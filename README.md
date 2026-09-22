@@ -27,6 +27,11 @@ See [`docs/`](docs/):
 - `design-home.html` — hi-fi home (Race Into the Shadow)
 - `devplan.html` — build plan (PRs & milestones)
 
+## Access & agents
+- **Sign-up is gated** by a shared access code — set `SIGNUP_ACCESS_CODE` (verified server-side).
+- **Agents** run as Vercel Cron; `/api/cron/*` is authorized by `CRON_SECRET`.
+- Both must be set in Vercel for production to work.
+
 ## Ways of working
 - One branch per PR (`feat/*`); small, reviewable diffs.
 - Merge to `main` → Vercel deploys production. No CLI deploys.
