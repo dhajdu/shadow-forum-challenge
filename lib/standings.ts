@@ -39,13 +39,13 @@ function build(
   const out: Standing[] = [];
   for (const [id, full_name] of names) {
     const a = agg.get(id);
-    // window: contest → from the fixed start; all-time → from the rider's first day.
-    const start = opts.sinceDay ?? a?.first;
+    // "missed" is always contest days (from the fixed start) with no data — the
+    // days that count as your lowest score. 0 until the contest begins.
     let missed = 0;
-    if (start && start <= today) {
+    if (CONTEST_START_DAY <= today) {
       let present = 0;
-      for (const d of a?.days ?? []) if (d >= start && d <= today) present++;
-      missed = Math.max(0, spanDays(start, today) - present);
+      for (const d of a?.days ?? []) if (d >= CONTEST_START_DAY && d <= today) present++;
+      missed = Math.max(0, spanDays(CONTEST_START_DAY, today) - present);
     }
     out.push({
       user_id: id,

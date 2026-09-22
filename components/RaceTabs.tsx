@@ -31,7 +31,7 @@ export function RaceTabs({
             : "All your WHOOP history — the contest resets Sep 23."}
         </span>
       </div>
-      <RaceBoard standings={standings} />
+      <RaceBoard standings={standings} showMissed={tab === "contest"} />
     </div>
   );
 }
