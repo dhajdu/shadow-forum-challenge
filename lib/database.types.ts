@@ -48,6 +48,8 @@ export interface Database {
           target_date: string | null;
           coach_id: string | null;
           locked: boolean;
+          current_progress: number;
+          current_status: GoalStatus;
           created_at: string;
         };
         Insert: {
@@ -58,6 +60,8 @@ export interface Database {
           target_date?: string | null;
           coach_id?: string | null;
           locked?: boolean;
+          current_progress?: number;
+          current_status?: GoalStatus;
           created_at?: string;
         };
         Update: {
@@ -68,6 +72,8 @@ export interface Database {
           target_date?: string | null;
           coach_id?: string | null;
           locked?: boolean;
+          current_progress?: number;
+          current_status?: GoalStatus;
           created_at?: string;
         };
         Relationships: [];

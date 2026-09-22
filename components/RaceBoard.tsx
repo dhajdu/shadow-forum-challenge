@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Standing } from "@/lib/standings";
 import { placementPenalty } from "@/lib/contest";
 
@@ -25,7 +26,7 @@ export function RaceBoard({ standings }: { standings: Standing[] }) {
       {standings.map((s, i) => {
         const pos = max > 0 ? (s.avg / max) * 100 : 0;
         return (
-          <div key={s.user_id} className={`lane p${i + 1}`}>
+          <Link key={s.user_id} href={`/rider/${s.user_id}`} className={`lane p${i + 1}`}>
             <div className="medal">{i + 1}</div>
             <div className="rname">
               {s.full_name}
@@ -42,7 +43,7 @@ export function RaceBoard({ standings }: { standings: Standing[] }) {
               {s.avg || "—"}
               <small>avg</small>
             </div>
-          </div>
+          </Link>
         );
       })}
 

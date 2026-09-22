@@ -29,22 +29,18 @@ export default async function RacePage() {
 
   const standings = await getStandings(supabase);
 
-  // business goals + latest status per rider
-  const { data: goals } = await supabase.from("goals").select("id, user_id, title");
-  const { data: progress } = await supabase
-    .from("goal_progress")
-    .select("goal_id, status, created_at")
-    .order("created_at", { ascending: false });
+  // business goals + public status (denormalized on goals, readable by all)
+  const { data: goals } = await supabase
+    .from("goals")
+    .select("id, user_id, title, current_status");
 
-  const latestStatus = new Map<string, GoalStatus>();
-  for (const p of (progress ?? []) as { goal_id: string; status: GoalStatus }[]) {
-    if (!latestStatus.has(p.goal_id)) latestStatus.set(p.goal_id, p.status);
-  }
   const nameById = new Map(standings.map((s) => [s.user_id, s.full_name]));
-  const goalList = ((goals ?? []) as { id: string; user_id: string; title: string }[]).map((g) => ({
+  const goalList = (
+    (goals ?? []) as { id: string; user_id: string; title: string; current_status: GoalStatus }[]
+  ).map((g) => ({
     ...g,
     rider: nameById.get(g.user_id) ?? "Rider",
-    status: latestStatus.get(g.id) ?? ("on_track" as GoalStatus),
+    status: g.current_status,
   }));
 
   const kitty = PLACEMENT_PENALTIES.reduce((a, b) => a + b, 0);
