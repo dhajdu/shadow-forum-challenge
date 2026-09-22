@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/steward", "schedule": "0 8 * * *" },
-    { "path": "/api/cron/whip", "schedule": "0 9 * * *" }
+    { "path": "/api/cron/whip", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/chronicler", "schedule": "0 10 1 * *" }
   ]
 }
