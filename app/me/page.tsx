@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UploadWhoop } from "@/components/UploadWhoop";
+import { ScoreTrend } from "@/components/ScoreTrend";
 import { SignOutButton } from "@/components/SignOutButton";
+import { getStandings } from "@/lib/standings";
 
 type Upload = { id: string; file_name: string; status: string; created_at: string };
+type Day = { day: string; score: number | null; recovery: number | null; missed: boolean };
 
 export default async function MyZone() {
   const supabase = await createClient();
@@ -33,6 +36,24 @@ export default async function MyZone() {
     .order("created_at", { ascending: false });
   const uploads = (uploadRows ?? []) as Upload[];
 
+  const { data: dayRows } = await supabase
+    .from("whoop_days")
+    .select("day, score, recovery, missed")
+    .eq("user_id", user.id)
+    .order("day", { ascending: true });
+  const days = (dayRows ?? []) as Day[];
+
+  const scored = days.filter((d) => d.score != null) as { score: number }[];
+  const avg = scored.length
+    ? Math.round((scored.reduce((s, d) => s + d.score, 0) / scored.length) * 10) / 10
+    : null;
+  const recoveries = days.filter((d) => d.recovery != null).map((d) => d.recovery as number);
+  const latestRecovery = recoveries.length ? recoveries[recoveries.length - 1] : null;
+  const missed = days.filter((d) => d.missed).length;
+
+  const standings = await getStandings(supabase);
+  const rank = standings.findIndex((s) => s.user_id === user.id) + 1;
+
   return (
     <main className="zone">
       <header className="zone-head">
@@ -42,6 +63,20 @@ export default async function MyZone() {
         </div>
         <SignOutButton />
       </header>
+
+      <section className="zone-card">
+        <h2>My data</h2>
+        <div className="kpi-row">
+          <div className="kpi"><b>{avg ?? "—"}</b><span>avg score</span></div>
+          <div className="kpi"><b>{latestRecovery ?? "—"}</b><span>recovery</span></div>
+          <div className="kpi"><b>{days.length}</b><span>days logged</span></div>
+          <div className="kpi"><b>{missed}</b><span>days missed</span></div>
+          <div className="kpi"><b>{rank > 0 ? `#${rank}` : "—"}</b><span>of {standings.length}</span></div>
+        </div>
+        <div className="trend-wrap">
+          <ScoreTrend scores={scored.map((d) => d.score)} />
+        </div>
+      </section>
 
       <section className="zone-card">
         <h2>Upload WHOOP data</h2>
