@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { signUpWithCode } from "@/app/actions/signup";
 
 type Mode = "signin" | "signup";
 
 export default function Home() {
   const router = useRouter();
   const supabase = createClient();
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>("signup");
+  const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,15 +28,15 @@ export default function Home() {
       if (error) setMsg({ text: error.message, ok: false });
       else router.push("/race");
     } else {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { full_name: name.trim() } },
-      });
-      if (error) {
-        setMsg({ text: error.message, ok: false });
-      } else if (data.session) {
-        // email confirmation disabled → straight into onboarding
+      const form = new FormData();
+      form.set("code", code);
+      form.set("name", name);
+      form.set("email", email);
+      form.set("password", password);
+      const res = await signUpWithCode(form);
+      if (res.error) {
+        setMsg({ text: res.error, ok: false });
+      } else if (res.session) {
         router.push("/welcome");
       } else {
         setMsg({ text: "Check your email to confirm access, then sign in.", ok: true });
@@ -45,9 +47,7 @@ export default function Home() {
 
   return (
     <main className="wrap">
-      {/* atmospheric gradient backdrop */}
       <div className="hero" />
-      {/* generated hero photo layered on top (falls back to gradient if absent) */}
       <div
         aria-hidden
         style={{
@@ -67,15 +67,26 @@ export default function Home() {
 
         <form onSubmit={onSubmit}>
           {mode === "signup" && (
-            <input
-              className="field"
-              type="text"
-              placeholder="Full name"
-              autoComplete="name"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <>
+              <input
+                className="field"
+                type="text"
+                placeholder="Access code"
+                autoComplete="off"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+              <input
+                className="field"
+                type="text"
+                placeholder="Full name"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </>
           )}
           <input
             className="field"
@@ -97,25 +108,25 @@ export default function Home() {
             onChange={(e) => setPassword(e.target.value)}
           />
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? "…" : mode === "signin" ? "Enter" : "Create account"}
+            {busy ? "…" : mode === "signin" ? "Enter" : "Join the Forum"}
           </button>
         </form>
 
         {msg && <div className={`msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
 
         <div className="toggle">
-          {mode === "signin" ? (
-            <>
-              Not a member?{" "}
-              <button onClick={() => { setMode("signup"); setMsg(null); }}>
-                Request access
-              </button>
-            </>
-          ) : (
+          {mode === "signup" ? (
             <>
               Already inside?{" "}
               <button onClick={() => { setMode("signin"); setMsg(null); }}>
                 Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              Have an access code?{" "}
+              <button onClick={() => { setMode("signup"); setMsg(null); }}>
+                Join
               </button>
             </>
           )}
