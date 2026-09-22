@@ -1,31 +1,24 @@
-"use client";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { SignOutButton } from "@/components/SignOutButton";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+export default async function Dashboard() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function Dashboard() {
-  const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
+  // middleware already guards this, but never render without a user
+  if (!user) redirect("/");
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.replace("/");
-        return;
-      }
-      setEmail(data.user.email ?? null);
-      setChecked(true);
-    });
-  }, [router]);
+  const { data } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    router.replace("/");
-  }
-
-  if (!checked) return <main className="wrap"><div className="hero" /></main>;
+  const profile = data as { full_name: string | null } | null;
+  const name = profile?.full_name || user.email;
 
   return (
     <main className="wrap">
@@ -34,8 +27,8 @@ export default function Dashboard() {
       <section className="panel">
         <div className="eyebrow">Inside</div>
         <h1 className="title">Welcome</h1>
-        <p className="tagline">{email}</p>
-        <button className="btn" onClick={signOut}>Sign out</button>
+        <p className="tagline">{name}</p>
+        <SignOutButton />
       </section>
     </main>
   );
