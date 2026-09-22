@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getStandings } from "@/lib/standings";
 import { RaceBoard } from "@/components/RaceBoard";
+import { NavBar } from "@/components/NavBar";
 import { dayOfContest, currentLeg, CONTEST_DAYS, PLACEMENT_PENALTIES } from "@/lib/contest";
 import type { GoalStatus } from "@/lib/database.types";
 
@@ -47,15 +47,7 @@ export default async function RacePage() {
 
   return (
     <main className="app">
-      <div className="bar">
-        <div className="brand">THE SHADOW FORUM</div>
-        <nav className="nav">
-          <Link href="/race" className="on">Race</Link>
-          <Link href="/me">My Zone</Link>
-        </nav>
-        <div className="spacer" />
-        <Link href="/profile" className="av">◧</Link>
-      </div>
+      <NavBar active="race" />
 
       <div className="race-head">
         <div>

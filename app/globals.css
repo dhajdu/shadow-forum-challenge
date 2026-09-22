@@ -304,3 +304,9 @@ a.lane:hover .rname { color: #fff; }
 .report-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
 @media (max-width: 560px){ .report-movers { grid-template-columns: 1fr; } }
 .mover { font-size: 18px; font-weight: 700; }
+
+/* nav polish + responsive */
+.bar { flex-wrap: wrap; }
+.bar .brand { text-decoration: none; }
+.bar .nav a:hover { color: #fff; }
+@media (max-width: 520px){ .race-head { gap: 12px; } .kpis .kpi { min-width: 72px; padding: 9px 11px; } .lanelbl { padding-left: 96px; } .rname { width: 74px; } }

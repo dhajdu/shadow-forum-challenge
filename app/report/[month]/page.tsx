@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { NavBar } from "@/components/NavBar";
 import { buildReport } from "@/lib/report";
 import type { GoalStatus } from "@/lib/database.types";
 
@@ -30,15 +31,7 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
 
   return (
     <main className="app">
-      <div className="bar">
-        <div className="brand">THE SHADOW FORUM</div>
-        <nav className="nav">
-          <Link href="/race">Race</Link>
-          <Link href="/me">My Zone</Link>
-        </nav>
-        <div className="spacer" />
-        <Link href="/profile" className="av">◧</Link>
-      </div>
+      <NavBar active="report" />
 
       <Link href="/race" className="back">← back to race</Link>
 
