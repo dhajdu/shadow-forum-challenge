@@ -11,12 +11,14 @@ export const PARTICIPANTS = [
 ] as const;
 
 // coachOf[person] = the person who coaches them.
+// Single cycle (Dave→Vinh→Dru→Tuan→Trung→Dave): everyone coaches exactly one and
+// is coached by exactly one, with no self-coaching and no reciprocal pairs.
 const COACH_OF: Record<string, string> = {
-  "dave hajdu": "Dru Nguyen",
-  "dru nguyen": "Dave Hajdu",
-  "vinh nguyen": "Tuan Anh Le",
-  "trung nguyen": "Vinh Nguyen",
-  "tuan anh le": "Trung Nguyen",
+  "vinh nguyen": "Dave Hajdu",
+  "dru nguyen": "Vinh Nguyen",
+  "tuan anh le": "Dru Nguyen",
+  "trung nguyen": "Tuan Anh Le",
+  "dave hajdu": "Trung Nguyen",
 };
 
 export function normalizeName(name: string): string {
