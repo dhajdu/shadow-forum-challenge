@@ -2,19 +2,13 @@
 
 import { useActionState } from "react";
 import { createGoal, type GoalFormState } from "@/app/actions/goal";
-
-type Coach = { id: string; full_name: string };
+import { coachNameFor } from "@/lib/roster";
 
 const initial: GoalFormState = { error: null };
 
-export function OnboardingForm({
-  name,
-  coaches,
-}: {
-  name: string;
-  coaches: Coach[];
-}) {
+export function OnboardingForm({ name }: { name: string }) {
   const [state, formAction, pending] = useActionState(createGoal, initial);
+  const coach = coachNameFor(name);
 
   return (
     <form action={formAction} className="onboard-form">
@@ -41,15 +35,8 @@ export function OnboardingForm({
         </div>
       </div>
 
-      <label>Your coach for the monthly 1-on-1</label>
-      <select className="field" name="coach_id" defaultValue="">
-        <option value="">Select a coach…</option>
-        {coaches.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.full_name || "Unnamed rider"}
-          </option>
-        ))}
-      </select>
+      <label>Your coach for the monthly 1-on-1 (assigned)</label>
+      <div className="field readonly">{coach ?? "Assigned once your roster is set"}</div>
 
       {state.error && <div className="msg err">{state.error}</div>}
 

@@ -24,12 +24,6 @@ export default async function Welcome() {
     .single();
   const name = (me as { full_name: string | null } | null)?.full_name || "";
 
-  const { data: others } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .neq("id", user.id);
-  const coaches = (others ?? []) as { id: string; full_name: string }[];
-
   return (
     <main className="wrap">
       <div className="hero" />
@@ -38,7 +32,7 @@ export default async function Welcome() {
         <div className="eyebrow">First time in</div>
         <h1 className="title">Welcome, Rider</h1>
         <p className="tagline">Lock in your Q4 goal</p>
-        <OnboardingForm name={name} coaches={coaches} />
+        <OnboardingForm name={name} />
       </section>
     </main>
   );

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { reconcileCoaches } from "@/lib/coach";
 
 export type SignUpResult = {
   error: string | null;
@@ -44,6 +45,9 @@ export async function signUpWithCode(formData: FormData): Promise<SignUpResult> 
   const supabase = await createClient();
   const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
   if (signInErr) return { error: signInErr.message, session: false };
+
+  // backfill coach links now that this participant exists
+  await reconcileCoaches(admin);
 
   return { error: null, session: true };
 }

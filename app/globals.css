@@ -316,3 +316,5 @@ a.lane:hover .rname { color: #fff; }
 .pwfield { width: 100%; padding-right: 44px; }
 .pweye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: 0; cursor: pointer; color: var(--muted); display: grid; place-items: center; padding: 6px; border-radius: 6px; }
 .pweye:hover { color: var(--ink); }
+
+.field.readonly { color: var(--muted); display: flex; align-items: center; }

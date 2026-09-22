@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { reconcileCoaches } from "@/lib/coach";
 
 export type GoalFormState = { error: string | null };
 
@@ -18,7 +20,6 @@ export async function createGoal(
   const title = String(formData.get("title") ?? "").trim();
   const measure = String(formData.get("measure") ?? "").trim() || null;
   const targetDate = String(formData.get("target_date") ?? "").trim() || null;
-  const coachId = String(formData.get("coach_id") ?? "").trim() || null;
 
   if (!title) return { error: "Your goal can't be empty." };
 
@@ -35,11 +36,14 @@ export async function createGoal(
     title,
     measure,
     target_date: targetDate,
-    coach_id: coachId,
+    coach_id: null, // assigned from the roster below
     locked: true,
   });
 
   if (error) return { error: error.message };
+
+  // auto-assign coaches from the roster (this goal + backfill any now-linkable)
+  await reconcileCoaches(createAdminClient());
 
   redirect("/race");
 }
