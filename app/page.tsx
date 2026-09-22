@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { signUpWithCode } from "@/app/actions/signup";
+import { PasswordField } from "@/components/PasswordField";
 
 type Mode = "signin" | "signup";
 
@@ -36,10 +37,9 @@ export default function Home() {
       const res = await signUpWithCode(form);
       if (res.error) {
         setMsg({ text: res.error, ok: false });
-      } else if (res.session) {
-        router.push("/welcome");
       } else {
-        setMsg({ text: "Check your email to confirm access, then sign in.", ok: true });
+        router.push("/welcome");
+        router.refresh();
       }
     }
     setBusy(false);
@@ -97,9 +97,7 @@ export default function Home() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <input
-            className="field"
-            type="password"
+          <PasswordField
             placeholder="Password"
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
             required
