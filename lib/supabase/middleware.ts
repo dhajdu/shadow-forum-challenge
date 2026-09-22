@@ -5,7 +5,7 @@ import type { Database } from "@/lib/database.types";
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 // Protected areas — unauthenticated visitors get bounced to the landing page.
-const PROTECTED = ["/dashboard", "/race", "/me", "/profile", "/welcome", "/rider", "/kitty", "/report"];
+const PROTECTED = ["/dashboard", "/race", "/me", "/profile", "/welcome", "/rider", "/kitty", "/report", "/rules"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

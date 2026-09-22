@@ -46,7 +46,7 @@ export default async function MyZone() {
 
   const { data: dayRows } = await supabase
     .from("whoop_days")
-    .select("day, score, recovery, strain, resting_hr, hrv, missed")
+    .select("day, score, recovery, sleep, strain, resting_hr, hrv, missed")
     .eq("user_id", user.id)
     .order("day", { ascending: true });
   const days = (dayRows ?? []) as WhoopDay[];

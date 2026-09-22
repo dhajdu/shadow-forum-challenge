@@ -7,16 +7,18 @@ export type WhoopDay = {
   day: string;
   score: number | null;
   recovery: number | null;
+  sleep: number | null;
   strain: number | null;
   resting_hr: number | null;
   hrv: number | null;
   missed: boolean;
 };
 
-type MetricKey = "score" | "recovery" | "strain" | "resting_hr" | "hrv";
+type MetricKey = "score" | "recovery" | "sleep" | "strain" | "resting_hr" | "hrv";
 const METRICS: { key: MetricKey; label: string; unit?: string }[] = [
-  { key: "score", label: "WHOOP score" },
+  { key: "score", label: "Race score (blend)" },
   { key: "recovery", label: "Recovery", unit: "%" },
+  { key: "sleep", label: "Sleep performance", unit: "%" },
   { key: "strain", label: "Day strain" },
   { key: "resting_hr", label: "Resting HR", unit: "bpm" },
   { key: "hrv", label: "HRV", unit: "ms" },
