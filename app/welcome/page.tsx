@@ -15,7 +15,7 @@ export default async function Welcome() {
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (goal) redirect("/dashboard");
+  if (goal) redirect("/race");
 
   const { data: me } = await supabase
     .from("profiles")

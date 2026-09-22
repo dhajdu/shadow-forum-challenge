@@ -28,7 +28,7 @@ export async function createGoal(
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (existing) redirect("/dashboard");
+  if (existing) redirect("/race");
 
   const { error } = await supabase.from("goals").insert({
     user_id: user.id,
@@ -41,5 +41,5 @@ export async function createGoal(
 
   if (error) return { error: error.message };
 
-  redirect("/dashboard");
+  redirect("/race");
 }
