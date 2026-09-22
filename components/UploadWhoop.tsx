@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { ingestUpload } from "@/app/actions/ingest";
 
 type Upload = { id: string; file_name: string; status: string; created_at: string };
 
@@ -33,13 +34,24 @@ export function UploadWhoop({
         setError(upErr.message);
         continue;
       }
-      const { error: rowErr } = await supabase.from("uploads").insert({
-        user_id: userId,
-        file_path: path,
-        file_name: file.name,
-        status: "uploaded",
-      });
-      if (rowErr) setError(rowErr.message);
+      const { data: row, error: rowErr } = await supabase
+        .from("uploads")
+        .insert({
+          user_id: userId,
+          file_path: path,
+          file_name: file.name,
+          status: "uploaded",
+        })
+        .select("id")
+        .single();
+      if (rowErr) {
+        setError(rowErr.message);
+        continue;
+      }
+      // parse + ingest server-side
+      const id = (row as { id: string }).id;
+      const res = await ingestUpload(id);
+      if (res.error) setError(res.error);
     }
 
     setBusy(false);
