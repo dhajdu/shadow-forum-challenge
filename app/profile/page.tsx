@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { NavBar } from "@/components/NavBar";
 import { ProfileForm } from "@/components/ProfileForm";
 
 export default async function ProfilePage() {
@@ -19,6 +20,7 @@ export default async function ProfilePage() {
 
   return (
     <main className="zone">
+      <NavBar />
       <header className="zone-head">
         <div>
           <div className="eyebrow">

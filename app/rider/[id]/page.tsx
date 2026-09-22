@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ScoreTrend } from "@/components/ScoreTrend";
+import { NavBar } from "@/components/NavBar";
 import { getStandings } from "@/lib/standings";
 import type { GoalStatus } from "@/lib/database.types";
 
@@ -67,15 +68,7 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="app">
-      <div className="bar">
-        <div className="brand">THE SHADOW FORUM</div>
-        <nav className="nav">
-          <Link href="/race" className="on">Race</Link>
-          <Link href="/me">My Zone</Link>
-        </nav>
-        <div className="spacer" />
-        <Link href="/profile" className="av">◧</Link>
-      </div>
+      <NavBar active="race" />
 
       <Link href="/race" className="back">← back to race</Link>
 
