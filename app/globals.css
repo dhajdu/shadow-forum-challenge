@@ -299,3 +299,8 @@ a.lane:hover .rname { color: #fff; }
 .note-when { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
 .app .card h3 { font-size: 13px; font-weight: 700; letter-spacing: .03em; margin-bottom: 12px; color: #cdd5f5; }
 .app .kpi-row .kpi b { color: var(--ink); }
+
+/* ── Monthly report ── */
+.report-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+@media (max-width: 560px){ .report-movers { grid-template-columns: 1fr; } }
+.mover { font-size: 18px; font-weight: 700; }
