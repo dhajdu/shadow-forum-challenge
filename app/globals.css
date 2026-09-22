@@ -197,3 +197,18 @@ form { display: grid; gap: 12px; }
 .seg-btn { font-family: inherit; font-size: 12px; padding: 7px 12px; border-radius: 20px; cursor: pointer;
   background: rgba(10,14,26,.5); color: var(--muted); border: 1px solid var(--line); }
 .seg-btn.on { background: var(--ink); color: #fff; border-color: rgba(47,125,255,.6); }
+
+/* ── Profile ── */
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 680px){ .profile-grid { grid-template-columns: 1fr; } }
+.pform { display: grid; gap: 8px; }
+.pform label { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.avatar-lg { width: 56px; height: 56px; border-radius: 50%; flex: none; border: 1px solid var(--line);
+  background: linear-gradient(135deg,#1a2136,#0e1424) center/cover no-repeat; }
+.btn-ghost { font-size: 13px; padding: 8px 14px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--ink); }
+.signout-row { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.back { color: var(--blue); text-decoration: none; font-size: 12px; }
+
+.zone-nav { display: flex; gap: 8px; align-items: center; }
