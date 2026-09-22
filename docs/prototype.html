@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shadow Forum — Lo-fi Prototype</title>
+<style>
+  :root{
+    --ink:#2b2b2b; --line:#b9b9b9; --line-2:#d7d7d7; --paper:#f4f4f2; --box:#e9e9e6;
+    --muted:#8a8a8a; --accent:#3a3a3a; --win:#4a4a4a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Comic Sans MS","Segoe Print",ui-rounded,"Bradley Hand",cursive, system-ui, sans-serif;
+    background:#dcdcd8;color:var(--ink);padding:22px;line-height:1.4;
+  }
+  /* prototype uses a hand-drawn wireframe look on purpose (low fidelity) */
+  .stagebar{max-width:1180px;margin:0 auto 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .stagebar h1{font-size:16px;margin-right:8px}
+  .stagebar button{
+    font-family:inherit;font-size:12px;border:2px solid var(--ink);background:#fff;border-radius:8px;
+    padding:6px 11px;cursor:pointer}
+  .stagebar button.active{background:var(--ink);color:#fff}
+  .hint{font-size:12px;color:#555;max-width:1180px;margin:0 auto 14px}
+
+  .frame{
+    max-width:1180px;margin:0 auto;background:#fff;border:2.5px solid var(--ink);border-radius:14px;
+    box-shadow:6px 6px 0 rgba(0,0,0,.12);overflow:hidden}
+  .chrome{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:2px dashed var(--line);background:var(--paper)}
+  .dot{width:10px;height:10px;border:2px solid var(--ink);border-radius:50%}
+  .url{margin-left:8px;font-size:12px;border:2px solid var(--line);background:#fff;border-radius:6px;padding:3px 10px;color:#555;flex:1}
+  .avatar{width:26px;height:26px;border:2px solid var(--ink);border-radius:50%;display:grid;place-items:center;
+    font-size:13px;cursor:pointer;background:#fff;flex:none}
+  .avatar:hover{background:var(--ink);color:#fff}
+
+  .screen{display:none;padding:26px}
+  .screen.on{display:block}
+
+  h2{font-size:22px;margin-bottom:4px}
+  .sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+  .wire{border:2px solid var(--line);border-radius:10px;background:var(--box)}
+  .ph{height:12px;background:repeating-linear-gradient(90deg,#cfcfcb,#cfcfcb 8px,#e2e2df 8px,#e2e2df 14px);border-radius:6px;margin:6px 0}
+  .ph.s{width:55%} .ph.m{width:78%} .ph.l{width:100%}
+  .btn{display:inline-block;font-family:inherit;font-size:14px;border:2px solid var(--ink);background:#fff;border-radius:8px;padding:9px 16px;cursor:pointer}
+  .btn.solid{background:var(--ink);color:#fff}
+  .imgbox{border:2px solid var(--line);border-radius:10px;background:var(--box);display:grid;place-items:center;color:#9a9a9a;font-size:13px;position:relative}
+  .imgbox::after{content:"";position:absolute;inset:0;background:
+    linear-gradient(45deg,transparent 49%,var(--line-2) 49% 51%,transparent 51%),
+    linear-gradient(-45deg,transparent 49%,var(--line-2) 49% 51%,transparent 51%)}
+  .imgbox span{position:relative;z-index:1;background:var(--box);padding:2px 8px}
+  .clk{cursor:pointer}
+  .clk:hover{outline:2px dashed #7a7a7a;outline-offset:2px}
+  .tag{display:inline-block;font-size:11px;border:2px solid var(--line);border-radius:20px;padding:2px 9px;color:#555;background:#fafafa}
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .col{flex:1;min-width:220px}
+  small.note{display:block;margin-top:10px;font-size:11px;color:#999}
+
+  /* ── ENTRY ── */
+  .entry{max-width:420px;margin:10px auto;text-align:center}
+  .entry .imgbox{height:150px;margin-bottom:18px}
+  .field{border:2px solid var(--line);border-radius:8px;background:#fff;padding:11px 12px;color:#999;text-align:left;margin:8px 0;font-size:13px}
+
+  /* ── RACE INTO THE SHADOW ── */
+  /* lanes run from lit (left) into shadow (right); the furthest in leads */
+  .track{border:2px solid var(--line);border-radius:10px;padding:14px 14px 8px;background:#fbfbf9}
+  .trackhead{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.12em;
+    text-transform:uppercase;color:#9a9a9a;padding:0 0 8px 132px}
+  .lane{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:2px dashed var(--line-2)}
+  .lane:last-child{border-bottom:0}
+  .rank{width:26px;height:26px;border:2px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-size:12px;flex:none}
+  .name{width:92px;font-size:13px;flex:none}
+  /* the lane: a gradient fading into shadow on the right */
+  .barwrap{flex:1;height:26px;border:2px solid var(--line);border-radius:6px;position:relative;overflow:hidden;
+    background:linear-gradient(90deg,#ffffff 0%,#e6e6e2 55%,#bdbdb8 78%,#6f6f6c 100%)}
+  .barwrap::before{content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(90deg,transparent,transparent 46px,rgba(0,0,0,.10) 46px,rgba(0,0,0,.10) 48px)}
+  /* the runner = a silhouette figure at the rider's position */
+  .runner{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:22px;z-index:2}
+  .runner svg{display:block;width:16px;height:22px}
+  .trail{position:absolute;top:50%;left:0;height:4px;transform:translateY(-50%);
+    background:linear-gradient(90deg,transparent,rgba(40,40,40,.35));border-radius:4px;z-index:1}
+  .score{width:52px;text-align:right;font-size:14px;font-weight:bold;flex:none}
+  .lead .barwrap{box-shadow:0 0 0 2px #2b2b2b inset}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border:2px solid var(--line-2);padding:7px 9px;text-align:left}
+  th{background:var(--paper)}
+  .kpi{border:2px solid var(--line);border-radius:10px;background:#fbfbf9;padding:14px;text-align:center;flex:1;min-width:120px}
+  .kpi b{display:block;font-size:24px}
+  .kpi span{font-size:11px;color:var(--muted)}
+  .navlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+
+  /* ── MY ZONE ── */
+  .drop{border:2.5px dashed var(--line);border-radius:12px;background:var(--paper);
+    padding:26px;text-align:center;color:#7a7a7a}
+  .drop b{display:block;font-size:15px;color:#444;margin-bottom:4px}
+  .filelist{margin-top:12px}
+  .filerow{display:flex;align-items:center;gap:10px;border:2px solid var(--line-2);border-radius:8px;
+    padding:8px 11px;background:#fff;font-size:12px;margin-top:8px}
+  .filerow .fi{width:22px;height:26px;border:2px solid var(--line);border-radius:3px;flex:none;background:var(--box)}
+  .filerow .ok{margin-left:auto;font-size:11px;color:#4a4a4a;border:2px solid var(--line);border-radius:20px;padding:1px 8px}
+  .progwrap{height:18px;border:2px solid var(--line);border-radius:20px;background:#fff;overflow:hidden;margin:8px 0}
+  .prog{height:100%;background:repeating-linear-gradient(45deg,#c8c8c4,#c8c8c4 7px,#dedeD9 7px,#dedeD9 14px)}
+  .seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .seg .s{border:2px solid var(--line);border-radius:20px;padding:4px 11px;font-size:12px;cursor:pointer;background:#fff}
+  .seg .s.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="stagebar">
+  <h1>Shadow Forum · lo-fi prototype</h1>
+  <button data-go="entry" class="active">1 · Entry</button>
+  <button data-go="onboard">1b · First-use goal</button>
+  <button data-go="race">2 · Race Into the Shadow</button>
+  <button data-go="player">3 · Player Detail</button>
+  <button data-go="report">4 · Monthly Report</button>
+  <button data-go="me">5 · My Zone</button>
+</div>
+<p class="hint">Wireframe only — grey boxes stand in for real content. Click the dashed / outlined elements (buttons, rows, links) to move between screens.</p>
+
+<div class="frame">
+  <div class="chrome">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <span class="url" id="url">eoshadowforum.com</span>
+    <span class="avatar clk" data-go="profile" title="Profile" style="display:none">◧</span>
+  </div>
+
+  <!-- ── 1. ENTRY ── -->
+  <div class="screen on" id="entry">
+    <div class="entry">
+      <div class="imgbox" style="height:150px"><span>hero image</span></div>
+      <div class="tag">by invitation only</div>
+      <h2 style="margin-top:12px">THE SHADOW FORUM</h2>
+      <div class="sub">Into the Shadow</div>
+
+      <div class="seg" style="justify-content:center;margin-bottom:6px">
+        <span class="s on" id="tab-in" onclick="authMode('in')">Sign in</span>
+        <span class="s" id="tab-up" onclick="authMode('up')">Sign up</span>
+      </div>
+
+      <div class="field" id="f-name" style="display:none">Full name…</div>
+      <div class="field">Email…</div>
+      <div class="field">Password…</div>
+      <div class="btn solid clk" id="auth-btn" data-go="race" style="width:100%;margin-top:6px">Enter →</div>
+      <small class="note" id="auth-note">Forgot password</small>
+    </div>
+  </div>
+
+  <!-- ── 1b. FIRST-USE: SET GOAL ── -->
+  <div class="screen" id="onboard">
+    <div class="entry" style="max-width:480px">
+      <div class="tag">first time in</div>
+      <h2 style="margin-top:12px">Welcome, Rider</h2>
+      <div class="sub">Before you enter, lock in your Q4 business goal. This is what you'll be held to.</div>
+
+      <div style="text-align:left;margin-top:10px">
+        <div style="font-size:12px;color:#555">Your name</div>
+        <div class="field">Rider A</div>
+
+        <div style="font-size:12px;color:#555">Your one Q4 business goal</div>
+        <div class="field" style="min-height:54px">e.g. "Close 3 new enterprise clients by Dec 31"…</div>
+
+        <div class="row">
+          <div class="col" style="min-width:150px">
+            <div style="font-size:12px;color:#555">How you'll measure it</div>
+            <div class="field">e.g. signed contracts</div>
+          </div>
+          <div class="col" style="min-width:120px">
+            <div style="font-size:12px;color:#555">Target by</div>
+            <div class="field">Dec 31, 2026</div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:#555">Your coach for the monthly 1-on-1</div>
+        <div class="field">Select a coach…</div>
+      </div>
+
+      <div class="btn solid clk" data-go="race" style="width:100%;margin-top:12px">Lock it in &amp; enter →</div>
+      <small class="note">You can update <b>progress</b> later in My Zone — but the goal itself is fixed once set.
+        Miss it → 5M you + 5M coach.</small>
+    </div>
+  </div>
+
+  <!-- ── 2. HORSE RACE ── -->
+  <div class="screen" id="race">
+    <h2>Race Into the Shadow</h2>
+    <div class="sub">WHOOP standings · Q4 2026 · updated daily · furthest into the shadow leads</div>
+
+    <div class="row" style="margin-bottom:16px">
+      <div class="kpi"><b>Day 42</b><span>of 92</span></div>
+      <div class="kpi"><b>14M</b><span>contest kitty</span></div>
+      <div class="kpi"><b>5</b><span>riders</span></div>
+      <div class="kpi"><b>Nov</b><span>current leg</span></div>
+    </div>
+
+    <div class="track">
+      <div class="trackhead"><span>◐ the light</span><span>the shadow ●</span></div>
+      <div class="lane lead clk" data-go="player"><div class="rank">1</div><div class="name">Rider A</div>
+        <div class="barwrap"><div class="trail" style="width:88%"></div><div class="runner" style="left:88%">SIL</div></div><div class="score">88</div></div>
+      <div class="lane clk" data-go="player"><div class="rank">2</div><div class="name">Rider B</div>
+        <div class="barwrap"><div class="trail" style="width:81%"></div><div class="runner" style="left:81%">SIL</div></div><div class="score">81</div></div>
+      <div class="lane clk" data-go="player"><div class="rank">3</div><div class="name">Rider C</div>
+        <div class="barwrap"><div class="trail" style="width:74%"></div><div class="runner" style="left:74%">SIL</div></div><div class="score">74</div></div>
+      <div class="lane clk" data-go="player"><div class="rank">4</div><div class="name">Rider D</div>
+        <div class="barwrap"><div class="trail" style="width:69%"></div><div class="runner" style="left:69%">SIL</div></div><div class="score">69</div></div>
+      <div class="lane clk" data-go="player"><div class="rank">5</div><div class="name">Rider E</div>
+        <div class="barwrap"><div class="trail" style="width:63%"></div><div class="runner" style="left:63%">SIL</div></div><div class="score">63</div></div>
+    </div>
+    <small class="note">Each lane runs from the light into the shadow · a rider's silhouette sits at their avg WHOOP score · deepest in the shadow leads &amp; pays nothing</small>
+
+    <div class="row" style="margin-top:20px">
+      <div class="col wire" style="padding:14px">
+        <b style="font-size:13px">Payout ladder (if race ended today)</b>
+        <table style="margin-top:8px">
+          <tr><th>Place</th><th>Rider</th><th>Owes</th></tr>
+          <tr><td>1st</td><td>A</td><td>0</td></tr>
+          <tr><td>2nd</td><td>B</td><td>2M</td></tr>
+          <tr><td>3rd</td><td>C</td><td>3M</td></tr>
+          <tr><td>4th</td><td>D</td><td>4M</td></tr>
+          <tr><td>5th</td><td>E</td><td>5M</td></tr>
+        </table>
+      </div>
+      <div class="col wire" style="padding:14px">
+        <b style="font-size:13px">Business goals</b>
+        <div class="ph l"></div><div class="ph m"></div><div class="ph l"></div><div class="ph s"></div>
+        <small class="note">hit goal → pay 0 · miss → 5M rider + 5M coach</small>
+      </div>
+    </div>
+
+    <div class="navlinks">
+      <div class="btn solid clk" data-go="me">My Zone →</div>
+      <div class="btn clk" data-go="report">View monthly report →</div>
+      <div class="btn clk" data-go="profile">Profile</div>
+    </div>
+  </div>
+
+  <!-- ── 3. PLAYER DETAIL ── -->
+  <div class="screen" id="player">
+    <div class="clk" data-go="race" style="font-size:12px;color:#555;margin-bottom:8px">← back to race</div>
+    <div class="row">
+      <div class="imgbox" style="width:70px;height:70px;flex:none"><span>◧</span></div>
+      <div><h2>Rider A</h2><div class="sub">Rank 1 · avg 88 · goal: on track</div></div>
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <div class="kpi"><b>88</b><span>avg score</span></div>
+      <div class="kpi"><b>91</b><span>recovery</span></div>
+      <div class="kpi"><b>13.5</b><span>strain</span></div>
+      <div class="kpi"><b>6</b><span>days missed</span></div>
+    </div>
+
+    <div class="wire" style="padding:16px;margin-top:16px">
+      <b style="font-size:13px">Score trend</b>
+      <div class="imgbox" style="height:120px;margin-top:8px"><span>line chart</span></div>
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <div class="col wire" style="padding:14px"><b style="font-size:13px">Q4 business goal</b>
+        <div class="ph l"></div><div class="ph m"></div><span class="tag">on track</span></div>
+      <div class="col wire" style="padding:14px"><b style="font-size:13px">Coaching notes (3 sessions)</b>
+        <div class="ph l"></div><div class="ph l"></div><div class="ph s"></div></div>
+    </div>
+  </div>
+
+  <!-- ── 4. MONTHLY REPORT ── -->
+  <div class="screen" id="report">
+    <div class="clk" data-go="race" style="font-size:12px;color:#555;margin-bottom:8px">← back to race</div>
+    <h2>Monthly Report — November</h2>
+    <div class="sub">auto-generated by the Steward + Chronicler agents</div>
+
+    <div class="wire" style="padding:16px">
+      <b style="font-size:13px">The month in one line</b>
+      <div class="ph l"></div><div class="ph m"></div>
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <div class="col wire" style="padding:14px"><b style="font-size:13px">Standings movement</b>
+        <div class="imgbox" style="height:110px;margin-top:8px"><span>bump chart</span></div></div>
+      <div class="col wire" style="padding:14px"><b style="font-size:13px">Biggest mover / faller</b>
+        <div class="ph l"></div><div class="ph s"></div><div class="ph m"></div></div>
+    </div>
+
+    <div class="wire" style="padding:16px;margin-top:16px">
+      <b style="font-size:13px">Per-rider recap</b>
+      <table style="margin-top:8px">
+        <tr><th>Rider</th><th>Avg</th><th>Δ vs last month</th><th>Goal status</th><th>Kitty owed</th></tr>
+        <tr><td>A</td><td>88</td><td>▲ +3</td><td>on track</td><td>0</td></tr>
+        <tr><td>B</td><td>81</td><td>▲ +1</td><td>at risk</td><td>2M</td></tr>
+        <tr><td>C</td><td>74</td><td>▼ −2</td><td>on track</td><td>3M</td></tr>
+        <tr><td>D</td><td>69</td><td>▲ +4</td><td>behind</td><td>4M+5M</td></tr>
+        <tr><td>E</td><td>63</td><td>▼ −1</td><td>on track</td><td>5M</td></tr>
+      </table>
+    </div>
+    <div class="navlinks">
+      <div class="btn solid clk" data-go="race">Back to the race</div>
+      <div class="btn">Email to the group</div>
+    </div>
+  </div>
+
+  <!-- ── 5. MY ZONE ── -->
+  <div class="screen" id="me">
+    <div class="clk" data-go="race" style="font-size:12px;color:#555;margin-bottom:8px">← back to race</div>
+    <div class="row">
+      <div class="imgbox" style="width:60px;height:60px;flex:none"><span>◧</span></div>
+      <div><h2>My Zone — Rider A</h2><div class="sub">upload your data · check your numbers · update your goal</div></div>
+    </div>
+
+    <div class="row" style="margin-top:18px">
+      <!-- Upload -->
+      <div class="col" style="min-width:300px">
+        <div class="wire" style="padding:16px">
+          <b style="font-size:13px">1 · Upload WHOOP data</b>
+          <div class="drop" style="margin-top:10px">
+            <b>Drop your WHOOP export here</b>
+            .csv / .zip · or <span style="text-decoration:underline">browse</span>
+          </div>
+          <div class="filelist">
+            <div class="filerow"><span class="fi"></span>physiological_cycles.csv<span class="ok">✓ parsed</span></div>
+            <div class="filerow"><span class="fi"></span>sleeps.csv<span class="ok">✓ parsed</span></div>
+            <div class="filerow"><span class="fi"></span>workouts.csv<span class="ok">⏳ processing</span></div>
+          </div>
+          <small class="note">Last upload: 2 days ago · the Whip nudges you if data goes stale</small>
+        </div>
+      </div>
+
+      <!-- My data -->
+      <div class="col" style="min-width:300px">
+        <div class="wire" style="padding:16px">
+          <b style="font-size:13px">2 · My data</b>
+          <div class="row" style="margin-top:10px">
+            <div class="kpi"><b>88</b><span>avg score</span></div>
+            <div class="kpi"><b>91</b><span>recovery</span></div>
+            <div class="kpi"><b>6</b><span>days missed</span></div>
+          </div>
+          <div class="imgbox" style="height:96px;margin-top:10px"><span>my score trend</span></div>
+          <small class="note">Rank 1 of 5 · deepest in the shadow</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Goal progress -->
+    <div class="wire" style="padding:16px;margin-top:16px">
+      <b style="font-size:13px">3 · Update business goal progress</b>
+      <div class="ph l" style="margin-top:10px"></div>
+      <small class="note" style="margin-top:2px">Your Q4 goal (set at kickoff)</small>
+
+      <div style="margin-top:14px;font-size:12px;color:#555">Progress: <b>65%</b></div>
+      <div class="progwrap"><div class="prog" style="width:65%"></div></div>
+
+      <div style="font-size:12px;color:#555;margin-top:10px">Status this month</div>
+      <div class="seg">
+        <span class="s">On track</span>
+        <span class="s on">At risk</span>
+        <span class="s">Behind</span>
+        <span class="s">Hit ✓</span>
+      </div>
+
+      <div style="font-size:12px;color:#555;margin-top:12px">Update note (goes to your coach)</div>
+      <div class="field" style="min-height:56px">Type an update…</div>
+
+      <div class="navlinks">
+        <div class="btn solid">Save progress</div>
+        <div class="btn clk" data-go="race">Back to race</div>
+      </div>
+      <small class="note">Reminder: hit → pay 0 · miss → 5M you + 5M coach</small>
+    </div>
+  </div>
+
+  <!-- ── 6. PROFILE ── -->
+  <div class="screen" id="profile">
+    <div class="clk" data-go="race" style="font-size:12px;color:#555;margin-bottom:8px">← back to race</div>
+    <div class="row">
+      <div class="imgbox" style="width:60px;height:60px;flex:none"><span>◧</span></div>
+      <div><h2>Profile</h2><div class="sub">your details, security, and session</div></div>
+    </div>
+
+    <div class="row" style="margin-top:18px">
+      <div class="col" style="min-width:300px">
+        <div class="wire" style="padding:16px">
+          <b style="font-size:13px">Profile info</b>
+          <div style="font-size:12px;color:#555;margin-top:10px">Display name</div>
+          <div class="field">Rider A</div>
+          <div style="font-size:12px;color:#555">Email</div>
+          <div class="field">rider.a@edge8.ai</div>
+          <div style="font-size:12px;color:#555">Avatar</div>
+          <div class="row" style="align-items:center;gap:10px">
+            <div class="imgbox" style="width:44px;height:44px;flex:none"><span>◧</span></div>
+            <div class="btn">Upload photo</div>
+          </div>
+          <div class="btn solid" style="margin-top:12px">Save changes</div>
+        </div>
+      </div>
+
+      <div class="col" style="min-width:300px">
+        <div class="wire" style="padding:16px">
+          <b style="font-size:13px">Change password</b>
+          <div class="field" style="margin-top:10px">Current password…</div>
+          <div class="field">New password…</div>
+          <div class="field">Confirm new password…</div>
+          <div class="btn solid" style="margin-top:6px">Update password</div>
+        </div>
+
+        <div class="wire" style="padding:16px;margin-top:16px">
+          <b style="font-size:13px">Session</b>
+          <div class="ph m"></div>
+          <div class="btn clk" data-go="entry" style="margin-top:8px">Log out</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const urls={entry:"eoshadowforum.com",onboard:"eoshadowforum.com/welcome",race:"eoshadowforum.com/race",
+    player:"eoshadowforum.com/rider/a",report:"eoshadowforum.com/report/nov",
+    me:"eoshadowforum.com/me",profile:"eoshadowforum.com/profile"};
+
+  // entry sign-in vs sign-up: sign-up reveals the name field and sends new riders to the first-use goal screen
+  function authMode(m){
+    const up = m==='up';
+    document.getElementById('f-name').style.display = up ? 'block' : 'none';
+    document.getElementById('tab-up').classList.toggle('on',up);
+    document.getElementById('tab-in').classList.toggle('on',!up);
+    const btn=document.getElementById('auth-btn');
+    btn.textContent = up ? 'Create account →' : 'Enter →';
+    btn.dataset.go = up ? 'onboard' : 'race';
+    document.getElementById('auth-note').textContent = up ? 'New members set their goal next' : 'Forgot password';
+  }
+  function go(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+    document.querySelectorAll('.stagebar button').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
+    document.getElementById('url').textContent=urls[id]||"eoshadowforum.com";
+    // avatar only shows once "logged in" (any screen except entry)
+    document.querySelector('.avatar').style.display = (id==='entry'||id==='onboard') ? 'none' : 'grid';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.addEventListener('click',e=>{const t=e.target.closest('[data-go]');if(t)go(t.dataset.go);});
+
+  // runner = a simple person silhouette (mid-stride) marking each rider's position
+  const SIL='<svg viewBox="0 0 16 22" fill="#232323"><circle cx="8" cy="3.4" r="2.6"/>'
+    +'<path d="M8 6.2c-1.9 0-3 1.2-3 3v4.5l-1.7 4.9 1.9.7 1.7-4.8h.2l1.7 4.8 1.9-.7L11 13.7V9.2c0-1.8-1.1-3-3-3z"/></svg>';
+  document.querySelectorAll('.runner').forEach(r=>r.innerHTML=SIL);
+</script>
+</body>
+</html>

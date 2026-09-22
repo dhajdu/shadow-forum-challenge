@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Shadow Forum — Q4 2026 Commitment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#101014; --muted:#5b6172; --line:#e7e9ef; --bg:#ffffff; --soft:#f4f5f8;
+    --dark:#0a0c12; --dark-2:#12151f;
+    --green:#12c37a; --blue:#287be8;
+    --red:#ff4326; --magenta:#ff2fb0; --purple:#7c4dff;
+    --tag-bg:#fde8e2; --tag-ink:#c1441f;
+    --tag2-bg:#eef0f5; --tag2-ink:#404657;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:Manrope,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  a{color:var(--blue);text-decoration:none}
+
+  /* ── Hero ── */
+  .hero{background:
+      radial-gradient(80% 120% at 12% 40%, rgba(255,67,38,.20), transparent 55%),
+      radial-gradient(80% 120% at 88% 50%, rgba(47,125,255,.22), transparent 55%),
+      radial-gradient(70% 90% at 50% 10%, rgba(255,47,176,.12), transparent 60%),
+      linear-gradient(180deg,var(--dark),var(--dark-2));
+    color:#fff;padding:66px 0 54px}
+  .pill{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.02em;
+    padding:6px 13px;border-radius:999px;background:rgba(255,255,255,.10);color:#dfe3f2;border:1px solid rgba(255,255,255,.12)}
+  .hero h1{font-size:clamp(38px,6vw,60px);font-weight:800;letter-spacing:-.01em;line-height:1.02;margin:20px 0 0}
+  .hero .lede{max-width:620px;color:#aeb6cf;font-size:16px;margin-top:18px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+  .stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:999px;
+    padding:8px 15px;font-size:13px;color:#c9cee2}
+  .stat b{color:#fff;font-weight:700}
+  .stat .n{color:var(--green);font-weight:800}
+
+  /* ── Commitment banner ── */
+  .lock{background:var(--dark-2);color:#fff;border-top:1px solid rgba(255,255,255,.06);padding:22px 0}
+  .lock .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:14px;justify-content:space-between}
+  .lock .t{font-size:15px;color:#d7dbec}
+  .lock .t b{color:#fff}
+  .lock .badge{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:#04120c;background:var(--green);padding:8px 14px;border-radius:999px}
+
+  /* ── Sections ── */
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{display:inline-block;font-size:12px;font-weight:600;color:var(--muted);
+    background:var(--soft);border-radius:999px;padding:6px 12px}
+  h2{font-size:32px;font-weight:700;letter-spacing:-.01em;margin:14px 0 6px}
+  .sub{color:var(--muted);font-size:15px;max-width:640px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:28px}
+  @media (max-width:720px){.grid{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:14px;padding:22px 22px 18px;display:flex;flex-direction:column}
+  .card .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+  .tags{display:flex;gap:7px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:5px 9px;border-radius:7px;text-transform:uppercase}
+  .tag.a{background:var(--tag-bg);color:var(--tag-ink)}
+  .tag.b{background:var(--tag2-bg);color:var(--tag2-ink)}
+  .meta{font-size:13px;color:var(--muted);white-space:nowrap}
+  .card h3{font-size:20px;font-weight:700;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:14.5px}
+  .card .foot{margin-top:auto;padding-top:16px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .card .foot .k{font-weight:700;color:var(--ink)}
+
+  /* ── Payout ladder ── */
+  .ladder{margin-top:28px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:14px 18px;font-size:14.5px;border-bottom:1px solid var(--line)}
+  th{background:var(--soft);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  tr:last-child td{border-bottom:0}
+  td.amt{font-weight:800;font-variant-numeric:tabular-nums}
+  .free{color:var(--green)}
+  .owe{color:var(--red)}
+  .rank{font-weight:800}
+
+  /* ── Roster / signatures ── */
+  .roster{margin-top:26px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .roster td .sig{display:inline-block;min-width:160px;border-bottom:1px dashed #c3c8d6;height:20px}
+  .note{margin-top:16px;font-size:13px;color:var(--muted)}
+  .note b{color:var(--ink)}
+
+  footer{padding:34px 0;text-align:center;color:var(--muted);font-size:13px}
+  .kicker{letter-spacing:.28em;text-transform:uppercase;font-size:11px;color:#98a0b6}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="pill">Accountability · locked for Q4 2026</span>
+    <h1>The Shadow Forum</h1>
+    <p class="lede">A private pact between the five of us for Q4 2026. Two commitments, three months,
+      real stakes. Best WHOOP score wins bragging rights; everyone else pays. One business goal,
+      backed by monthly high-performance coaching. Miss it, and you feed the kitty.</p>
+    <div class="stats">
+      <span class="stat"><span class="n">5</span> &nbsp;players</span>
+      <span class="stat"><b>3 months</b> &nbsp;Oct–Dec 2026</span>
+      <span class="stat"><b>2</b> &nbsp;commitments</span>
+      <span class="stat"><span class="n">4</span> &nbsp;agents</span>
+      <span class="stat">up to <b>19M</b> &nbsp;in the kitty</span>
+    </div>
+  </div>
+</header>
+
+<div class="lock">
+  <div class="wrap">
+    <div class="t"><b>Lock this down before Q4 begins.</b> Names, goals, and the WHOOP baseline are agreed and signed by 30 Sep 2026.</div>
+    <span class="badge">Commit</span>
+  </div>
+</div>
+
+<!-- ── Commitment 1 ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Commitment 01</span>
+    <h2>The WHOOP Contest</h2>
+    <p class="sub">Highest average WHOOP score over the three-month window takes first. The rest pay
+      on a sliding ladder — the worse you place, the more you owe into the kitty.</p>
+
+    <div class="grid">
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Health</span><span class="tag b">3 Months</span></div>
+          <span class="meta">Oct 1 – Dec 31, 2026</span>
+        </div>
+        <h3>The metric</h3>
+        <p>Each player's score is their average WHOOP metric across the full window. Agree the exact
+          measure up front — Recovery %, Strain, or a blended monthly average — so there's one number to rank on.</p>
+        <div class="foot"><span>Ranked monthly</span><span class="k">1 winner</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Rules</span><span class="tag b">Fair play</span></div>
+          <span class="meta">Baseline @ Sep 30</span>
+        </div>
+        <h3>The rules</h3>
+        <p>Everyone wears the band daily; a missed day counts as the lowest recorded score. Baselines
+          captured on 30 Sep. Data screenshots shared to the group monthly. No excuses, no edits.</p>
+        <div class="foot"><span>Daily wear</span><span class="k">Transparent</span></div>
+      </article>
+    </div>
+
+    <div class="ladder">
+      <table>
+        <thead>
+          <tr><th>Placement</th><th>Owes into kitty</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="rank">🥇 1st</td><td class="amt free">0</td><td>Wins outright — pays nothing.</td></tr>
+          <tr><td class="rank">🥈 2nd</td><td class="amt owe">2M</td><td>So close.</td></tr>
+          <tr><td class="rank">🥉 3rd</td><td class="amt owe">3M</td><td>Middle of the pack.</td></tr>
+          <tr><td class="rank">4th</td><td class="amt owe">4M</td><td>Room to improve.</td></tr>
+          <tr><td class="rank">5th</td><td class="amt owe">5M</td><td>Pays the most.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>Contest pool: 14M</b> (2 + 3 + 4 + 5). Amounts in VND millions — <b>confirm currency & where the kitty goes</b> (retreat fund, dinner, charity?).</p>
+  </div>
+</section>
+
+<!-- ── Commitment 2 ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Commitment 02</span>
+    <h2>Business Accountability</h2>
+    <p class="sub">One business goal each for the quarter, backed by a monthly 1-on-1 with a coach —
+      a live rep at high-performance coaching. Miss your goal, contribute to the kitty.</p>
+
+    <div class="grid">
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Goal</span><span class="tag b">1 per player</span></div>
+          <span class="meta">Set @ Sep 30</span>
+        </div>
+        <h3>One business goal</h3>
+        <p>Each player names a single, measurable business goal for Q4 — specific enough that on
+          Dec 31 it's an unambiguous hit or miss. Captured on <b>first login</b> (a one-time set-your-goal
+          screen), locked once set, and shared at kickoff.</p>
+        <div class="foot"><span>Set at first use · locked</span><span class="k">Binary outcome</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Coaching</span><span class="tag b">Monthly</span></div>
+          <span class="meta">3 sessions</span>
+        </div>
+        <h3>Monthly 1-on-1 with Coach</h3>
+        <p>One coaching call a month — a genuine opportunity to practise high-performance coaching on
+          each other. Prep, review progress, unblock, commit to the next month's actions.</p>
+        <div class="foot"><span>Oct · Nov · Dec</span><span class="k">3 × 1-on-1</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Optional</span><span class="tag b">AI</span></div>
+          <span class="meta">Test bed</span>
+        </div>
+        <h3>AI Coaching Assistant</h3>
+        <p>If you're up for it, run the calls through my AI Coaching Assistant to record and summarise —
+          and stress-test its Vietnamese. 🇻🇳 Free QA for the tool, free notes for you.</p>
+        <div class="foot"><span>Records + summarises</span><span class="k">Opt-in</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Stakes</span><span class="tag b">Penalty</span></div>
+          <span class="meta">Dec 31 verdict</span>
+        </div>
+        <h3>Hit → pay 0 · Miss → 5M + coach 5M</h3>
+        <p>Reach your stated business goal and you pay nothing. Miss it and <b>you contribute 5M</b> — and
+          <b>your coach also puts in 5M</b>. Skin in the game on both sides of the 1-on-1: the coach is on the
+          hook for your result too. Independent of where you land in the WHOOP contest.</p>
+        <div class="foot"><span>Per missed goal</span><span class="k owe" style="color:var(--red)">5M rider + 5M coach</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── The Member Area ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Self-serve</span>
+    <h2>The Member Area</h2>
+    <p class="sub">Every rider gets their own space — the front door for data going in, and the mirror for
+      where they stand. It's what feeds the agents.</p>
+
+    <div class="grid">
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Upload</span><span class="tag b">WHOOP export</span></div>
+          <span class="meta">Weekly</span>
+        </div>
+        <h3>Upload your data</h3>
+        <p>Drop your WHOOP export (the CSVs — cycles, sleeps, workouts) straight into your zone. It's parsed,
+          stored, and folded into your average automatically. The Whip nudges you if it goes stale.</p>
+        <div class="foot"><span>Drag &amp; drop · .csv / .zip</span><span class="k">→ feeds the Steward</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">See</span><span class="tag b">Your numbers</span></div>
+          <span class="meta">Live</span>
+        </div>
+        <h3>See your data</h3>
+        <p>Your average score, recovery, days missed, score trend, and where you sit in Race Into the
+          Shadow — all in one view. No spreadsheets, no guessing where you stand.</p>
+        <div class="foot"><span>Personal dashboard</span><span class="k">Rank + trend</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Update</span><span class="tag b">Business goal</span></div>
+          <span class="meta">Monthly+</span>
+        </div>
+        <h3>Update goal progress</h3>
+        <p>Move your progress bar, set status (on track / at risk / behind / hit), and leave a note that
+          goes to your coach ahead of the 1-on-1. Keeps the goal honest between sessions.</p>
+        <div class="foot"><span>Progress + status + note</span><span class="k">→ your coach</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">Profile</span><span class="tag b">Account</span></div>
+          <span class="meta">Anytime</span>
+        </div>
+        <h3>Profile &amp; account</h3>
+        <p>Your name is captured at sign-up; tap your avatar anytime to edit your name, email and photo,
+          change your password, or log out. The basics, where you'd expect them.</p>
+        <div class="foot"><span>Edit info · password</span><span class="k">Log out</span></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── The Agents ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">The machinery</span>
+    <h2>The Agents</h2>
+    <p class="sub">Four scheduled agents run the contest so no human has to nag, tally, or write it up.
+      They pull the data, keep everyone honest, and turn the standings into a monthly "horse race."</p>
+
+    <div class="grid">
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">The Whip</span><span class="tag b">Daily</span></div>
+          <span class="meta">Accountability</span>
+        </div>
+        <h3>The Whip — keeps everyone honest</h3>
+        <p>Checks each rider wore the band and logged a score yesterday. Missing data or a skipped day
+          triggers a friendly (then less friendly) nudge in the group chat, and flags it as the day's
+          lowest score per the rules. Weekly, it posts a "who's slipping" summary.</p>
+        <div class="foot"><span>Trigger: daily 07:00</span><span class="k">→ Lark / email nudge</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">The Steward</span><span class="tag b">Daily</span></div>
+          <span class="meta">Scoring</span>
+        </div>
+        <h3>The Steward — runs Race Into the Shadow</h3>
+        <p>Pulls every rider's WHOOP scores, computes running averages, ranks the field, and updates the
+          live standings + provisional payout ladder. Owns the <b>Race Into the Shadow</b> board — each
+          rider a silhouette moving down a neon lane from the light into the shadow as their average shifts;
+          deepest in leads.</p>
+        <div class="foot"><span>Trigger: daily</span><span class="k">→ Standings + ladder</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">The Chronicler</span><span class="tag b">Monthly</span></div>
+          <span class="meta">Reporting</span>
+        </div>
+        <h3>The Chronicler — writes the monthly report</h3>
+        <p>End of each month, compiles standings movement (who moved up/down), biggest mover and faller,
+          a per-rider recap, business-goal status, and coaching-call highlights into one report emailed
+          to the group. Pulls summaries from the AI Coaching Assistant where riders opted in.</p>
+        <div class="foot"><span>Trigger: last day of month</span><span class="k">→ Emailed report</span></div>
+      </article>
+
+      <article class="card">
+        <div class="top">
+          <div class="tags"><span class="tag a">The Bookkeeper</span><span class="tag b">Monthly + EOQ</span></div>
+          <span class="meta">The kitty</span>
+        </div>
+        <h3>The Bookkeeper — tallies the kitty</h3>
+        <p>Tracks what each rider owes: contest placement (2M–5M) plus any missed business goal
+          (+5M rider, +5M coach). Keeps a running kitty total, and at quarter-end produces the final
+          settlement — who pays whom, and where the pot goes.</p>
+        <div class="foot"><span>Trigger: monthly + Dec 31</span><span class="k">→ Settlement sheet</span></div>
+      </article>
+    </div>
+    <p class="note"><b>Data flow:</b> WHOOP → the Whip (completeness) → the Steward (scoring &amp; race) →
+      the Chronicler (report) → the Bookkeeper (kitty). Standings live on the site; reports land in the
+      group's inbox each month.</p>
+  </div>
+</section>
+
+<!-- ── Roster / sign ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Lock it down</span>
+    <h2>The Five</h2>
+    <p class="sub">Fill in names, each player's Q4 business goal, and sign. Once signed, the pact holds
+      until 31 Dec 2026.</p>
+
+    <div class="roster">
+      <table>
+        <thead>
+          <tr><th style="width:22%">Player</th><th style="width:48%">Q4 business goal</th><th>Signed</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1. __________</td><td>__________________________</td><td><span class="sig"></span></td></tr>
+          <tr><td>2. __________</td><td>__________________________</td><td><span class="sig"></span></td></tr>
+          <tr><td>3. __________</td><td>__________________________</td><td><span class="sig"></span></td></tr>
+          <tr><td>4. __________</td><td>__________________________</td><td><span class="sig"></span></td></tr>
+          <tr><td>5. __________</td><td>__________________________</td><td><span class="sig"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><b>Open items to confirm:</b> currency & value of "M"; the exact WHOOP metric to rank on;
+      what happens to the kitty; who coaches whom for the 1-on-1s.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="kicker">The Shadow Forum · Q4 2026</div>
+</footer>
+
+</body>
+</html>

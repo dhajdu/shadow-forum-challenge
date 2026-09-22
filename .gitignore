@@ -1,0 +1,20 @@
+# deps / build
+node_modules/
+.next/
+out/
+.vercel
+
+# env & secrets
+.env.local
+.env*.local
+.env.production
+
+# private data — Dave's real WHOOP/journal exports, kept locally as test fixtures only
+whoop-analysis/
+
+# os / editor
+.DS_Store
+next-env.d.ts
+*.log
+
+*.tsbuildinfo

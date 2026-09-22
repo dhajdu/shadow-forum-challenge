@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shadow Forum — Development Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#101014;--muted:#5b6172;--line:#e7e9ef;--bg:#ffffff;--soft:#f4f5f8;
+    --dark:#0a0c12;--dark-2:#12151f;--green:#12c37a;--blue:#287be8;
+    --red:#ff4326;--magenta:#ff2fb0;--purple:#7c4dff;
+    --tag-bg:#fde8e2;--tag-ink:#c1441f;--tag2-bg:#eef0f5;--tag2-ink:#404657;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Manrope,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  a{color:var(--blue);text-decoration:none}
+  code{font-family:var(--mono);font-size:12px;background:var(--soft);padding:1px 6px;border-radius:5px;color:#2a2e3a}
+
+  .hero{background:
+      radial-gradient(80% 120% at 12% 40%,rgba(255,67,38,.20),transparent 55%),
+      radial-gradient(80% 120% at 88% 50%,rgba(47,125,255,.22),transparent 55%),
+      linear-gradient(180deg,var(--dark),var(--dark-2));color:#fff;padding:60px 0 48px}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:6px 13px;border-radius:999px;background:rgba(255,255,255,.10);color:#dfe3f2;border:1px solid rgba(255,255,255,.12)}
+  .hero h1{font-size:clamp(34px,6vw,54px);font-weight:800;letter-spacing:-.01em;margin:18px 0 0}
+  .hero .lede{max-width:640px;color:#aeb6cf;font-size:16px;margin-top:16px}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 15px;font-size:13px;color:#c9cee2}
+  .stat b{color:#fff;font-weight:700}.stat .n{color:var(--green);font-weight:800}
+
+  .stack{background:var(--dark-2);color:#cfd5ea;border-top:1px solid rgba(255,255,255,.06);padding:16px 0;font-size:13.5px}
+  .stack .wrap{display:flex;flex-wrap:wrap;gap:8px 22px}
+  .stack b{color:#fff}
+
+  section{padding:46px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{display:inline-block;font-size:12px;font-weight:600;color:var(--muted);background:var(--soft);border-radius:999px;padding:6px 12px}
+  h2{font-size:28px;font-weight:700;letter-spacing:-.01em;margin:12px 0 4px}
+  .sub{color:var(--muted);font-size:14.5px;max-width:660px}
+
+  .prs{margin-top:24px;display:grid;gap:14px}
+  .pr{border:1px solid var(--line);border-radius:13px;padding:18px 20px}
+  .pr .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .prno{font-family:var(--mono);font-weight:600;font-size:12px;color:#fff;background:var(--ink);border-radius:6px;padding:3px 9px}
+  .tags{display:flex;gap:7px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.05em;padding:4px 9px;border-radius:7px;text-transform:uppercase}
+  .tag.a{background:var(--tag-bg);color:var(--tag-ink)}
+  .tag.b{background:var(--tag2-bg);color:var(--tag2-ink)}
+  .pr h3{font-size:18px;font-weight:700;margin-bottom:6px}
+  .pr p{color:var(--muted);font-size:14px;margin-bottom:8px}
+  .pr ul{list-style:none;margin:6px 0 0}
+  .pr li{font-size:13.5px;color:#2f3444;padding-left:18px;position:relative;margin:3px 0}
+  .pr li::before{content:"→";position:absolute;left:0;color:var(--muted)}
+  .meta{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:grid;gap:6px;font-size:12.5px}
+  .meta .k{font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.05em;font-size:11px;margin-right:6px}
+  .dep{color:#8a90a2}
+  .files code{font-size:11.5px}
+  .branch{font-family:var(--mono);font-size:11.5px;color:#3a3f4d}
+
+  .milestone{display:flex;align-items:center;gap:10px;margin:2px 0 20px;flex-wrap:wrap}
+  .mchip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:#fbfbfd}
+  .mchip b{color:var(--ink)}
+
+  .note{margin-top:16px;font-size:13px;color:var(--muted)}
+  .note b{color:var(--ink)}
+  .ways{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:16px}
+  @media(max-width:680px){.ways{grid-template-columns:1fr}}
+  .ways div{font-size:13.5px;color:#2f3444;padding-left:18px;position:relative}
+  .ways div::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:800}
+  footer{padding:30px 0;text-align:center;color:var(--muted);font-size:12px}
+  .kicker{letter-spacing:.28em;text-transform:uppercase;font-size:11px;color:#98a0b6}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="pill">Build plan · Q4 2026</span>
+    <h1>The Shadow Forum — Development Plan</h1>
+    <p class="lede">The prototype is signed off. This breaks the build into small, shippable pull requests —
+      each independently reviewable and deployable — grouped into five milestones from foundation to launch.</p>
+    <div class="stats">
+      <span class="stat"><span class="n">16</span> &nbsp;pull requests</span>
+      <span class="stat"><b>5</b> &nbsp;milestones</span>
+      <span class="stat"><b>Next.js + Supabase</b></span>
+      <span class="stat">deploy via <b>git → Vercel</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="stack">
+  <div class="wrap">
+    <span><b>Frontend:</b> Next.js 15 (App Router), React 19, TS</span>
+    <span><b>Backend:</b> Supabase — Auth, Postgres (RLS), Storage, Edge Functions</span>
+    <span><b>Email:</b> Resend</span>
+    <span><b>Host:</b> Vercel (preview per PR)</span>
+    <span><b>Repo:</b> dhajdu/shadow-forum-challenge</span>
+  </div>
+</div>
+
+<!-- ── M0 ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Milestone 0</span>
+    <h2>Foundation</h2>
+    <p class="sub">A clean, deployable baseline and the data model everything else builds on.</p>
+    <div class="milestone" style="margin-top:14px"><span class="mchip"><b>Goal:</b> app deploys green; schema + RLS live</span></div>
+
+    <div class="prs">
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Infra</span><span class="tag b">No deps</span></div><span class="prno">PR #1</span></div>
+        <h3>Baseline, env schema &amp; CI/deploy</h3>
+        <p>Lock the existing Next.js scaffold to a green baseline, connect the Vercel project, and wire preview deploys.</p>
+        <ul>
+          <li>Confirm <code>build</code> + <code>lint</code> + <code>tsc</code> pass in CI</li>
+          <li>Document all env vars in <code>.env.local</code>; add the same to Vercel (dev/preview/prod)</li>
+          <li>Connect repo → Vercel project so every PR gets a preview URL</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>.github/workflows/ci.yml</code> · <code>.env.local</code> · <code>README.md</code></div>
+          <div><span class="k">Done when</span> PR preview deploys and CI is green on a trivial change.</div>
+          <div class="branch">branch: feat/ci-baseline</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Data</span><span class="tag b">Depends #1</span></div><span class="prno">PR #2</span></div>
+        <h3>Supabase schema, RLS &amp; types</h3>
+        <p>The full data model as migrations, with row-level security so each rider only sees their own rows (standings are read-all).</p>
+        <ul>
+          <li>Tables: <code>profiles</code>, <code>goals</code>, <code>whoop_days</code>, <code>uploads</code>, <code>coaching_notes</code>, <code>penalties</code></li>
+          <li>RLS: owner-only writes; standings read-all for members; coach can read assigned riders</li>
+          <li>Generate TS types → <code>lib/database.types.ts</code></li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>supabase/migrations/*.sql</code> · <code>lib/database.types.ts</code></div>
+          <div><span class="k">Done when</span> migrations apply cleanly; RLS verified with two test users.</div>
+          <div class="branch">branch: feat/db-schema</div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── M1 ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Milestone 1</span>
+    <h2>Auth &amp; Onboarding</h2>
+    <p class="sub">Get riders in the door with a name, and lock their Q4 goal on first use.</p>
+    <div class="milestone" style="margin-top:14px"><span class="mchip"><b>Goal:</b> new rider → signs up → sets goal → lands on the race</span></div>
+
+    <div class="prs">
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Auth</span><span class="tag b">Depends #2</span></div><span class="prno">PR #3</span></div>
+        <h3>Auth with name capture + SSR sessions</h3>
+        <p>Email/password sign-in and sign-up (with full name), server-side sessions, and route protection. Replaces the prototype's client-only auth.</p>
+        <ul>
+          <li><code>@supabase/ssr</code> server client + <code>middleware.ts</code> session refresh</li>
+          <li>Sign-up writes <code>full_name</code> to <code>profiles</code>; protected routes redirect to <code>/</code></li>
+          <li>Neon landing wired to real auth (sign in / sign up toggle)</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>middleware.ts</code> · <code>lib/supabase/{server,client}.ts</code> · <code>app/(auth)/*</code></div>
+          <div><span class="k">Done when</span> a new email can sign up with a name and reach a protected page.</div>
+          <div class="branch">branch: feat/auth-ssr</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Onboarding</span><span class="tag b">Depends #3</span></div><span class="prno">PR #4</span></div>
+        <h3>First-use goal screen</h3>
+        <p>The one-time <code>/welcome</code> flow: capture the locked Q4 goal, measure, target date, and coach.</p>
+        <ul>
+          <li>Gate: signed-in rider with no goal → forced to <code>/welcome</code></li>
+          <li>Insert into <code>goals</code> (immutable after set); coach picker from members list</li>
+          <li>After save → redirect to the race</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/welcome/page.tsx</code> · <code>app/actions/goal.ts</code></div>
+          <div><span class="k">Done when</span> a goal-less rider is routed to onboarding and can't skip it.</div>
+          <div class="branch">branch: feat/onboarding-goal</div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── M2 ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Milestone 2</span>
+    <h2>Member Area</h2>
+    <p class="sub">Upload data, see your numbers, move your goal, manage your account.</p>
+    <div class="milestone" style="margin-top:14px"><span class="mchip"><b>Goal:</b> a rider can self-serve their whole loop</span></div>
+
+    <div class="prs">
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Upload</span><span class="tag b">Depends #2</span></div><span class="prno">PR #5</span></div>
+        <h3>WHOOP upload → Storage</h3>
+        <p>Drag-and-drop the WHOOP export into Supabase Storage with per-rider paths and an <code>uploads</code> record.</p>
+        <ul>
+          <li>Accept <code>.csv</code> / <code>.zip</code>; storage bucket with owner-scoped policies</li>
+          <li>Upload state UI (queued / uploaded); list of prior uploads</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/me/upload/*</code> · <code>app/actions/upload.ts</code></div>
+          <div><span class="k">Done when</span> a file lands in Storage and shows in the rider's upload list.</div>
+          <div class="branch">branch: feat/whoop-upload</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Ingest</span><span class="tag b">Depends #5</span></div><span class="prno">PR #6</span></div>
+        <h3>CSV parse &amp; score ingest</h3>
+        <p>Parse the WHOOP CSVs (cycles / sleeps / workouts) into <code>whoop_days</code> and compute each rider's running average.</p>
+        <ul>
+          <li>Edge Function or server action triggered on upload; idempotent by date</li>
+          <li>Store daily score + derived fields; recompute rider average</li>
+          <li>Agree the ranked metric (Recovery % vs blend) — config, not hardcoded</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>supabase/functions/ingest-whoop/*</code> · <code>lib/whoop/parse.ts</code></div>
+          <div><span class="k">Done when</span> uploading the sample CSVs produces correct daily rows + average.</div>
+          <div class="branch">branch: feat/whoop-ingest</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Dashboard</span><span class="tag b">Depends #6</span></div><span class="prno">PR #7</span></div>
+        <h3>My Zone dashboard</h3>
+        <p>The rider's personal view: avg score, recovery, days missed, score trend, and current rank.</p>
+        <ul>
+          <li>KPI tiles + trend chart from <code>whoop_days</code></li>
+          <li>Rank pulled from standings; empty state before first upload</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/me/page.tsx</code> · <code>components/ScoreTrend.tsx</code></div>
+          <div><span class="k">Done when</span> a rider with data sees accurate numbers + trend.</div>
+          <div class="branch">branch: feat/my-zone</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Goal</span><span class="tag b">Depends #4</span></div><span class="prno">PR #8</span></div>
+        <h3>Goal progress update</h3>
+        <p>Move progress %, set status, and leave a note for the coach — without touching the locked goal text.</p>
+        <ul>
+          <li>Progress + status (on track / at risk / behind / hit) → <code>goals</code> progress log</li>
+          <li>Note writes to <code>coaching_notes</code>, visible to the assigned coach</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/me/goal/*</code> · <code>app/actions/progress.ts</code></div>
+          <div><span class="k">Done when</span> progress + note persist and surface to the coach.</div>
+          <div class="branch">branch: feat/goal-progress</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Account</span><span class="tag b">Depends #3</span></div><span class="prno">PR #9</span></div>
+        <h3>Profile &amp; account</h3>
+        <p>Avatar menu → edit name / email / photo, change password, log out.</p>
+        <ul>
+          <li>Profile form → <code>profiles</code>; avatar upload to Storage</li>
+          <li>Password change via Supabase; sign-out clears session</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/profile/page.tsx</code> · <code>components/AvatarMenu.tsx</code></div>
+          <div><span class="k">Done when</span> name/photo/password changes all take effect.</div>
+          <div class="branch">branch: feat/profile</div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── M3 ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Milestone 3</span>
+    <h2>The Contest</h2>
+    <p class="sub">Turn the numbers into Race Into the Shadow.</p>
+    <div class="milestone" style="margin-top:14px"><span class="mchip"><b>Goal:</b> live standings + the neon race board</span></div>
+
+    <div class="prs">
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Contest</span><span class="tag b">Depends #6</span></div><span class="prno">PR #10</span></div>
+        <h3>Race Into the Shadow board</h3>
+        <p>The hero component: silhouettes on neon lanes fading light → shadow, ranked by average, plus the live payout ladder.</p>
+        <ul>
+          <li>Standings query (avg per rider) + provisional ladder (0 / 2M / 3M / 4M / 5M)</li>
+          <li>Neon lane visualization with silhouette markers; KPI header (day X of 92, kitty, riders)</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/race/page.tsx</code> · <code>components/RaceBoard.tsx</code></div>
+          <div><span class="k">Done when</span> standings match the data and update after an ingest.</div>
+          <div class="branch">branch: feat/race-board</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Contest</span><span class="tag b">Depends #10</span></div><span class="prno">PR #11</span></div>
+        <h3>Player detail page</h3>
+        <p>Per-rider view from the race: stats, trend, goal status, coaching notes (coach/self only).</p>
+        <ul>
+          <li><code>/rider/[id]</code> with RLS-aware data; link from each lane</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/rider/[id]/page.tsx</code></div>
+          <div><span class="k">Done when</span> clicking a lane opens the correct rider with permitted data.</div>
+          <div class="branch">branch: feat/player-detail</div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── M4 ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Milestone 4</span>
+    <h2>The Agents &amp; Launch</h2>
+    <p class="sub">Automate accountability, scoring, reporting and the kitty — then polish and ship.</p>
+    <div class="milestone" style="margin-top:14px"><span class="mchip"><b>Goal:</b> it runs itself; hi-fi polish; live on eoshadowforum.com</span></div>
+
+    <div class="prs">
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Agent</span><span class="tag b">Depends #6</span></div><span class="prno">PR #12</span></div>
+        <h3>The Steward — scoring cron</h3>
+        <p>Scheduled daily recompute of standings + provisional ladder, so the race is always current.</p>
+        <ul><li>Supabase scheduled function / Vercel cron; writes a standings snapshot</li></ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>supabase/functions/steward/*</code> or <code>app/api/cron/steward</code></div>
+          <div><span class="k">Done when</span> standings refresh on schedule without a manual trigger.</div>
+          <div class="branch">branch: feat/agent-steward</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Agent</span><span class="tag b">Depends #6</span></div><span class="prno">PR #13</span></div>
+        <h3>The Whip — accountability cron</h3>
+        <p>Detect stale / missing data and nudge the rider; apply the "missed day = lowest score" rule.</p>
+        <ul><li>Daily check → Resend email (and/or Lark webhook); weekly "who's slipping" summary</li></ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/api/cron/whip</code> · <code>lib/notify.ts</code></div>
+          <div><span class="k">Done when</span> a rider with stale data gets a nudge; missed days score correctly.</div>
+          <div class="branch">branch: feat/agent-whip</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Agent</span><span class="tag b">Depends #10</span></div><span class="prno">PR #14</span></div>
+        <h3>The Chronicler — monthly report</h3>
+        <p>Generate and email the monthly report: standings movement, movers/fallers, per-rider recap, coaching highlights.</p>
+        <ul><li>Monthly cron → report page + emailed summary to the group</li></ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/report/[month]/page.tsx</code> · <code>app/api/cron/chronicler</code></div>
+          <div><span class="k">Done when</span> a report renders + emails with real month data.</div>
+          <div class="branch">branch: feat/agent-chronicler</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Agent</span><span class="tag b">Depends #8, #10</span></div><span class="prno">PR #15</span></div>
+        <h3>The Bookkeeper — kitty &amp; settlement</h3>
+        <p>Tally what each rider owes (placement 2M–5M + missed goal 5M rider / 5M coach) and produce the Dec 31 settlement.</p>
+        <ul><li>Kitty ledger in <code>penalties</code>; running total; end-of-quarter settlement view</li></ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/kitty/page.tsx</code> · <code>lib/kitty.ts</code></div>
+          <div><span class="k">Done when</span> the ledger matches the rules for a simulated end-state.</div>
+          <div class="branch">branch: feat/agent-bookkeeper</div>
+        </div>
+      </article>
+
+      <article class="pr">
+        <div class="top"><div class="tags"><span class="tag a">Polish</span><span class="tag b">Depends all</span></div><span class="prno">PR #16</span></div>
+        <h3>Hi-fi theming, responsive &amp; launch</h3>
+        <p>Full neon theme pass across every screen, mobile layouts, empty/error states, and the custom domain.</p>
+        <ul>
+          <li>Design polish to match the landing; loading + empty states</li>
+          <li>Point <code>eoshadowforum.com</code> at the app; production smoke test</li>
+        </ul>
+        <div class="meta">
+          <div class="files"><span class="k">Files</span><code>app/**</code> · <code>app/globals.css</code></div>
+          <div><span class="k">Done when</span> every screen is on-brand, responsive, and live on the domain.</div>
+          <div class="branch">branch: feat/hifi-launch</div>
+        </div>
+      </article>
+    </div>
+    <p class="note"><b>Stretch (post-launch):</b> AI Coaching Assistant integration — record + summarise the 1-on-1s, test Vietnamese, and feed highlights into the Chronicler.</p>
+  </div>
+</section>
+
+<!-- ── Ways of working ── -->
+<section>
+  <div class="wrap">
+    <span class="eyebrow">Ways of working</span>
+    <h2>Rules for the build</h2>
+    <div class="ways">
+      <div>One branch per PR (<code>feat/*</code>); small, reviewable diffs.</div>
+      <div>Merge to <code>main</code> → Vercel deploys prod. No CLI deploys.</div>
+      <div>Every PR gets a preview URL + green CI before merge.</div>
+      <div>New env var → added to <code>.env.local</code> and Vercel same PR.</div>
+      <div>Never commit <code>.env*</code> or secrets.</div>
+      <div>RLS on by default; verify data isolation per feature.</div>
+    </div>
+    <p class="note"><b>Open decisions to confirm before PR #6:</b> which WHOOP metric ranks the race · currency of "M" · where the kitty goes · who coaches whom.</p>
+  </div>
+</section>
+
+<footer><div class="kicker">The Shadow Forum · Development Plan</div></footer>
+</body>
+</html>
