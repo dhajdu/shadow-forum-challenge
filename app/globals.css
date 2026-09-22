@@ -160,3 +160,21 @@ form { display: grid; gap: 12px; }
 .onboard-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 480px){ .onboard-row { grid-template-columns: 1fr; } }
 .onboard-note { font-size: 12px; color: var(--muted); margin-top: 10px; text-align: center; }
+
+/* ── Member area (My Zone) ── */
+.zone { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+.zone-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.zone-head h1 { font-size: 30px; font-weight: 800; margin-top: 4px;
+  background: linear-gradient(90deg, #fff, #cdd5f5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.zone-card { background: rgba(18,22,35,.6); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; margin-bottom: 16px; }
+.zone-card h2 { font-size: 14px; font-weight: 700; letter-spacing: .03em; margin-bottom: 12px; color: #cdd5f5; }
+.upload .drop { display: grid; place-items: center; gap: 4px; padding: 30px; border-radius: 12px; cursor: pointer;
+  border: 2px dashed var(--line); background: rgba(10,14,26,.5); text-align: center; transition: border-color .15s, background .15s; }
+.upload .drop.drag { border-color: rgba(47,125,255,.7); background: rgba(47,125,255,.08); }
+.upload .drop b { font-size: 15px; color: var(--ink); }
+.upload .drop span { font-size: 12px; color: var(--muted); }
+.filelist { list-style: none; margin-top: 12px; display: grid; gap: 8px; }
+.filerow { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font-size: 13px; background: rgba(10,14,26,.4); }
+.filerow .fi { width: 18px; height: 22px; border: 1px solid var(--line); border-radius: 3px; flex: none; background: rgba(255,255,255,.05); }
+.filerow .fn { flex: 1; }
+.filerow .badge { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 20px; padding: 2px 9px; text-transform: capitalize; }
