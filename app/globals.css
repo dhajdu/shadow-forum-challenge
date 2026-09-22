@@ -150,3 +150,13 @@ form { display: grid; gap: 12px; }
   text-transform: uppercase;
   color: #3d4463;
 }
+
+/* ── Onboarding form ── */
+.panel.onboard { width: min(94vw, 520px); }
+.onboard-form { display: grid; gap: 8px; text-align: left; }
+.onboard-form label { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.onboard-form textarea.field { resize: vertical; font-family: inherit; }
+.onboard-form select.field { appearance: none; }
+.onboard-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px){ .onboard-row { grid-template-columns: 1fr; } }
+.onboard-note { font-size: 12px; color: var(--muted); margin-top: 10px; text-align: center; }
