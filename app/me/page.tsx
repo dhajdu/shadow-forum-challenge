@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UploadWhoop } from "@/components/UploadWhoop";
 import { ScoreTrend } from "@/components/ScoreTrend";
@@ -73,7 +74,10 @@ export default async function MyZone() {
           <div className="eyebrow">My Zone</div>
           <h1>{name}</h1>
         </div>
-        <SignOutButton />
+        <div className="zone-nav">
+          <Link href="/profile" className="btn-ghost">Profile</Link>
+          <SignOutButton />
+        </div>
       </header>
 
       <section className="zone-card">
