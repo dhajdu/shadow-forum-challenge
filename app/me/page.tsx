@@ -8,6 +8,7 @@ import { GoalProgress } from "@/components/GoalProgress";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getStandings } from "@/lib/standings";
 import { CONTEST_START_DAY } from "@/lib/contest";
+import { coachNameFor } from "@/lib/roster";
 import type { GoalStatus } from "@/lib/database.types";
 
 type Upload = { id: string; file_name: string; status: string; created_at: string };
@@ -83,6 +84,9 @@ export default async function MyZone() {
 
       <section className="zone-card">
         <h2>Business goal progress</h2>
+        <p className="coach-line">
+          Your coach: <b>{coachNameFor(name) ?? "to be assigned"}</b>
+        </p>
         <GoalProgress
           title={goal.title}
           currentProgress={goal.current_progress}
