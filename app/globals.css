@@ -287,3 +287,15 @@ form { display: grid; gap: 12px; }
 .chip.at_risk { background: rgba(255,180,60,.14); color: #ffc87a; border: 1px solid rgba(255,180,60,.3); }
 .chip.behind { background: rgba(255,80,80,.14); color: #ff8f8f; border: 1px solid rgba(255,80,80,.3); }
 .chip.hit { background: rgba(120,160,255,.16); color: #a9c2ff; border: 1px solid rgba(120,160,255,.34); }
+
+/* ── Rider detail ── */
+a.lane { text-decoration: none; color: inherit; }
+a.lane:hover .rname { color: #fff; }
+.rider-head { display: flex; align-items: center; gap: 14px; margin: 10px 2px 18px; }
+.rider-head h1 { font-size: 28px; font-weight: 800; background: linear-gradient(90deg,#fff,#cdd5f5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.rider-head .sub { color: var(--muted); font-size: 13px; }
+.notelist { list-style: none; display: grid; gap: 10px; }
+.notelist li { font-size: 13px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: rgba(10,14,26,.4); }
+.note-when { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.app .card h3 { font-size: 13px; font-weight: 700; letter-spacing: .03em; margin-bottom: 12px; color: #cdd5f5; }
+.app .kpi-row .kpi b { color: var(--ink); }

@@ -39,6 +39,13 @@ export async function updateProgress(
   });
   if (error) return { error: error.message, ok: false };
 
+  // public snapshot on the goal (readable by all members for the race board)
+  await supabase
+    .from("goals")
+    .update({ current_progress: progress, current_status: status })
+    .eq("id", g.id);
+
   revalidatePath("/me");
+  revalidatePath("/race");
   return { error: null, ok: true };
 }

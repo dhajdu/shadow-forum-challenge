@@ -20,20 +20,13 @@ export default async function MyZone() {
 
   const { data: goalRow } = await supabase
     .from("goals")
-    .select("id, title")
+    .select("id, title, current_progress, current_status")
     .eq("user_id", user.id)
     .maybeSingle();
-  const goal = goalRow as { id: string; title: string } | null;
+  const goal = goalRow as
+    | { id: string; title: string; current_progress: number; current_status: GoalStatus }
+    | null;
   if (!goal) redirect("/welcome");
-
-  const { data: progRow } = await supabase
-    .from("goal_progress")
-    .select("progress, status")
-    .eq("goal_id", goal.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const latest = progRow as { progress: number; status: GoalStatus } | null;
 
   const { data: me } = await supabase
     .from("profiles")
@@ -98,8 +91,8 @@ export default async function MyZone() {
         <h2>Business goal progress</h2>
         <GoalProgress
           title={goal.title}
-          currentProgress={latest?.progress ?? 0}
-          currentStatus={latest?.status ?? "on_track"}
+          currentProgress={goal.current_progress}
+          currentStatus={goal.current_status}
         />
       </section>
 
