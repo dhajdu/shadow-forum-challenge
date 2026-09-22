@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 type Mode = "signin" | "signup";
 
 export default function Home() {
   const router = useRouter();
+  const supabase = createClient();
   const [mode, setMode] = useState<Mode>("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,9 +26,19 @@ export default function Home() {
       if (error) setMsg({ text: error.message, ok: false });
       else router.push("/dashboard");
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setMsg({ text: error.message, ok: false });
-      else setMsg({ text: "Check your email to confirm access.", ok: true });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name.trim() } },
+      });
+      if (error) {
+        setMsg({ text: error.message, ok: false });
+      } else if (data.session) {
+        // email confirmation disabled → straight into onboarding
+        router.push("/welcome");
+      } else {
+        setMsg({ text: "Check your email to confirm access, then sign in.", ok: true });
+      }
     }
     setBusy(false);
   }
@@ -54,6 +66,17 @@ export default function Home() {
         <p className="tagline">Into the Shadow</p>
 
         <form onSubmit={onSubmit}>
+          {mode === "signup" && (
+            <input
+              className="field"
+              type="text"
+              placeholder="Full name"
+              autoComplete="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          )}
           <input
             className="field"
             type="email"
@@ -74,7 +97,7 @@ export default function Home() {
             onChange={(e) => setPassword(e.target.value)}
           />
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? "…" : mode === "signin" ? "Enter" : "Request Access"}
+            {busy ? "…" : mode === "signin" ? "Enter" : "Create account"}
           </button>
         </form>
 
