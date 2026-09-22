@@ -234,6 +234,12 @@ export interface Database {
         };
         Relationships: [];
       };
+      standings_snapshots: {
+        Row: { id: string; day: string; data: Json; created_at: string };
+        Insert: { id?: string; day: string; data: Json; created_at?: string };
+        Update: { id?: string; day?: string; data?: Json; created_at?: string };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
