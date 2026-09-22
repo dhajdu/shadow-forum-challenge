@@ -18,3 +18,5 @@ next-env.d.ts
 *.log
 
 *.tsbuildinfo
+supabase/.temp/
+supabase/.branches/
