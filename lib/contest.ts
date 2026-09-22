@@ -1,8 +1,9 @@
 // Contest constants and helpers shared across the app.
 
-export const CONTEST_START = new Date("2026-10-01T00:00:00Z");
-export const CONTEST_END = new Date("2026-12-31T23:59:59Z");
-export const CONTEST_DAYS = 92;
+export const CONTEST_START = new Date("2026-09-23T00:00:00Z");
+export const CONTEST_END = new Date("2026-12-22T23:59:59Z");
+export const CONTEST_DAYS = 91;
+export const CONTEST_START_DAY = "2026-09-23"; // YYYY-MM-DD, for filtering whoop_days
 
 // Placement penalties (VND millions): 1st pays 0, then 2M..5M.
 export const PLACEMENT_PENALTIES = [0, 2, 3, 4, 5];
