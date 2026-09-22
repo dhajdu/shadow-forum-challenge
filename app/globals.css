@@ -348,3 +348,6 @@ a.lane:hover .rname { color: #fff; }
 
 .coach-line { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
 .coach-line b { color: var(--ink); }
+
+.rule-p { font-size: 14px; color: #cdd5f5; line-height: 1.6; }
+.rule-p b { color: #fff; }

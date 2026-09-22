@@ -1,16 +1,35 @@
 // Parse a WHOOP physiological_cycles CSV export into daily rows.
-// The ranked contest metric is configurable here.
-
-export const RANKED_METRIC = "recovery" as const; // score = Recovery score %
+// The ranked contest score is a blend of recovery, sleep and strain.
 
 export type WhoopDay = {
   day: string; // YYYY-MM-DD
   recovery: number | null;
+  sleep: number | null; // sleep performance %
   strain: number | null;
   resting_hr: number | null;
   hrv: number | null;
-  score: number | null;
+  score: number | null; // blended daily score, 0-100
 };
+
+// Blend weights — the daily score averages these normalised 0-100 components.
+// Recovery % and Sleep performance % are already 0-100; strain (0-21) is scaled.
+export const SCORE_WEIGHTS = { recovery: 1, sleep: 1, strain: 1 };
+const STRAIN_MAX = 21;
+
+/** Blended daily score from the three components (averages whichever are present). */
+export function blendScore(
+  recovery: number | null,
+  sleep: number | null,
+  strain: number | null
+): number | null {
+  const parts: number[] = [];
+  if (recovery != null) for (let i = 0; i < SCORE_WEIGHTS.recovery; i++) parts.push(recovery);
+  if (sleep != null) for (let i = 0; i < SCORE_WEIGHTS.sleep; i++) parts.push(sleep);
+  if (strain != null)
+    for (let i = 0; i < SCORE_WEIGHTS.strain; i++) parts.push(Math.min(100, (strain / STRAIN_MAX) * 100));
+  if (parts.length === 0) return null;
+  return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;
+}
 
 // minimal CSV line splitter that respects double-quoted fields
 function splitLine(line: string): string[] {
@@ -60,6 +79,7 @@ export function parseCycles(text: string): WhoopDay[] {
 
   const iStart = idx("cycle start time");
   const iRec = idx("recovery score %");
+  const iSleep = idx("sleep performance %");
   const iRhr = idx("resting heart rate (bpm)");
   const iHrv = idx("heart rate variability (ms)");
   const iStrain = idx("day strain");
@@ -74,13 +94,16 @@ export function parseCycles(text: string): WhoopDay[] {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
 
     const recovery = num(cols[iRec]);
+    const sleep = iSleep >= 0 ? num(cols[iSleep]) : null;
+    const strain = num(cols[iStrain]);
     const row: WhoopDay = {
       day,
       recovery,
-      strain: num(cols[iStrain]),
+      sleep,
+      strain,
       resting_hr: num(cols[iRhr]),
       hrv: num(cols[iHrv]),
-      score: recovery, // RANKED_METRIC = recovery
+      score: blendScore(recovery, sleep, strain),
     };
     // last row for a given day wins (export is newest-first, but idempotent either way)
     if (!byDay.has(day)) byDay.set(day, row);

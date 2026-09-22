@@ -112,6 +112,7 @@ export interface Database {
           day: string;
           score: number | null;
           recovery: number | null;
+          sleep: number | null;
           strain: number | null;
           resting_hr: number | null;
           hrv: number | null;
@@ -125,6 +126,7 @@ export interface Database {
           day: string;
           score?: number | null;
           recovery?: number | null;
+          sleep?: number | null;
           strain?: number | null;
           resting_hr?: number | null;
           hrv?: number | null;
@@ -138,6 +140,7 @@ export interface Database {
           day?: string;
           score?: number | null;
           recovery?: number | null;
+          sleep?: number | null;
           strain?: number | null;
           resting_hr?: number | null;
           hrv?: number | null;
