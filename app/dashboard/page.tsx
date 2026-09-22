@@ -11,6 +11,14 @@ export default async function Dashboard() {
   // middleware already guards this, but never render without a user
   if (!user) redirect("/");
 
+  // no goal yet → force onboarding
+  const { data: goal } = await supabase
+    .from("goals")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!goal) redirect("/welcome");
+
   const { data } = await supabase
     .from("profiles")
     .select("full_name")
