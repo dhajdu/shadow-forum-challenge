@@ -29,3 +29,8 @@ export function normalizeName(name: string): string {
 export function coachNameFor(fullName: string): string | null {
   return COACH_OF[normalizeName(fullName)] ?? null;
 }
+
+/** The full roster as rider → coach pairs, for display. */
+export function coachingPairs(): { rider: string; coach: string }[] {
+  return PARTICIPANTS.map((rider) => ({ rider, coach: coachNameFor(rider) ?? "—" }));
+}

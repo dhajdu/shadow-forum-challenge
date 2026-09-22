@@ -345,3 +345,6 @@ a.lane:hover .rname { color: #fff; }
 .chat-form { display: flex; gap: 8px; }
 .chat-form .field { flex: 1; }
 .chat-send { width: auto; padding: 13px 20px; }
+
+.coach-line { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.coach-line b { color: var(--ink); }

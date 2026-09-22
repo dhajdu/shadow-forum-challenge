@@ -4,6 +4,7 @@ import { getStandings } from "@/lib/standings";
 import { RaceBoard } from "@/components/RaceBoard";
 import { NavBar } from "@/components/NavBar";
 import { dayOfContest, currentLeg, CONTEST_DAYS, PLACEMENT_PENALTIES } from "@/lib/contest";
+import { coachingPairs } from "@/lib/roster";
 import type { GoalStatus } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<GoalStatus, string> = {
@@ -81,6 +82,24 @@ export default async function RacePage() {
           ))}
         </div>
         <div className="board-foot">Hit → pay 0 · miss → 5M rider + 5M coach into the kitty.</div>
+      </section>
+
+      <section className="card goals-card">
+        <h3>Coaching pairings</h3>
+        <table className="ladder">
+          <thead>
+            <tr><th>Rider</th><th>Coached by</th></tr>
+          </thead>
+          <tbody>
+            {coachingPairs().map((p) => (
+              <tr key={p.rider}>
+                <td>{p.rider}</td>
+                <td>{p.coach}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="board-foot">Coaches are assigned — nobody picks their own, and no two coach each other.</div>
       </section>
     </main>
   );
