@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UploadWhoop } from "@/components/UploadWhoop";
 import { ScoreTrend } from "@/components/ScoreTrend";
+import { GoalProgress } from "@/components/GoalProgress";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getStandings } from "@/lib/standings";
+import type { GoalStatus } from "@/lib/database.types";
 
 type Upload = { id: string; file_name: string; status: string; created_at: string };
 type Day = { day: string; score: number | null; recovery: number | null; missed: boolean };
@@ -15,12 +17,22 @@ export default async function MyZone() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const { data: goal } = await supabase
+  const { data: goalRow } = await supabase
     .from("goals")
-    .select("id")
+    .select("id, title")
     .eq("user_id", user.id)
     .maybeSingle();
+  const goal = goalRow as { id: string; title: string } | null;
   if (!goal) redirect("/welcome");
+
+  const { data: progRow } = await supabase
+    .from("goal_progress")
+    .select("progress, status")
+    .eq("goal_id", goal.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const latest = progRow as { progress: number; status: GoalStatus } | null;
 
   const { data: me } = await supabase
     .from("profiles")
@@ -76,6 +88,15 @@ export default async function MyZone() {
         <div className="trend-wrap">
           <ScoreTrend scores={scored.map((d) => d.score)} />
         </div>
+      </section>
+
+      <section className="zone-card">
+        <h2>Business goal progress</h2>
+        <GoalProgress
+          title={goal.title}
+          currentProgress={latest?.progress ?? 0}
+          currentStatus={latest?.status ?? "on_track"}
+        />
       </section>
 
       <section className="zone-card">
