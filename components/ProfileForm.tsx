@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { updateProfile, changePassword, type ProfileState } from "@/app/actions/profile";
 import { SignOutButton } from "@/components/SignOutButton";
+import { PasswordField } from "@/components/PasswordField";
 
 const initial: ProfileState = { error: null, ok: false };
 
@@ -71,8 +72,8 @@ export function ProfileForm({
       <section className="zone-card">
         <h2>Change password</h2>
         <form action={pwAction} className="pform">
-          <input className="field" type="password" name="password" placeholder="New password" minLength={6} required />
-          <input className="field" type="password" name="confirm" placeholder="Confirm new password" minLength={6} required />
+          <PasswordField name="password" placeholder="New password" minLength={6} required />
+          <PasswordField name="confirm" placeholder="Confirm new password" minLength={6} required />
           {pwState.error && <div className="msg err">{pwState.error}</div>}
           {pwState.ok && <div className="msg ok">Password updated.</div>}
           <button className="btn" type="submit" disabled={pwPending}>

@@ -310,3 +310,9 @@ a.lane:hover .rname { color: #fff; }
 .bar .brand { text-decoration: none; }
 .bar .nav a:hover { color: #fff; }
 @media (max-width: 520px){ .race-head { gap: 12px; } .kpis .kpi { min-width: 72px; padding: 9px 11px; } .lanelbl { padding-left: 96px; } .rname { width: 74px; } }
+
+/* ── Password field with eye toggle ── */
+.pwwrap { position: relative; display: block; }
+.pwfield { width: 100%; padding-right: 44px; }
+.pweye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: 0; cursor: pointer; color: var(--muted); display: grid; place-items: center; padding: 6px; border-radius: 6px; }
+.pweye:hover { color: var(--ink); }
