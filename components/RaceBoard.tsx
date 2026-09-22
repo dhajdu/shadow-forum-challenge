@@ -9,7 +9,13 @@ const RUNNER = (
   </svg>
 );
 
-export function RaceBoard({ standings }: { standings: Standing[] }) {
+export function RaceBoard({
+  standings,
+  showMissed = false,
+}: {
+  standings: Standing[];
+  showMissed?: boolean;
+}) {
   const max = Math.max(100, ...standings.map((s) => s.avg));
 
   return (
@@ -43,10 +49,12 @@ export function RaceBoard({ standings }: { standings: Standing[] }) {
               {s.avg || "—"}
               <small>avg</small>
             </div>
-            <div className="missed" title="Contest days with no data">
-              {s.missed}
-              <small>missed</small>
-            </div>
+            {showMissed && (
+              <div className="missed" title="Contest days with no data">
+                {s.missed}
+                <small>missed</small>
+              </div>
+            )}
           </Link>
         );
       })}
