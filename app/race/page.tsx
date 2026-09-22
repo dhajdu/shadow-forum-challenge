@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getStandings } from "@/lib/standings";
+import { getRaceStandings } from "@/lib/standings";
+import { RaceTabs } from "@/components/RaceTabs";
+import { NavBar } from "@/components/NavBar";
+import { dayOfContest, currentLeg, CONTEST_DAYS, CONTEST_START_DAY, PLACEMENT_PENALTIES } from "@/lib/contest";
 
 export const dynamic = "force-dynamic";
-import { RaceBoard } from "@/components/RaceBoard";
-import { NavBar } from "@/components/NavBar";
-import { dayOfContest, currentLeg, CONTEST_DAYS, PLACEMENT_PENALTIES } from "@/lib/contest";
 import { coachingPairs } from "@/lib/roster";
 import type { GoalStatus } from "@/lib/database.types";
 
@@ -30,14 +30,16 @@ export default async function RacePage() {
     .maybeSingle();
   if (!goal) redirect("/welcome");
 
-  const standings = await getStandings(supabase);
+  const { contest, all } = await getRaceStandings(supabase);
+  const today = new Date().toISOString().slice(0, 10);
+  const started = today >= CONTEST_START_DAY;
 
   // business goals + public status (denormalized on goals, readable by all)
   const { data: goals } = await supabase
     .from("goals")
     .select("id, user_id, title, current_status");
 
-  const nameById = new Map(standings.map((s) => [s.user_id, s.full_name]));
+  const nameById = new Map(all.map((s) => [s.user_id, s.full_name]));
   const goalList = (
     (goals ?? []) as { id: string; user_id: string; title: string; current_status: GoalStatus }[]
   ).map((g) => ({
@@ -61,12 +63,12 @@ export default async function RacePage() {
         <div className="kpis">
           <div className="kpi"><b>{dayOfContest()}</b><span>day of {CONTEST_DAYS}</span></div>
           <div className="kpi k-kitty"><b>{kitty}M</b><span>kitty</span></div>
-          <div className="kpi"><b>{standings.length}</b><span>riders</span></div>
+          <div className="kpi"><b>{all.length}</b><span>riders</span></div>
           <div className="kpi"><b>{currentLeg()}</b><span>current leg</span></div>
         </div>
       </div>
 
-      <RaceBoard standings={standings} />
+      <RaceTabs contest={contest} all={all} defaultTab={started ? "contest" : "all"} />
 
       <section className="card goals-card">
         <h3>Business goals — Q4</h3>
