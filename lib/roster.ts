@@ -2,23 +2,24 @@
 // 1-on-1 with, and who shares their 5M penalty). Coaches are assigned here —
 // riders don't pick their own. Matching is by normalized full name.
 
+// Names match the profiles as each rider actually signed up.
 export const PARTICIPANTS = [
   "Dave Hajdu",
   "Dru Nguyen",
   "Vinh Nguyen",
-  "Trung Nguyen",
-  "Tuan Anh Le",
+  "Tran Trung",
+  "Anh Le",
 ] as const;
 
 // coachOf[person] = the person who coaches them.
-// Single cycle (Dave→Vinh→Dru→Tuan→Trung→Dave): everyone coaches exactly one and
-// is coached by exactly one, with no self-coaching and no reciprocal pairs.
+// Single cycle (Dave→Vinh→Dru→Anh Le→Tran Trung→Dave): everyone coaches exactly
+// one and is coached by exactly one, with no self-coaching and no reciprocal pairs.
 const COACH_OF: Record<string, string> = {
   "vinh nguyen": "Dave Hajdu",
   "dru nguyen": "Vinh Nguyen",
-  "tuan anh le": "Dru Nguyen",
-  "trung nguyen": "Tuan Anh Le",
-  "dave hajdu": "Trung Nguyen",
+  "anh le": "Dru Nguyen",
+  "tran trung": "Anh Le",
+  "dave hajdu": "Tran Trung",
 };
 
 export function normalizeName(name: string): string {
