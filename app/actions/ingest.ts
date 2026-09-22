@@ -1,5 +1,6 @@
 "use server";
 
+import { unzipSync, strFromU8 } from "fflate";
 import { createClient } from "@/lib/supabase/server";
 import { parseCycles, isCyclesCsv } from "@/lib/whoop/parse";
 
@@ -33,9 +34,34 @@ export async function ingestUpload(uploadId: string): Promise<IngestResult> {
     return { ingested: 0, error: dlErr?.message ?? "Download failed." };
   }
 
-  const text = await blob.text();
-  if (!isCyclesCsv(text)) {
-    // not the cycles file (e.g. sleeps/workouts) — mark parsed, nothing to ingest
+  // Get the physiological_cycles CSV text — the file may be a raw CSV or a WHOOP
+  // export .zip containing several CSVs.
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  const looksZip = up.file_path.toLowerCase().endsWith(".zip") || (buf[0] === 0x50 && buf[1] === 0x4b);
+
+  let text: string | null = null;
+  if (looksZip) {
+    try {
+      const files = unzipSync(buf);
+      for (const [name, data] of Object.entries(files)) {
+        if (!name.toLowerCase().endsWith(".csv")) continue;
+        const t = strFromU8(data);
+        if (isCyclesCsv(t)) {
+          text = t;
+          break;
+        }
+      }
+    } catch {
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return { ingested: 0, error: "Could not read the .zip file." };
+    }
+  } else {
+    const t = strFromU8(buf);
+    if (isCyclesCsv(t)) text = t;
+  }
+
+  if (!text) {
+    // no physiological_cycles data here (e.g. sleeps/workouts only) — nothing to ingest
     await supabase.from("uploads").update({ status: "parsed", rows_ingested: 0 }).eq("id", uploadId);
     return { ingested: 0, error: null };
   }
