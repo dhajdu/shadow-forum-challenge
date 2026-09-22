@@ -43,6 +43,10 @@ export function RaceBoard({ standings }: { standings: Standing[] }) {
               {s.avg || "—"}
               <small>avg</small>
             </div>
+            <div className="missed" title="Contest days with no data">
+              {s.missed}
+              <small>missed</small>
+            </div>
           </Link>
         );
       })}

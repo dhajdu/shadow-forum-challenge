@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStandings } from "@/lib/standings";
+
+export const dynamic = "force-dynamic";
 import { RaceBoard } from "@/components/RaceBoard";
 import { NavBar } from "@/components/NavBar";
 import { dayOfContest, currentLeg, CONTEST_DAYS, PLACEMENT_PENALTIES } from "@/lib/contest";
