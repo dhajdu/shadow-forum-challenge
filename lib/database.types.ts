@@ -45,6 +45,9 @@ export interface Database {
           user_id: string;
           title: string;
           measure: string | null;
+          unit: string | null;
+          target_value: number | null;
+          current_value: number;
           target_date: string | null;
           coach_id: string | null;
           locked: boolean;
@@ -57,6 +60,9 @@ export interface Database {
           user_id: string;
           title: string;
           measure?: string | null;
+          unit?: string | null;
+          target_value?: number | null;
+          current_value?: number;
           target_date?: string | null;
           coach_id?: string | null;
           locked?: boolean;
@@ -69,11 +75,44 @@ export interface Database {
           user_id?: string;
           title?: string;
           measure?: string | null;
+          unit?: string | null;
+          target_value?: number | null;
+          current_value?: number;
           target_date?: string | null;
           coach_id?: string | null;
           locked?: boolean;
           current_progress?: number;
           current_status?: GoalStatus;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      personal_goals: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          unit: string | null;
+          target_value: number | null;
+          current_value: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          unit?: string | null;
+          target_value?: number | null;
+          current_value?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          unit?: string | null;
+          target_value?: number | null;
+          current_value?: number;
           created_at?: string;
         };
         Relationships: [];

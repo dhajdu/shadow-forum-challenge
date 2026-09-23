@@ -5,6 +5,7 @@ import { UploadWhoop } from "@/components/UploadWhoop";
 import { MyData, type WhoopDay } from "@/components/MyData";
 import { Assistant } from "@/components/Assistant";
 import { GoalProgress } from "@/components/GoalProgress";
+import { ExtraCredit, type PersonalGoal } from "@/components/ExtraCredit";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getStandings } from "@/lib/standings";
 import { CONTEST_START_DAY } from "@/lib/contest";
@@ -22,11 +23,18 @@ export default async function MyZone() {
 
   const { data: goalRow } = await supabase
     .from("goals")
-    .select("id, title, current_progress, current_status")
+    .select("id, title, unit, target_value, current_value, current_status")
     .eq("user_id", user.id)
     .maybeSingle();
   const goal = goalRow as
-    | { id: string; title: string; current_progress: number; current_status: GoalStatus }
+    | {
+        id: string;
+        title: string;
+        unit: string | null;
+        target_value: number | null;
+        current_value: number;
+        current_status: GoalStatus;
+      }
     | null;
   if (!goal) redirect("/welcome");
 
@@ -53,6 +61,13 @@ export default async function MyZone() {
 
   const standings = await getStandings(supabase);
   const rank = standings.findIndex((s) => s.user_id === user.id) + 1;
+
+  const { data: pgRows } = await supabase
+    .from("personal_goals")
+    .select("id, title, unit, target_value, current_value")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+  const personalGoals = (pgRows ?? []) as PersonalGoal[];
 
   return (
     <main className="zone">
@@ -89,9 +104,16 @@ export default async function MyZone() {
         </p>
         <GoalProgress
           title={goal.title}
-          currentProgress={goal.current_progress}
+          unit={goal.unit}
+          targetValue={goal.target_value}
+          currentValue={goal.current_value}
           currentStatus={goal.current_status}
         />
+      </section>
+
+      <section className="zone-card">
+        <h2>Extra Credit</h2>
+        <ExtraCredit goals={personalGoals} />
       </section>
 
       <section className="zone-card">

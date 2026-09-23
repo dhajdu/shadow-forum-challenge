@@ -46,11 +46,14 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
 
   const { data: goalRow } = await supabase
     .from("goals")
-    .select("id, title, current_status, current_progress")
+    .select("id, title, unit, target_value, current_value, current_status, current_progress")
     .eq("user_id", id)
     .maybeSingle();
   const goal = goalRow as
-    | { id: string; title: string; current_status: GoalStatus; current_progress: number }
+    | {
+        id: string; title: string; unit: string | null; target_value: number | null;
+        current_value: number; current_status: GoalStatus; current_progress: number;
+      }
     | null;
 
   // coaching notes — RLS returns rows only if the viewer is the owner or coach
@@ -97,7 +100,11 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
             <div className="gi" />
             <div className="gt">
               {goal.title}
-              <small>{goal.current_progress}% complete</small>
+              <small>
+                {goal.target_value != null
+                  ? `${goal.current_value}/${goal.target_value}${goal.unit ? ` ${goal.unit}` : ""} · ${goal.current_progress}%`
+                  : `${goal.current_progress}% complete`}
+              </small>
             </div>
             <span className={`chip ${goal.current_status}`}>{STATUS_LABEL[goal.current_status]}</span>
           </div>

@@ -18,10 +18,13 @@ export async function createGoal(
   if (!user) return { error: "Not signed in." };
 
   const title = String(formData.get("title") ?? "").trim();
-  const measure = String(formData.get("measure") ?? "").trim() || null;
+  const unit = String(formData.get("unit") ?? "").trim() || null;
+  const targetRaw = formData.get("target_value");
+  const targetValue = targetRaw != null && String(targetRaw).trim() !== "" ? Number(targetRaw) : null;
   const targetDate = String(formData.get("target_date") ?? "").trim() || null;
 
   if (!title) return { error: "Your goal can't be empty." };
+  if (targetValue != null && Number.isNaN(targetValue)) return { error: "Target must be a number." };
 
   // one locked goal per rider — refuse if one already exists
   const { data: existing } = await supabase
@@ -34,7 +37,9 @@ export async function createGoal(
   const { error } = await supabase.from("goals").insert({
     user_id: user.id,
     title,
-    measure,
+    unit,
+    target_value: targetValue,
+    current_value: 0,
     target_date: targetDate,
     coach_id: null, // assigned from the roster below
     locked: true,
