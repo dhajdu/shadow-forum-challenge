@@ -37,15 +37,21 @@ export default async function RacePage() {
   // business goals + public status (denormalized on goals, readable by all)
   const { data: goals } = await supabase
     .from("goals")
-    .select("id, user_id, title, current_status");
+    .select("id, user_id, title, unit, target_value, current_value, current_progress, current_status");
 
+  type GoalRow = {
+    id: string; user_id: string; title: string; unit: string | null;
+    target_value: number | null; current_value: number; current_progress: number; current_status: GoalStatus;
+  };
   const nameById = new Map(all.map((s) => [s.user_id, s.full_name]));
-  const goalList = (
-    (goals ?? []) as { id: string; user_id: string; title: string; current_status: GoalStatus }[]
-  ).map((g) => ({
+  const goalList = ((goals ?? []) as GoalRow[]).map((g) => ({
     ...g,
     rider: nameById.get(g.user_id) ?? "Rider",
     status: g.current_status,
+    measure:
+      g.target_value != null
+        ? `${g.current_value}/${g.target_value}${g.unit ? ` ${g.unit}` : ""} · ${g.current_progress}%`
+        : null,
   }));
 
   const kitty = PLACEMENT_PENALTIES.reduce((a, b) => a + b, 0);
@@ -79,7 +85,7 @@ export default async function RacePage() {
               <div className="gi" />
               <div className="gt">
                 {g.rider}
-                <small>{g.title}</small>
+                <small>{g.title}{g.measure ? ` — ${g.measure}` : ""}</small>
               </div>
               <span className={`chip ${g.status}`}>{STATUS_LABEL[g.status]}</span>
             </div>

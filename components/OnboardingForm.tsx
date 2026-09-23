@@ -26,14 +26,16 @@ export function OnboardingForm({ name }: { name: string }) {
 
       <div className="onboard-row">
         <div>
-          <label>How you&apos;ll measure it</label>
-          <input className="field" name="measure" placeholder="e.g. signed contracts" />
+          <label>Target number</label>
+          <input className="field" name="target_value" type="number" step="any" placeholder="e.g. 3" />
         </div>
         <div>
-          <label>Target by</label>
-          <input className="field" name="target_date" type="date" defaultValue="2026-12-31" />
+          <label>Unit of measure</label>
+          <input className="field" name="unit" placeholder="e.g. deals" />
         </div>
       </div>
+      <label>Target by</label>
+      <input className="field" name="target_date" type="date" defaultValue="2026-12-31" />
 
       <label>Your coach for the monthly 1-on-1 (assigned)</label>
       <div className="field readonly">{coach ?? "Assigned once your roster is set"}</div>

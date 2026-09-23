@@ -357,3 +357,28 @@ a.lane:hover .rname { color: #fff; }
 
 .raceseg { align-items: center; margin-bottom: 12px; }
 .raceseg-note { font-size: 11.5px; color: var(--muted); }
+
+/* ── Measurable goal + Extra Credit ── */
+.measure-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.measure-row label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); flex: 1; min-width: 90px; }
+.measure-row .field { width: 100%; }
+.measure-row .slash { color: var(--muted); padding-bottom: 12px; }
+.pct-line { font-size: 13px; color: var(--muted); margin-top: 12px; }
+.pct-line b { color: var(--ink); }
+.statlbl { font-size: 12px; color: var(--muted); margin-top: 10px; display: block; }
+.prog.sm { height: 8px; margin: 6px 0 0; }
+
+.xc-note { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; }
+.xc-list { list-style: none; display: grid; gap: 10px; margin-bottom: 14px; }
+.xc-item { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: rgba(10,14,26,.4); }
+.xc-info { flex: 1; min-width: 0; }
+.xc-title { font-size: 13.5px; font-weight: 600; }
+.xc-sub { display: block; font-size: 11.5px; color: var(--muted); }
+.xc-upd { display: flex; gap: 6px; align-items: center; }
+.xc-upd .field { width: 84px; padding: 8px 10px; }
+.xc-del { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
+.xc-del:hover { color: #ff8f8f; border-color: rgba(255,80,80,.4); }
+.xc-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.xc-add .field { flex: 1; min-width: 140px; }
+.xc-add .xc-num { flex: 0 0 96px; min-width: 80px; }
+.xc-addbtn { width: auto; padding: 12px 18px; margin: 0; }
