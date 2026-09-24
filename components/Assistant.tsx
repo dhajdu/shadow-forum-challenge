@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+const CHAT_KEY = "sf-chat-messages";
+
 const SUGGESTIONS = [
   "How's my recovery trending?",
   "What should I focus on to improve my score?",
@@ -16,6 +18,23 @@ export function Assistant() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const loaded = useRef(false);
+
+  // keep the conversation for the browser session, so it survives page changes
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(CHAT_KEY);
+      if (saved) setMessages(JSON.parse(saved) as Msg[]);
+    } catch {}
+    loaded.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    try {
+      sessionStorage.setItem(CHAT_KEY, JSON.stringify(messages));
+    } catch {}
+  }, [messages]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });

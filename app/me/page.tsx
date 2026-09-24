@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { NavBar } from "@/components/NavBar";
 import { UploadWhoop } from "@/components/UploadWhoop";
 import { MyData, type WhoopDay } from "@/components/MyData";
-import { Assistant } from "@/components/Assistant";
 import { GoalProgress } from "@/components/GoalProgress";
 import { ExtraCredit, type PersonalGoal } from "@/components/ExtraCredit";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -90,11 +89,6 @@ export default async function MyZone() {
           rank={rank}
           riderCount={standings.length}
         />
-      </section>
-
-      <section className="zone-card">
-        <h2>Ask about your data</h2>
-        <Assistant />
       </section>
 
       <section className="zone-card">

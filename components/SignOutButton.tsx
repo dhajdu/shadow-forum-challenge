@@ -9,6 +9,9 @@ export function SignOutButton() {
 
   async function signOut() {
     await supabase.auth.signOut();
+    try {
+      sessionStorage.clear(); // drop the saved assistant chat
+    } catch {}
     router.replace("/");
     router.refresh();
   }
