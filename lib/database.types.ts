@@ -189,6 +189,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      whoop_journal: {
+        Row: {
+          id: string;
+          user_id: string;
+          day: string;
+          question: string;
+          answered_yes: boolean | null;
+          notes: string | null;
+          upload_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          question: string;
+          answered_yes?: boolean | null;
+          notes?: string | null;
+          upload_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          question?: string;
+          answered_yes?: boolean | null;
+          notes?: string | null;
+          upload_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       uploads: {
         Row: {
           id: string;

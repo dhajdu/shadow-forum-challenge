@@ -67,6 +67,38 @@ export async function POST(req: NextRequest) {
     .map((d) => `${d.day}: score=${d.score ?? "-"} rec=${d.recovery ?? "-"} strain=${d.strain ?? "-"} rhr=${d.resting_hr ?? "-"} hrv=${d.hrv ?? "-"}`)
     .join("\n");
 
+  // The rider's OWN WHOOP journal answers — per-question yes rate + recent days.
+  const { data: jRows } = await supabase
+    .from("whoop_journal")
+    .select("day, question, answered_yes, notes")
+    .eq("user_id", user.id)
+    .order("day", { ascending: true });
+  const journal = (jRows ?? []) as { day: string; question: string; answered_yes: boolean | null; notes: string | null }[];
+
+  const perQ = new Map<string, { yes: number; n: number }>();
+  const byDay = new Map<string, { yes: string[]; no: string[]; notes: string[] }>();
+  for (const j of journal) {
+    if (j.answered_yes != null) {
+      const q = perQ.get(j.question) ?? { yes: 0, n: 0 };
+      q.n += 1;
+      if (j.answered_yes) q.yes += 1;
+      perQ.set(j.question, q);
+    }
+    const d = byDay.get(j.day) ?? { yes: [], no: [], notes: [] };
+    if (j.answered_yes === true) d.yes.push(j.question);
+    else if (j.answered_yes === false) d.no.push(j.question);
+    if (j.notes) d.notes.push(`${j.question} ${j.notes}`);
+    byDay.set(j.day, d);
+  }
+  const journalSummary = Array.from(perQ, ([q, v]) => `- ${q} yes ${v.yes}/${v.n} days`).join("\n");
+  const journalRecent = Array.from(byDay)
+    .slice(-45)
+    .map(
+      ([day, d]) =>
+        `${day}: yes=[${d.yes.join("; ")}] no=[${d.no.join("; ")}]${d.notes.length ? ` notes=[${d.notes.join("; ")}]` : ""}`
+    )
+    .join("\n");
+
   const system = [
     "You are the WHOOP data analyst inside The Shadow Forum, a private fitness-accountability app.",
     "You are helping ONE rider understand THEIR OWN WHOOP data. You only ever have access to this rider's data — never reference or compare to anyone else.",
@@ -76,6 +108,9 @@ export async function POST(req: NextRequest) {
     days.length === 0
       ? "This rider has NOT uploaded any WHOOP data yet — tell them to upload their WHOOP export in My Zone first."
       : `Rider's WHOOP summary (metrics: score=recovery-based 0-100, recovery %, day strain 0-21, resting HR bpm, HRV ms):\n${JSON.stringify(summary)}\n\nMost recent days:\n${recent}`,
+    journal.length === 0
+      ? "This rider has no WHOOP journal entries uploaded."
+      : `Rider's WHOOP journal (daily yes/no behaviours they logged; the journal day matches the metrics day). Use it to link behaviours to recovery, HRV, sleep and strain — e.g. compare metrics on days with vs without alcohol or late eating.\nYes rate per question:\n${journalSummary}\n\nMost recent journal days:\n${journalRecent}`,
   ].join("\n\n");
 
   const resp = await fetch("https://api.anthropic.com/v1/messages", {

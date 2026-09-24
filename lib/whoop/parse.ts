@@ -70,6 +70,50 @@ export function isCyclesCsv(text: string): boolean {
   return header.includes("recovery score") && header.includes("cycle start time");
 }
 
+export type JournalEntry = {
+  day: string; // YYYY-MM-DD (cycle start)
+  question: string;
+  answered_yes: boolean | null;
+  notes: string | null;
+};
+
+/** True when the header looks like a WHOOP journal_entries export. */
+export function isJournalCsv(text: string): boolean {
+  const header = text.slice(0, text.indexOf("\n")).toLowerCase();
+  return header.includes("question text") && header.includes("cycle start time");
+}
+
+export function parseJournal(text: string): JournalEntry[] {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
+  if (lines.length < 2) return [];
+
+  const header = splitLine(lines[0]).map((h) => h.trim().toLowerCase());
+  const idx = (name: string) => header.findIndex((h) => h === name);
+  const iStart = idx("cycle start time");
+  const iQ = idx("question text");
+  const iYes = idx("answered yes");
+  const iNotes = idx("notes");
+
+  const byKey = new Map<string, JournalEntry>();
+  for (let r = 1; r < lines.length; r++) {
+    const cols = splitLine(lines[r]);
+    const day = cols[iStart]?.trim().slice(0, 10);
+    const question = cols[iQ]?.trim();
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !question) continue;
+    const yes = cols[iYes]?.trim().toLowerCase();
+    const notes = iNotes >= 0 ? cols[iNotes]?.trim() : "";
+    const key = `${day}|${question}`;
+    if (!byKey.has(key))
+      byKey.set(key, {
+        day,
+        question,
+        answered_yes: yes === "true" ? true : yes === "false" ? false : null,
+        notes: notes || null,
+      });
+  }
+  return Array.from(byKey.values());
+}
+
 export function parseCycles(text: string): WhoopDay[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
   if (lines.length < 2) return [];
