@@ -5,7 +5,7 @@ import { runSteward, runWhip, runBookkeeper } from "@/lib/agents";
 
 export const dynamic = "force-dynamic";
 
-// Daily aggregator — runs the Steward, Whip, and Bookkeeper in one cron
+// Weekly aggregator (Monday 08:00 ICT) — runs the Steward, Whip, and Bookkeeper in one cron
 // (keeps us within the platform's cron-job limit).
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {

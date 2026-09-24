@@ -31,7 +31,7 @@ export async function runSteward(admin: Admin) {
 }
 
 // ── The Whip: nudge riders with stale data (only sends during the contest) ──
-const STALE_DAYS = 2;
+const STALE_DAYS = 7; // riders upload weekly
 export async function runWhip(admin: Admin, opts: { dry: boolean }) {
   const { data: profs } = await admin.from("profiles").select("id, full_name, email");
   const { data: rows } = await admin.from("whoop_days").select("user_id, day");
@@ -64,7 +64,7 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
         subject: "The Whip: your WHOOP data has gone quiet",
         html: `<p>${s.name || "Rider"}, your data is stale${
           s.lastData ? ` (last seen ${s.lastData})` : ""
-        }. Missing days count as your lowest score — upload before you slide down the shadow. 🏃</p>`,
+        }. Upload your WHOOP export this week so your days count — and keep the strap on: days it doesn't record are logged as missed. 🏃</p>`,
       });
       if (res.ok) nudged++;
     }
