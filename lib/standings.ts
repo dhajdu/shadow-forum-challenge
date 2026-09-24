@@ -7,7 +7,7 @@ export type Standing = {
   full_name: string;
   avg: number; // average blended score over the window
   days: number; // days with a score in the window
-  missed: number; // contest days so far with no data
+  missed: number; // contest days WHOOP didn't record (gaps up to the latest upload)
 };
 
 type Row = { user_id: string; score: number | null; day: string };
@@ -22,8 +22,8 @@ function build(
 ): Standing[] {
   const today = new Date().toISOString().slice(0, 10);
 
-  // per rider: scores in the window + the set of every day they have a row for
-  const agg = new Map<string, { sum: number; n: number; days: Set<string>; first?: string }>();
+  // per rider: scores in the window + the set of days WHOOP recorded a score + latest uploaded day
+  const agg = new Map<string, { sum: number; n: number; days: Set<string>; last?: string }>();
   for (const r of rows) {
     const cur = agg.get(r.user_id) ?? { sum: 0, n: 0, days: new Set<string>() };
     const inWindow = !opts.sinceDay || r.day >= opts.sinceDay;
@@ -31,21 +31,23 @@ function build(
       cur.sum += r.score;
       cur.n += 1;
     }
-    cur.days.add(r.day);
-    if (!cur.first || r.day < cur.first) cur.first = r.day;
+    if (r.score != null) cur.days.add(r.day);
+    if (!cur.last || r.day > cur.last) cur.last = r.day;
     agg.set(r.user_id, cur);
   }
 
   const out: Standing[] = [];
   for (const [id, full_name] of names) {
     const a = agg.get(id);
-    // "missed" is always contest days (from the fixed start) with no data — the
-    // days that count as your lowest score. 0 until the contest begins.
+    // "missed" = contest days the WHOOP didn't record: gaps (no row, or no score)
+    // between the contest start and the rider's latest uploaded day. Days not yet
+    // uploaded don't count. 0 until the contest begins.
     let missed = 0;
-    if (CONTEST_START_DAY <= today) {
+    const end = a?.last && a.last < today ? a.last : today;
+    if (a?.last && CONTEST_START_DAY <= a.last) {
       let present = 0;
-      for (const d of a?.days ?? []) if (d >= CONTEST_START_DAY && d <= today) present++;
-      missed = Math.max(0, spanDays(CONTEST_START_DAY, today) - present);
+      for (const d of a.days) if (d >= CONTEST_START_DAY && d <= end) present++;
+      missed = Math.max(0, spanDays(CONTEST_START_DAY, end) - present);
     }
     out.push({
       user_id: id,

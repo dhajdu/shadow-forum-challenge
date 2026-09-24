@@ -50,7 +50,7 @@ export function RaceBoard({
               <small>avg</small>
             </div>
             {showMissed && (
-              <div className="missed" title="Contest days with no data">
+              <div className="missed" title="Contest days WHOOP didn't record">
                 {s.missed}
                 <small>missed</small>
               </div>
