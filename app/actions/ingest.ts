@@ -2,7 +2,7 @@
 
 import { unzipSync, strFromU8 } from "fflate";
 import { createClient } from "@/lib/supabase/server";
-import { parseCycles, isCyclesCsv } from "@/lib/whoop/parse";
+import { parseCycles, isCyclesCsv, parseJournal, isJournalCsv } from "@/lib/whoop/parse";
 
 export type IngestResult = { ingested: number; error: string | null };
 
@@ -34,39 +34,32 @@ export async function ingestUpload(uploadId: string): Promise<IngestResult> {
     return { ingested: 0, error: dlErr?.message ?? "Download failed." };
   }
 
-  // Get the physiological_cycles CSV text — the file may be a raw CSV or a WHOOP
-  // export .zip containing several CSVs.
+  // Get the physiological_cycles and journal_entries CSV text — the file may be a
+  // raw CSV or a WHOOP export .zip containing several CSVs.
   const buf = new Uint8Array(await blob.arrayBuffer());
   const looksZip = up.file_path.toLowerCase().endsWith(".zip") || (buf[0] === 0x50 && buf[1] === 0x4b);
 
   let text: string | null = null;
+  let journalText: string | null = null;
+  const pick = (t: string) => {
+    if (!text && isCyclesCsv(t)) text = t;
+    else if (!journalText && isJournalCsv(t)) journalText = t;
+  };
   if (looksZip) {
     try {
       const files = unzipSync(buf);
       for (const [name, data] of Object.entries(files)) {
-        if (!name.toLowerCase().endsWith(".csv")) continue;
-        const t = strFromU8(data);
-        if (isCyclesCsv(t)) {
-          text = t;
-          break;
-        }
+        if (name.toLowerCase().endsWith(".csv")) pick(strFromU8(data));
       }
     } catch {
       await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
       return { ingested: 0, error: "Could not read the .zip file." };
     }
   } else {
-    const t = strFromU8(buf);
-    if (isCyclesCsv(t)) text = t;
+    pick(strFromU8(buf));
   }
 
-  if (!text) {
-    // no physiological_cycles data here (e.g. sleeps/workouts only) — nothing to ingest
-    await supabase.from("uploads").update({ status: "parsed", rows_ingested: 0 }).eq("id", uploadId);
-    return { ingested: 0, error: null };
-  }
-
-  const days = parseCycles(text);
+  const days = text ? parseCycles(text) : [];
   if (days.length > 0) {
     const rows = days.map((d) => ({ ...d, user_id: user.id, upload_id: uploadId }));
     const { error: upErr } = await supabase
@@ -75,6 +68,18 @@ export async function ingestUpload(uploadId: string): Promise<IngestResult> {
     if (upErr) {
       await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
       return { ingested: 0, error: upErr.message };
+    }
+  }
+
+  const journal = journalText ? parseJournal(journalText) : [];
+  if (journal.length > 0) {
+    const rows = journal.map((j) => ({ ...j, user_id: user.id, upload_id: uploadId }));
+    const { error: jErr } = await supabase
+      .from("whoop_journal")
+      .upsert(rows, { onConflict: "user_id,day,question" });
+    if (jErr) {
+      await supabase.from("uploads").update({ status: "error" }).eq("id", uploadId);
+      return { ingested: 0, error: jErr.message };
     }
   }
 

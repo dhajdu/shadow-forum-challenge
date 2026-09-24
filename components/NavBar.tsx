@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChatLauncher } from "@/components/ChatLauncher";
 
 export function NavBar({ active }: { active?: "race" | "me" | "kitty" | "report" | "rules" }) {
   const month = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
@@ -16,6 +17,7 @@ export function NavBar({ active }: { active?: "race" | "me" | "kitty" | "report"
       </nav>
       <div className="spacer" />
       <Link href="/profile" className="av" aria-label="Profile">◧</Link>
+      <ChatLauncher />
     </div>
   );
 }
