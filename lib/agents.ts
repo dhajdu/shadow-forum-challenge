@@ -8,7 +8,7 @@ import { selectAll } from "@/lib/supabase/selectAll";
 
 type Admin = SupabaseClient<Database>;
 
-// ── The Steward: recompute standings, write today's snapshot ──
+// ── The Steward: snapshot this week's race placing (runs Monday) ──
 export async function runSteward(admin: Admin) {
   const standings = await getStandings(admin);
   const day = new Date().toISOString().slice(0, 10);
@@ -16,6 +16,8 @@ export async function runSteward(admin: Admin) {
     user_id: s.user_id,
     full_name: s.full_name,
     avg: s.avg,
+    days: s.days,
+    missed: s.missed,
     rank: i + 1,
   }));
   const { error } = await admin
