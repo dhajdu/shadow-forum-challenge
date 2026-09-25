@@ -2,15 +2,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavBar } from "@/components/NavBar";
-import type { PenaltyKind } from "@/lib/database.types";
+import { getRaceStandings } from "@/lib/standings";
+import { placementPenalty } from "@/lib/contest";
 
-const KIND_LABEL: Record<PenaltyKind, string> = {
-  placement: "Placement",
-  missed_goal: "Missed goal",
-  coach_share: "Coach share",
-};
-
-type Penalty = { user_id: string; kind: PenaltyKind; amount_m: number; reason: string | null };
+export const dynamic = "force-dynamic";
 
 export default async function KittyPage() {
   const supabase = await createClient();
@@ -19,23 +14,11 @@ export default async function KittyPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const { data: pen } = await supabase
-    .from("penalties")
-    .select("user_id, kind, amount_m, reason");
-  const penalties = (pen ?? []) as Penalty[];
-
-  const { data: profs } = await supabase.from("profiles").select("id, full_name");
-  const nameById = new Map(
-    ((profs ?? []) as { id: string; full_name: string }[]).map((p) => [p.id, p.full_name])
-  );
-
-  const byRider = new Map<string, number>();
-  for (const p of penalties) byRider.set(p.user_id, (byRider.get(p.user_id) ?? 0) + p.amount_m);
-  const total = penalties.reduce((a, b) => a + b.amount_m, 0);
-
-  const riderTotals = Array.from(byRider.entries())
-    .map(([id, amt]) => ({ name: nameById.get(id) ?? "Rider", amt }))
-    .sort((a, b) => b.amt - a.amt);
+  // Who owes what comes from the WHOOP race only (contest standings) — business
+  // goals aren't realized until year end, so they don't count here yet.
+  const { contest } = await getRaceStandings(supabase);
+  const riderTotals = contest.map((s, i) => ({ id: s.user_id, name: s.full_name, place: i + 1, amt: placementPenalty(i) }));
+  const total = riderTotals.reduce((a, r) => a + r.amt, 0);
 
   return (
     <main className="app">
@@ -47,7 +30,9 @@ export default async function KittyPage() {
         <div>
           <div className="eyebrow">The kitty</div>
           <h1>{total}M in the pot</h1>
-          <p className="sub">Provisional — recomputed by the Bookkeeper. Settles Dec 31.</p>
+          <p className="sub">
+            Live — based on current WHOOP race position. Nothing is charged until the contest ends.
+          </p>
         </div>
       </div>
 
@@ -58,33 +43,19 @@ export default async function KittyPage() {
         ) : (
           <table className="ladder">
             <thead>
-              <tr><th>Rider</th><th className="r">Owes</th></tr>
+              <tr><th>Place</th><th>Rider</th><th className="r">Owes</th></tr>
             </thead>
             <tbody>
               {riderTotals.map((r) => (
-                <tr key={r.name}><td>{r.name}</td><td className="r amt owe">{r.amt}M</td></tr>
+                <tr key={r.id}>
+                  <td>{r.place}</td>
+                  <td>{r.name}</td>
+                  <td className={`r amt ${r.amt === 0 ? "free" : "owe"}`}>{r.amt === 0 ? "0" : `${r.amt}M`}</td>
+                </tr>
               ))}
             </tbody>
           </table>
         )}
-      </section>
-
-      <section className="card" style={{ marginTop: 16 }}>
-        <h3>Ledger</h3>
-        <table className="ladder">
-          <thead>
-            <tr><th>Rider</th><th>Reason</th><th className="r">Amount</th></tr>
-          </thead>
-          <tbody>
-            {penalties.map((p, i) => (
-              <tr key={i}>
-                <td>{nameById.get(p.user_id) ?? "Rider"}</td>
-                <td>{p.reason ?? KIND_LABEL[p.kind]}</td>
-                <td className="r amt owe">{p.amount_m}M</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </section>
     </main>
   );

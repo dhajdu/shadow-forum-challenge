@@ -5,7 +5,7 @@ import { runBookkeeper } from "@/lib/agents";
 
 export const dynamic = "force-dynamic";
 
-// The Bookkeeper — recompute the kitty ledger (placement + missed-goal penalties).
+// The Bookkeeper — books kitty charges once the contest ends (WHOOP race placement only).
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
