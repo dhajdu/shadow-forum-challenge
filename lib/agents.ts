@@ -4,6 +4,7 @@ import type { Database } from "@/lib/database.types";
 import { getStandings, getRaceStandings } from "@/lib/standings";
 import { placementPenalty, CONTEST_START, CONTEST_END } from "@/lib/contest";
 import { sendEmail } from "@/lib/notify";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 type Admin = SupabaseClient<Database>;
 
@@ -28,10 +29,12 @@ export async function runSteward(admin: Admin) {
 const STALE_DAYS = 7; // riders upload weekly
 export async function runWhip(admin: Admin, opts: { dry: boolean }) {
   const { data: profs } = await admin.from("profiles").select("id, full_name, email");
-  const { data: rows } = await admin.from("whoop_days").select("user_id, day");
+  const rows = await selectAll<{ user_id: string; day: string }>((from, to) =>
+    admin.from("whoop_days").select("user_id, day").order("day").order("user_id").range(from, to)
+  );
 
   const latest = new Map<string, string>();
-  for (const r of (rows ?? []) as { user_id: string; day: string }[]) {
+  for (const r of rows) {
     const cur = latest.get(r.user_id);
     if (!cur || r.day > cur) latest.set(r.user_id, r.day);
   }
