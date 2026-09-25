@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { CONTEST_START_DAY } from "@/lib/contest";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 export type Standing = {
   user_id: string;
@@ -62,13 +63,15 @@ function build(
 }
 
 async function fetchAll(supabase: SupabaseClient<Database>) {
-  const { data: rows } = await supabase.from("whoop_days").select("user_id, score, day");
+  const rows = await selectAll<Row>((from, to) =>
+    supabase.from("whoop_days").select("user_id, score, day").order("day").order("user_id").range(from, to)
+  );
   const { data: profs } = await supabase.from("profiles").select("id, full_name");
   const names = new Map<string, string>();
   for (const p of (profs ?? []) as { id: string; full_name: string }[]) {
     names.set(p.id, p.full_name || "Rider");
   }
-  return { rows: (rows ?? []) as Row[], names };
+  return { rows, names };
 }
 
 /** All-time standings (used by dashboards, rider pages, reports, agents). */

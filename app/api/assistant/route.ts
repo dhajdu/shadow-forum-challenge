@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 export const dynamic = "force-dynamic";
 
@@ -68,12 +69,16 @@ export async function POST(req: NextRequest) {
     .join("\n");
 
   // The rider's OWN WHOOP journal answers — per-question yes rate + recent days.
-  const { data: jRows } = await supabase
-    .from("whoop_journal")
-    .select("day, question, answered_yes, notes")
-    .eq("user_id", user.id)
-    .order("day", { ascending: true });
-  const journal = (jRows ?? []) as { day: string; question: string; answered_yes: boolean | null; notes: string | null }[];
+  const journal = await selectAll<{ day: string; question: string; answered_yes: boolean | null; notes: string | null }>(
+    (from, to) =>
+      supabase
+        .from("whoop_journal")
+        .select("day, question, answered_yes, notes")
+        .eq("user_id", user.id)
+        .order("day", { ascending: true })
+        .order("question")
+        .range(from, to)
+  );
 
   const perQ = new Map<string, { yes: number; n: number }>();
   const byDay = new Map<string, { yes: string[]; no: string[]; notes: string[] }>();
