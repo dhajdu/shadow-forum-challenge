@@ -1,14 +1,8 @@
 // Core agent logic, shared by the individual cron routes and the daily aggregator.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, GoalStatus } from "@/lib/database.types";
-import { getStandings } from "@/lib/standings";
-import {
-  placementPenalty,
-  MISSED_GOAL_PENALTY,
-  COACH_SHARE_PENALTY,
-  CONTEST_START,
-  CONTEST_END,
-} from "@/lib/contest";
+import type { Database } from "@/lib/database.types";
+import { getStandings, getRaceStandings } from "@/lib/standings";
+import { placementPenalty, CONTEST_START, CONTEST_END } from "@/lib/contest";
 import { sendEmail } from "@/lib/notify";
 
 type Admin = SupabaseClient<Database>;
@@ -72,33 +66,25 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
   return { contestActive, staleCount: stale.length, stale, nudged };
 }
 
-// ── The Bookkeeper: recompute the kitty ledger ──
+// ── The Bookkeeper: book the kitty charges ──
+// Nothing is charged until the contest ends — until then the kitty is shown live
+// from race position. At the end it books WHOOP race placement (contest standings);
+// business-goal penalties are settled separately.
 const PERIOD = "Q4-2026";
 export async function runBookkeeper(admin: Admin) {
-  const standings = await getStandings(admin);
-  const { data: goals } = await admin.from("goals").select("user_id, coach_id, current_status");
+  if (new Date() <= CONTEST_END) return { period: PERIOD, skipped: "contest still running", entries: 0, kitty: 0 };
 
-  type Row = {
-    user_id: string;
-    kind: "placement" | "missed_goal" | "coach_share";
-    amount_m: number;
-    reason: string;
-    period: string;
-  };
-  const rows: Row[] = [];
+  const { contest } = await getRaceStandings(admin);
 
-  standings.forEach((s, i) => {
-    const owes = placementPenalty(i);
-    if (owes > 0)
-      rows.push({ user_id: s.user_id, kind: "placement", amount_m: owes, reason: `Placement #${i + 1}`, period: PERIOD });
-  });
-
-  for (const g of (goals ?? []) as { user_id: string; coach_id: string | null; current_status: GoalStatus }[]) {
-    if (g.current_status === "hit") continue;
-    rows.push({ user_id: g.user_id, kind: "missed_goal", amount_m: MISSED_GOAL_PENALTY, reason: "Missed business goal", period: PERIOD });
-    if (g.coach_id)
-      rows.push({ user_id: g.coach_id, kind: "coach_share", amount_m: COACH_SHARE_PENALTY, reason: "Coach share (goal missed)", period: PERIOD });
-  }
+  const rows = contest
+    .map((s, i) => ({
+      user_id: s.user_id,
+      kind: "placement" as const,
+      amount_m: placementPenalty(i),
+      reason: `Placement #${i + 1}`,
+      period: PERIOD,
+    }))
+    .filter((r) => r.amount_m > 0);
 
   await admin.from("penalties").delete().eq("period", PERIOD);
   if (rows.length > 0) {
