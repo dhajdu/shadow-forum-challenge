@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChatLauncher } from "@/components/ChatLauncher";
 
-export function NavBar({ active }: { active?: "race" | "me" | "kitty" | "report" | "rules" }) {
+export function NavBar({ active }: { active?: "race" | "me" | "report" | "rules" }) {
   const month = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
   return (
     <div className="bar">
@@ -9,7 +9,6 @@ export function NavBar({ active }: { active?: "race" | "me" | "kitty" | "report"
       <nav className="nav">
         <Link href="/race" className={active === "race" ? "on" : ""}>Race</Link>
         <Link href="/me" className={active === "me" ? "on" : ""}>My Zone</Link>
-        <Link href="/kitty" className={active === "kitty" ? "on" : ""}>Kitty</Link>
         <Link href={`/report/${encodeURIComponent(month)}`} className={active === "report" ? "on" : ""}>
           Report
         </Link>
