@@ -316,7 +316,21 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      race_standings: {
+        Row: {
+          user_id: string;
+          full_name: string;
+          contest_avg: number;
+          contest_days: number;
+          contest_missed: number;
+          all_avg: number;
+          all_days: number;
+          last_day: string | null;
+        };
+        Relationships: [];
+      };
+    };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
