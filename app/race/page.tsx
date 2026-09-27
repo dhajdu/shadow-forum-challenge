@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getRaceStandings } from "@/lib/standings";
-import { RaceTabs } from "@/components/RaceTabs";
+import { getStandings } from "@/lib/standings";
+import { RaceBoard } from "@/components/RaceBoard";
 import { NavBar } from "@/components/NavBar";
-import { dayOfContest, currentLeg, CONTEST_DAYS, CONTEST_START_DAY, PLACEMENT_PENALTIES } from "@/lib/contest";
+import { dayOfContest, currentLeg, CONTEST_DAYS, PLACEMENT_PENALTIES } from "@/lib/contest";
 
 export const dynamic = "force-dynamic";
 import { coachingPairs } from "@/lib/roster";
@@ -24,22 +24,19 @@ export default async function RacePage() {
 
   // business goals (public status, readable by all) + standings, fetched together.
   // The rider's own goal is in the same list — no goal yet → onboarding.
-  const [{ data: goals }, { contest, all }] = await Promise.all([
+  const [{ data: goals }, standings] = await Promise.all([
     supabase
       .from("goals")
       .select("id, user_id, title, unit, target_value, current_value, current_progress, current_status"),
-    getRaceStandings(supabase),
+    getStandings(supabase),
   ]);
   if (!(goals ?? []).some((g) => (g as { user_id: string }).user_id === user.id)) redirect("/welcome");
-
-  const today = new Date().toISOString().slice(0, 10);
-  const started = today >= CONTEST_START_DAY;
 
   type GoalRow = {
     id: string; user_id: string; title: string; unit: string | null;
     target_value: number | null; current_value: number; current_progress: number; current_status: GoalStatus;
   };
-  const nameById = new Map(all.map((s) => [s.user_id, s.full_name]));
+  const nameById = new Map(standings.map((s) => [s.user_id, s.full_name]));
   const goalList = ((goals ?? []) as GoalRow[]).map((g) => ({
     ...g,
     rider: nameById.get(g.user_id) ?? "Rider",
@@ -65,12 +62,12 @@ export default async function RacePage() {
         <div className="kpis">
           <div className="kpi"><b>{dayOfContest()}</b><span>day of {CONTEST_DAYS}</span></div>
           <div className="kpi k-kitty"><b>{kitty}M</b><span>kitty</span></div>
-          <div className="kpi"><b>{all.length}</b><span>riders</span></div>
+          <div className="kpi"><b>{standings.length}</b><span>riders</span></div>
           <div className="kpi"><b>{currentLeg()}</b><span>current leg</span></div>
         </div>
       </div>
 
-      <RaceTabs contest={contest} all={all} defaultTab={started ? "contest" : "all"} />
+      <RaceBoard standings={standings} showMissed />
 
       <section className="card goals-card">
         <h3>Business goals — Q4</h3>

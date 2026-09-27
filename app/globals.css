@@ -250,6 +250,8 @@ form { display: grid; gap: 12px; }
 .lane.p3 .medal { background: linear-gradient(135deg,#e6a877,#b9713f); color: #2a1600; }
 .rname { width: 92px; flex: none; font-size: 13px; font-weight: 600; }
 .rname small { display: block; font-size: 10.5px; color: var(--muted); font-weight: 500; }
+.rname .stale { display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 5px; border-radius: 50%;
+  background: #e5484d; color: #fff; font-size: 10px; font-weight: 800; line-height: 1; vertical-align: 1px; }
 .track { flex: 1; height: 32px; border-radius: 9px; position: relative; overflow: hidden; border: 1px solid var(--line);
   background: linear-gradient(90deg, rgba(47,125,255,.12) 0%, rgba(255,47,176,.08) 26%, rgba(10,12,20,.2) 60%, #05060c 100%); }
 .track .trail { position: absolute; top: 50%; left: 0; height: 6px; transform: translateY(-50%); border-radius: 6px;
@@ -375,8 +377,6 @@ a.lane:hover .rname { color: #fff; }
 .missed { width: 50px; flex: none; text-align: right; font-weight: 700; font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .missed small { display: block; font-size: 10px; color: var(--muted); font-weight: 600; }
 
-.raceseg { align-items: center; margin-bottom: 12px; }
-.raceseg-note { font-size: 11.5px; color: var(--muted); }
 
 /* ── Measurable goal + Extra Credit ── */
 .measure-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }

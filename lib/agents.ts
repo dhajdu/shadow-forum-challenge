@@ -1,7 +1,7 @@
 // Core agent logic, shared by the individual cron routes and the daily aggregator.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { getStandings, getRaceStandings } from "@/lib/standings";
+import { getStandings } from "@/lib/standings";
 import { placementPenalty, CONTEST_START, CONTEST_END } from "@/lib/contest";
 import { sendEmail } from "@/lib/notify";
 import { selectAll } from "@/lib/supabase/selectAll";
@@ -73,15 +73,15 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
 
 // ── The Bookkeeper: book the kitty charges ──
 // Nothing is charged until the contest ends — until then the kitty is shown live
-// from race position. At the end it books WHOOP race placement (contest standings);
+// from race position. At the end it books WHOOP race placement (overall average);
 // business-goal penalties are settled separately.
 const PERIOD = "Q4-2026";
 export async function runBookkeeper(admin: Admin) {
   if (new Date() <= CONTEST_END) return { period: PERIOD, skipped: "contest still running", entries: 0, kitty: 0 };
 
-  const { contest } = await getRaceStandings(admin);
+  const standings = await getStandings(admin);
 
-  const rows = contest
+  const rows = standings
     .map((s, i) => ({
       user_id: s.user_id,
       kind: "placement" as const,
