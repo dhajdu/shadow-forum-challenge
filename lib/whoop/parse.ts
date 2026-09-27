@@ -34,6 +34,15 @@ export function blendScore(
   return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;
 }
 
+/** Average of whichever components are present — only for the in-progress newest day. */
+function partialScore(recovery: number | null, sleep: number | null, strain: number | null): number | null {
+  const parts = [recovery, sleep, strain == null ? null : Math.min(100, (strain / STRAIN_MAX) * 100)].filter(
+    (v): v is number => v != null
+  );
+  if (parts.length === 0) return null;
+  return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;
+}
+
 // minimal CSV line splitter that respects double-quoted fields
 function splitLine(line: string): string[] {
   const out: string[] = [];
@@ -156,5 +165,11 @@ export function parseCycles(text: string): WhoopDay[] {
     if (!byDay.has(day)) byDay.set(day, row);
   }
 
-  return Array.from(byDay.values());
+  // The newest day is usually still in progress at export time (strain still
+  // building). Count it with the numbers it has; the next upload overwrites it.
+  const days = Array.from(byDay.values());
+  const newest = days.reduce<WhoopDay | null>((a, d) => (!a || d.day > a.day ? d : a), null);
+  if (newest && newest.score == null) newest.score = partialScore(newest.recovery, newest.sleep, newest.strain);
+
+  return days;
 }
