@@ -73,7 +73,7 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
 
 // ── The Bookkeeper: book the kitty charges ──
 // Nothing is charged until the contest ends — until then the kitty is shown live
-// from race position. At the end it books WHOOP race placement (overall average);
+// from race position. At the end it books WHOOP race placement (contest average);
 // business-goal penalties are settled separately.
 const PERIOD = "Q4-2026";
 export async function runBookkeeper(admin: Admin) {

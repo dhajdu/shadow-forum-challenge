@@ -17,20 +17,20 @@ export const SCORE_WEIGHTS = { recovery: 1, sleep: 1, strain: 1 };
 const STRAIN_MAX = 21;
 
 /**
- * Blended daily score from the three components. A missing component counts as 0,
- * so it pulls the day down. No components at all → null (a missed day).
+ * Blended daily score from the three components. A day only scores when WHOOP
+ * recorded all three — an incomplete day (e.g. the cycle still in progress at
+ * export, or a number WHOOP didn't record) is left unscored rather than zero-filled.
  */
 export function blendScore(
   recovery: number | null,
   sleep: number | null,
   strain: number | null
 ): number | null {
-  if (recovery == null && sleep == null && strain == null) return null;
+  if (recovery == null || sleep == null || strain == null) return null;
   const parts: number[] = [];
-  for (let i = 0; i < SCORE_WEIGHTS.recovery; i++) parts.push(recovery ?? 0);
-  for (let i = 0; i < SCORE_WEIGHTS.sleep; i++) parts.push(sleep ?? 0);
-  for (let i = 0; i < SCORE_WEIGHTS.strain; i++)
-    parts.push(strain == null ? 0 : Math.min(100, (strain / STRAIN_MAX) * 100));
+  for (let i = 0; i < SCORE_WEIGHTS.recovery; i++) parts.push(recovery);
+  for (let i = 0; i < SCORE_WEIGHTS.sleep; i++) parts.push(sleep);
+  for (let i = 0; i < SCORE_WEIGHTS.strain; i++) parts.push(Math.min(100, (strain / STRAIN_MAX) * 100));
   return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;
 }
 

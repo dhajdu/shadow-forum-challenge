@@ -38,7 +38,7 @@ export default async function RulesPage() {
         <h3>2 · Race Into the Shadow — payment by position</h3>
         <p className="rule-p">
           Final standings rank on your average daily <b>WHOOP score — a blend of Recovery, Sleep performance and Strain</b>.
-          Ranking uses your overall average across all your uploaded days. A missing number counts as 0 for that day. Where you finish, you pay:
+          Only days from the contest start count, and a day only scores once WHOOP has recorded all three numbers — an incomplete day isn&apos;t used. Where you finish, you pay:
         </p>
         <table className="ladder">
           <thead>
