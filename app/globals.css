@@ -1,5 +1,5 @@
 :root {
-  /* Neon cyberpunk palette (from reference) */
+  /* Night-city palette: graphite, steel blue, amber, red */
   --bg: #06080f;
   --bg-2: #0b1020;
   --ink: #e8ecff;
@@ -7,8 +7,8 @@
   --red: #ff4326;      /* left neon */
   --orange: #ff7a1a;
   --blue: #2f7dff;     /* right neon */
-  --purple: #7c4dff;
-  --magenta: #ff2fb0;  /* streak */
+  --navy: #1d3a7a;     /* deep steel */
+  --amber: #f5a524;   /* highlight */
   --line: rgba(255, 255, 255, 0.08);
 }
 
@@ -36,7 +36,7 @@ html, body {
   background:
     radial-gradient(120% 90% at 15% 55%, rgba(255, 67, 38, 0.28), transparent 55%),
     radial-gradient(120% 90% at 85% 45%, rgba(47, 125, 255, 0.30), transparent 55%),
-    radial-gradient(90% 60% at 50% 60%, rgba(255, 47, 176, 0.18), transparent 60%),
+    radial-gradient(90% 60% at 50% 60%, rgba(245, 165, 36, 0.18), transparent 60%),
     linear-gradient(180deg, var(--bg-2), var(--bg));
   background-size: cover;
   background-position: center;
@@ -73,11 +73,8 @@ html, body {
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.02;
-  background: linear-gradient(90deg, var(--red), var(--magenta) 55%, var(--blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 40px rgba(255, 47, 176, 0.15);
+  color: var(--ink);
+  text-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
 }
 
 .tagline {
@@ -86,7 +83,7 @@ html, body {
   font-size: 15px;
   letter-spacing: 0.42em;
   text-transform: uppercase;
-  text-shadow: 0 0 24px rgba(255, 47, 176, 0.35);
+  text-shadow: 0 0 24px rgba(245, 165, 36, 0.35);
 }
 
 /* Auth form */
@@ -119,8 +116,8 @@ form { display: grid; gap: 12px; }
   letter-spacing: 0.03em;
   color: #fff;
   cursor: pointer;
-  background: linear-gradient(90deg, var(--red), var(--magenta) 60%, var(--purple));
-  box-shadow: 0 8px 30px rgba(255, 47, 176, 0.25);
+  background: linear-gradient(180deg, var(--blue), var(--navy));
+  box-shadow: 0 8px 30px rgba(47, 125, 255, 0.22);
   transition: transform 0.08s ease, filter 0.15s;
 }
 .btn:hover { filter: brightness(1.08); }
@@ -192,7 +189,7 @@ form { display: grid; gap: 12px; }
 .goalprog { display: grid; gap: 8px; }
 .goalprog .goal-title { font-size: 14px; color: var(--ink); background: rgba(10,14,26,.5); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
 .goalprog label { font-size: 12px; color: var(--muted); margin-top: 6px; }
-.goalprog input[type="range"] { width: 100%; accent-color: var(--magenta); }
+.goalprog input[type="range"] { width: 100%; accent-color: var(--amber); }
 .seg { display: flex; gap: 8px; flex-wrap: wrap; }
 .seg-btn { font-family: inherit; font-size: 12px; padding: 7px 12px; border-radius: 20px; cursor: pointer;
   background: rgba(10,14,26,.5); color: var(--muted); border: 1px solid var(--line); }
@@ -216,8 +213,7 @@ form { display: grid; gap: 12px; }
 /* ── Race Into the Shadow (app home) ── */
 .app { max-width: 1080px; margin: 0 auto; padding: 0 20px 60px; }
 .bar { display: flex; align-items: center; gap: 16px; padding: 16px 2px 20px; }
-.bar .brand { font-weight: 800; font-size: 15px; letter-spacing: .02em; white-space: nowrap;
-  background: linear-gradient(90deg,var(--red),var(--magenta) 55%,var(--blue)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bar .brand { font-weight: 800; font-size: 15px; letter-spacing: .02em; white-space: nowrap; color: var(--ink); }
 .bar .nav { display: flex; gap: 6px; }
 .bar .nav a { font-size: 13px; color: var(--muted); text-decoration: none; padding: 7px 13px; border-radius: 9px; font-weight: 600; }
 .bar .nav a.on { color: #fff; background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 1px var(--line); }
@@ -235,7 +231,7 @@ form { display: grid; gap: 12px; }
 .kpis .kpi { background: rgba(18,22,35,.62); border: 1px solid var(--line); border-radius: 14px; padding: 11px 15px; min-width: 92px; }
 .kpis .kpi b { display: block; font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .kpis .kpi span { font-size: 11px; color: var(--muted); }
-.kpis .k-kitty b { background: linear-gradient(90deg,var(--red),var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kpis .k-kitty b { background: linear-gradient(90deg,var(--red),var(--amber)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 .board { background: rgba(18,22,35,.62); border: 1px solid var(--line); border-radius: 20px; padding: 18px 20px 14px; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
 .board-head { display: flex; justify-content: space-between; align-items: center; }
@@ -253,7 +249,7 @@ form { display: grid; gap: 12px; }
 .rname .stale { display: inline-grid; place-items: center; width: 15px; height: 15px; margin-left: 5px; border-radius: 50%;
   background: #e5484d; color: #fff; font-size: 10px; font-weight: 800; line-height: 1; vertical-align: 1px; }
 .track { flex: 1; height: 32px; border-radius: 9px; position: relative; overflow: hidden; border: 1px solid var(--line);
-  background: linear-gradient(90deg, rgba(47,125,255,.12) 0%, rgba(255,47,176,.08) 26%, rgba(10,12,20,.2) 60%, #05060c 100%); }
+  background: linear-gradient(90deg, rgba(47,125,255,.12) 0%, rgba(245, 165, 36,.08) 26%, rgba(10,12,20,.2) 60%, #05060c 100%); }
 .track .trail { position: absolute; top: 50%; left: 0; height: 6px; transform: translateY(-50%); border-radius: 6px;
   background: linear-gradient(90deg, transparent, rgba(120,160,255,.5)); }
 .lane.p1 .track .trail { background: linear-gradient(90deg, transparent, rgba(255,207,90,.6)); }
@@ -262,7 +258,7 @@ form { display: grid; gap: 12px; }
 .lane.p1 .runner { filter: drop-shadow(0 0 8px rgba(255,207,90,.95)); }
 .runner svg { width: 18px; height: 26px; display: block; fill: #0b0e17; stroke: rgba(160,190,255,.9); stroke-width: 1; }
 .lane.p1 .runner svg { stroke: rgba(255,207,90,.95); }
-.finish { position: absolute; top: 0; bottom: 0; right: 0; width: 3px; background: linear-gradient(180deg,var(--magenta),var(--purple)); box-shadow: 0 0 12px var(--magenta); }
+.finish { position: absolute; top: 0; bottom: 0; right: 0; width: 3px; background: linear-gradient(180deg,var(--amber),var(--navy)); box-shadow: 0 0 12px var(--amber); }
 .score { width: 56px; flex: none; text-align: right; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
 .score small { display: block; font-size: 10px; color: var(--muted); font-weight: 600; }
 .lane.p1 .score { color: #ffcf5a; }
@@ -351,7 +347,7 @@ a.lane:hover .rname { color: #fff; }
 /* floating launcher + panel */
 .chat-fab { position: fixed; right: 20px; bottom: 20px; z-index: 60; width: 56px; height: 56px; border-radius: 50%;
   display: grid; place-items: center; cursor: pointer; color: #fff; font-size: 26px; line-height: 1;
-  border: 1px solid rgba(255,255,255,.12); background: linear-gradient(135deg, var(--purple), var(--blue));
+  border: 1px solid rgba(255,255,255,.12); background: linear-gradient(135deg, var(--navy), var(--blue));
   box-shadow: 0 8px 28px rgba(47,125,255,.45); transition: transform .15s, box-shadow .15s; }
 .chat-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(47,125,255,.6); }
 .chat-fab.on { background: var(--bg-2); box-shadow: 0 6px 20px rgba(0,0,0,.5); }

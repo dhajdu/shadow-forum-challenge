@@ -22,7 +22,7 @@ export function ScoreTrend({ scores }: { scores: number[] }) {
       <defs>
         <linearGradient id="trendline" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#2f7dff" />
-          <stop offset="0.5" stopColor="#ff2fb0" />
+          <stop offset="0.5" stopColor="#f5a524" />
           <stop offset="1" stopColor="#ff4326" />
         </linearGradient>
       </defs>

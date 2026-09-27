@@ -30,10 +30,10 @@ type Upload = { id: string; file_name: string; status: string; created_at: strin
 const SUFFIX = ["th", "st", "nd", "rd"];
 const ordinal = (n: number) => n + (SUFFIX[(n % 100 - 20) % 10] || SUFFIX[n % 100] || SUFFIX[0]);
 
-// Score → neon colour, red (low) → magenta → blue (high).
+// Score → neon colour, red (low) → amber → blue (high).
 const STOPS: [number, [number, number, number]][] = [
   [40, [255, 67, 38]],
-  [65, [255, 47, 176]],
+  [65, [245, 165, 36]],
   [90, [47, 125, 255]],
 ];
 function scoreColor(score: number, alpha = 1): string {
