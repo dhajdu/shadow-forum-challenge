@@ -8,7 +8,7 @@
 .who { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .avatar { width: 56px; height: 56px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 800; font-size: 18px;
   color: #cdd5f5; border: 1px solid var(--line); background: linear-gradient(135deg, #1a2136, #0e1424) center/cover no-repeat;
-  box-shadow: 0 0 18px rgba(255, 47, 176, .25); }
+  box-shadow: 0 0 18px rgba(245, 165, 36, .25); }
 .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .actions { display: flex; gap: 8px; align-items: center; }
 .upload > summary { list-style: none; white-space: nowrap; }
@@ -31,13 +31,13 @@
 /* latest day */
 .score { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .score b { font-size: 52px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
-  background: linear-gradient(90deg, var(--blue), var(--magenta)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  background: linear-gradient(90deg, var(--blue), var(--amber)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .score span { font-size: 13px; font-weight: 600; }
 .parts { display: grid; gap: 10px; margin-top: 18px; }
 .part { display: grid; grid-template-columns: 70px 1fr 56px; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
 .part b { color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
 .track { height: 8px; border-radius: 8px; background: rgba(255, 255, 255, .06); overflow: hidden; }
-.track i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--blue), var(--magenta)); }
+.track i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--blue), var(--amber)); }
 
 /* daily progress */
 .strip { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -62,7 +62,7 @@
 .tbars { grid-area: bars; display: flex; align-items: flex-end; gap: 2px; height: 28px; }
 .thead .tbars { height: auto; }
 .tbars i { flex: 1; min-width: 0; border-radius: 2px; background: rgba(138, 147, 178, .35); }
-.tbars i.recent { background: var(--magenta); box-shadow: 0 0 6px rgba(255, 47, 176, .5); }
+.tbars i.recent { background: var(--amber); box-shadow: 0 0 6px rgba(245, 165, 36, .5); }
 .t7 { grid-area: t7; text-align: right; }
 .t30 { grid-area: t30; text-align: right; }
 .tdelta { grid-area: delta; text-align: right; white-space: nowrap; font-size: 12px; }
