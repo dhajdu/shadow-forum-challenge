@@ -327,6 +327,7 @@ export interface Database {
           all_avg: number;
           all_days: number;
           last_day: string | null;
+          last_data_day: string | null;
         };
         Relationships: [];
       };

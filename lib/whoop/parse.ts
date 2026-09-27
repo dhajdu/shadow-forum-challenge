@@ -156,11 +156,5 @@ export function parseCycles(text: string): WhoopDay[] {
     if (!byDay.has(day)) byDay.set(day, row);
   }
 
-  // The newest day with no strain yet is the cycle still in progress at export time:
-  // leave it unscored (not penalised, not missed) — the next upload fills it in.
-  const days = Array.from(byDay.values());
-  const newest = days.reduce<WhoopDay | null>((a, d) => (!a || d.day > a.day ? d : a), null);
-  if (newest && newest.strain == null) newest.score = null;
-
-  return days;
+  return Array.from(byDay.values());
 }

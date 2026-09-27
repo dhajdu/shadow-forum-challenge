@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Standing } from "@/lib/standings";
+import { STALE_DAYS, type Standing } from "@/lib/standings";
 import { placementPenalty } from "@/lib/contest";
 
 const RUNNER = (
@@ -36,6 +36,11 @@ export function RaceBoard({
             <div className="medal">{i + 1}</div>
             <div className="rname">
               {s.full_name}
+              {s.stale && (
+                <span className="stale" title={`No WHOOP upload in over ${STALE_DAYS} days`} aria-label="Overdue upload">
+                  !
+                </span>
+              )}
               <small>{s.days} days</small>
             </div>
             <div className="track">
