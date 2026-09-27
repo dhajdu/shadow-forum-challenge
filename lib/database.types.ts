@@ -222,6 +222,35 @@ export interface Database {
         };
         Relationships: [];
       };
+      journal_analyses: {
+        Row: {
+          id: string;
+          user_id: string;
+          week_of: string;
+          headline: string;
+          insights: { title: string; detail: string; effect: "helps" | "hurts" | "mixed" }[];
+          suggestion: string;
+          model: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          week_of: string;
+          headline: string;
+          insights: { title: string; detail: string; effect: "helps" | "hurts" | "mixed" }[];
+          suggestion: string;
+          model: string;
+          created_at?: string;
+        };
+        Update: Partial<{
+          headline: string;
+          insights: { title: string; detail: string; effect: "helps" | "hurts" | "mixed" }[];
+          suggestion: string;
+          model: string;
+        }>;
+        Relationships: [];
+      };
       uploads: {
         Row: {
           id: string;

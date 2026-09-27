@@ -94,3 +94,17 @@
 .jrow span { font-size: 11px; color: var(--muted); }
 .jstat { text-align: right; }
 .jstat b { display: block; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* Weekly AI analysis */
+.analysis { margin-top: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(47, 125, 255, .06); }
+.aHead { font-size: 15px; font-weight: 700; line-height: 1.4; }
+.aList { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.aList li { padding-left: 12px; border-left: 3px solid var(--line); }
+.aList li b { display: block; font-size: 13.5px; }
+.aList li span { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.aHelps { border-left-color: #57d38c !important; }
+.aHurts { border-left-color: var(--red) !important; }
+.aMixed { border-left-color: var(--amber) !important; }
+.aTry { font-size: 13.5px; }
+.aMeta { font-size: 11px; color: var(--muted); margin-top: 8px; }
+.jNumbers { margin-top: 18px; font-size: 13px; letter-spacing: .04em; color: var(--muted); }
