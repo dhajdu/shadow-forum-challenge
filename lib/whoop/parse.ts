@@ -68,6 +68,17 @@ function splitLine(line: string): string[] {
   return out;
 }
 
+// WHOOP cycles run sleep-to-sleep, so a cycle that starts in the evening is the
+// next day you wake up to. Label cycles by that wake day: start at/after 6pm → next date.
+const WAKE_CUTOFF_HOUR = 18;
+export function cycleDay(start: string | undefined): string | null {
+  const m = start?.trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2})/);
+  if (!m) return null;
+  const date = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  if (+m[4] >= WAKE_CUTOFF_HOUR) date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 const num = (v: string | undefined): number | null => {
   if (v == null) return null;
   const t = v.trim();
@@ -109,9 +120,9 @@ export function parseJournal(text: string): JournalEntry[] {
   const byKey = new Map<string, JournalEntry>();
   for (let r = 1; r < lines.length; r++) {
     const cols = splitLine(lines[r]);
-    const day = cols[iStart]?.trim().slice(0, 10);
+    const day = cycleDay(cols[iStart]);
     const question = cols[iQ]?.trim();
-    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !question) continue;
+    if (!day || !question) continue;
     const yes = cols[iYes]?.trim().toLowerCase();
     const notes = iNotes >= 0 ? cols[iNotes]?.trim() : "";
     const key = `${day}|${question}`;
@@ -144,10 +155,8 @@ export function parseCycles(text: string): WhoopDay[] {
 
   for (let r = 1; r < lines.length; r++) {
     const cols = splitLine(lines[r]);
-    const start = cols[iStart]?.trim();
-    if (!start) continue;
-    const day = start.slice(0, 10); // YYYY-MM-DD
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+    const day = cycleDay(cols[iStart]); // the wake day, YYYY-MM-DD
+    if (!day) continue;
 
     const recovery = num(cols[iRec]);
     const sleep = iSleep >= 0 ? num(cols[iSleep]) : null;
@@ -161,8 +170,10 @@ export function parseCycles(text: string): WhoopDay[] {
       hrv: num(cols[iHrv]),
       score: blendScore(recovery, sleep, strain),
     };
-    // last row for a given day wins (export is newest-first, but idempotent either way)
-    if (!byDay.has(day)) byDay.set(day, row);
+    // one row per day; if two cycles land on the same day (e.g. a nap-split cycle),
+    // keep the one with a score
+    const prev = byDay.get(day);
+    if (!prev || (prev.score == null && row.score != null)) byDay.set(day, row);
   }
 
   // The newest day is usually still in progress at export time (strain still
