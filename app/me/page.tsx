@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavBar } from "@/components/NavBar";
 import { UploadWhoop } from "@/components/UploadWhoop";
@@ -11,12 +12,14 @@ import { CONTEST_START_DAY } from "@/lib/contest";
 import { coachNameFor } from "@/lib/roster";
 import type { GoalStatus } from "@/lib/database.types";
 import { getSessionUser } from "@/lib/supabase/session";
+import { selectAll } from "@/lib/supabase/selectAll";
 import {
   addDays,
   contestStrip,
   currentStreak,
-  journalInsight,
+  journalImpacts,
   latestDay,
+  monthly,
   round1,
   shortDate,
   trends,
@@ -48,12 +51,15 @@ function scoreColor(score: number, alpha = 1): string {
 
 const signed = (n: number) => `${n > 0 ? "+" : ""}${n}`;
 
-export default async function MyZone() {
+export default async function MyZone({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
+  const view = (await searchParams).view === "all" ? "all" : "contest";
   const today = new Date().toISOString().slice(0, 10);
+  // journal window: ~3 months for the contest view, ~6 months for all time
+  const journalSince = addDays(today, view === "all" ? -182 : -90);
 
   // independent reads — run them together
   const [
@@ -63,7 +69,7 @@ export default async function MyZone() {
     { data: dayRows },
     standings,
     { data: pgRows },
-    { data: journalRows },
+    journalRows,
   ] = await Promise.all([
     supabase
       .from("goals")
@@ -87,12 +93,17 @@ export default async function MyZone() {
       .select("id, title, unit, target_value, current_value")
       .eq("user_id", user.id)
       .order("created_at", { ascending: true }),
-    // last ~60 days keeps us well under the 1000-row select cap
-    supabase
-      .from("whoop_journal")
-      .select("day, question, answered_yes")
-      .eq("user_id", user.id)
-      .gte("day", addDays(today, -60)),
+    // ~25 questions a day adds up fast — page past the 1000-row select cap
+    selectAll<JournalRow>((from, to) =>
+      supabase
+        .from("whoop_journal")
+        .select("day, question, answered_yes")
+        .eq("user_id", user.id)
+        .gte("day", journalSince)
+        .order("day")
+        .order("question")
+        .range(from, to)
+    ),
   ]);
 
   const goal = goalRow as
@@ -130,8 +141,12 @@ export default async function MyZone() {
     null
   );
   const streak = currentStreak(strip);
-  const trendRows = trends(days);
-  const insight = journalInsight((journalRows ?? []) as JournalRow[], days);
+  const trendRows = trends(days, view === "all" ? "all" : "recent");
+  const impacts = journalImpacts(journalRows, days).slice(0, 6);
+  const months = monthly(days);
+  const scoredAll = days.filter((d) => d.score != null).map((d) => d.score as number);
+  const allAvg = scoredAll.length ? round1(scoredAll.reduce((a, b) => a + b, 0) / scoredAll.length) : null;
+  const firstDay = days.find((d) => d.score != null)?.day ?? null;
   const lastUpload = uploads[0] ? shortDate(uploads[0].created_at.slice(0, 10)) : null;
 
   return (
@@ -149,10 +164,18 @@ export default async function MyZone() {
             <div className="eyebrow">My Zone</div>
             <h1>{name}</h1>
             <p className={s.sub}>
-              {mine
-                ? `${ordinal(rank)} of ${standings.length} · race avg ${mine.avg} · ${mine.days} scored days · ${mine.missed} missed`
-                : "Not on the board yet — upload your WHOOP export."}
+              {view === "all"
+                ? allAvg != null && firstDay
+                  ? `All time · avg ${allAvg} over ${scoredAll.length} scored days since ${shortDate(firstDay)} ${firstDay.slice(0, 4)}`
+                  : "No WHOOP history yet — upload your export."
+                : mine
+                  ? `${ordinal(rank)} of ${standings.length} · race avg ${mine.avg} · ${mine.days} scored days · ${mine.missed} missed`
+                  : "Not on the board yet — upload your WHOOP export."}
             </p>
+            <div className={`seg ${s.viewToggle}`}>
+              <Link href="/me" className={`seg-btn ${view === "contest" ? "on" : ""}`}>Contest</Link>
+              <Link href="/me?view=all" className={`seg-btn ${view === "all" ? "on" : ""}`}>All time</Link>
+            </div>
           </div>
         </div>
         <div className={s.actions}>
@@ -197,6 +220,40 @@ export default async function MyZone() {
           )}
         </section>
 
+        {view === "all" ? (
+        <section className="zone-card">
+          <h2>Monthly averages</h2>
+          {months.length === 0 ? (
+            <p className="trend-empty">No scored days yet — upload your WHOOP export.</p>
+          ) : (
+            <div className={s.months}>
+              {months.slice(-12).map((m) => (
+                <div className={s.month} key={m.month} title={`${m.label} · ${m.avg} avg over ${m.days} days`}>
+                  <span className={s.monthBar}>
+                    <i style={{ height: `${Math.max(4, m.avg)}%`, background: scoreColor(m.avg, 0.85) }} />
+                  </span>
+                  <b>{Math.round(m.avg)}</b>
+                  <span>{m.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className={s.tiles}>
+            <div className={s.tile}>
+              <b>{allAvg ?? "—"}</b>
+              <span>all-time avg</span>
+            </div>
+            <div className={s.tile}>
+              <b>{scoredAll.length ? Math.max(...scoredAll) : "—"}</b>
+              <span>best day ever</span>
+            </div>
+            <div className={s.tile}>
+              <b>{scoredAll.length}</b>
+              <span>scored days</span>
+            </div>
+          </div>
+        </section>
+        ) : (
         <section className="zone-card">
           <h2>Daily progress</h2>
           <div className={s.strip}>
@@ -230,20 +287,21 @@ export default async function MyZone() {
             </div>
           </div>
         </section>
+        )}
       </div>
 
       <div className={s.row2}>
         <section className="zone-card">
-          <h2>Trends · last 7 vs 30 days</h2>
+          <h2>{view === "all" ? "Trends · last 7 days vs all time" : "Trends · last 7 vs 30 days"}</h2>
           {days.length === 0 ? (
             <p className="trend-empty">No data yet — upload your WHOOP export.</p>
           ) : (
             <>
               <div className={`${s.trow} ${s.thead}`}>
                 <span className={s.tlabel} />
-                <span className={s.tbars}>30 days</span>
+                <span className={s.tbars}>{view === "all" ? "26 weeks" : "30 days"}</span>
                 <span className={s.t7}>7d</span>
-                <span className={s.t30}>30d</span>
+                <span className={s.t30}>{view === "all" ? "all" : "30d"}</span>
                 <span className={s.tdelta}>trend</span>
               </div>
               {trendRows.map((t) => {
@@ -258,7 +316,7 @@ export default async function MyZone() {
                         {t.bars.map((v, i) => (
                           <i
                             key={i}
-                            className={i >= t.bars.length - 7 ? s.recent : undefined}
+                            className={i >= t.bars.length - (view === "all" ? 1 : 7) ? s.recent : undefined}
                             style={{ height: v == null ? "2px" : `${20 + ((v - min) / range) * 80}%` }}
                           />
                         ))}
@@ -275,7 +333,6 @@ export default async function MyZone() {
                   </details>
                 );
               })}
-              {insight && <p className={s.note}>{insight}</p>}
             </>
           )}
         </section>
@@ -301,6 +358,39 @@ export default async function MyZone() {
           </section>
         </div>
       </div>
+
+      <section className={`zone-card ${s.journal}`}>
+        <h2>Journal insights · {view === "all" ? "last 6 months" : "last 3 months"}</h2>
+        <p className={s.note}>How your WHOOP journal answers line up with the next morning&apos;s recovery and sleep.</p>
+        {impacts.length === 0 ? (
+          <p className="trend-empty">
+            Not enough journal answers yet — keep answering the WHOOP journal each morning and upload your export.
+          </p>
+        ) : (
+          <div className={s.jlist}>
+            {impacts.map((j) => (
+              <div className={s.jrow} key={j.question}>
+                <div>
+                  <b>{j.question}</b>
+                  <span>
+                    yes on {j.yesDays} of {j.answered} days · {j.thisWeek} this week
+                  </span>
+                </div>
+                <div className={s.jstat}>
+                  <b className={j.recoveryDiff >= 0 ? s.up : s.down}>{signed(j.recoveryDiff)}</b>
+                  <span>recovery</span>
+                </div>
+                <div className={s.jstat}>
+                  <b className={j.sleepDiff == null ? s.muted : j.sleepDiff >= 0 ? s.up : s.down}>
+                    {j.sleepDiff == null ? "—" : signed(j.sleepDiff)}
+                  </b>
+                  <span>sleep</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
