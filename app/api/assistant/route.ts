@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { selectAll } from "@/lib/supabase/selectAll";
-import { getSessionUser } from "@/lib/supabase/session";
+import { getRequestUser } from "@/lib/supabase/request";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +27,10 @@ function stats(vals: number[]) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const user = await getSessionUser(supabase);
-  if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // session cookie (web) or Authorization: Bearer <access token> (iOS)
+  const auth = await getRequestUser(req);
+  if (!auth) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const { supabase, user } = auth;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Assistant not configured." }, { status: 500 });
