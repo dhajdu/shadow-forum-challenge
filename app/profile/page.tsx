@@ -3,12 +3,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavBar } from "@/components/NavBar";
 import { ProfileForm } from "@/components/ProfileForm";
+import { getSessionUser } from "@/lib/supabase/session";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
   const { data } = await supabase

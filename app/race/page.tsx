@@ -8,6 +8,7 @@ import { dayOfContest, currentLeg, CONTEST_DAYS, CONTEST_START_DAY, PLACEMENT_PE
 export const dynamic = "force-dynamic";
 import { coachingPairs } from "@/lib/roster";
 import type { GoalStatus } from "@/lib/database.types";
+import { getSessionUser } from "@/lib/supabase/session";
 
 const STATUS_LABEL: Record<GoalStatus, string> = {
   on_track: "on track",
@@ -18,26 +19,21 @@ const STATUS_LABEL: Record<GoalStatus, string> = {
 
 export default async function RacePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
-  const { data: goal } = await supabase
-    .from("goals")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!goal) redirect("/welcome");
+  // business goals (public status, readable by all) + standings, fetched together.
+  // The rider's own goal is in the same list — no goal yet → onboarding.
+  const [{ data: goals }, { contest, all }] = await Promise.all([
+    supabase
+      .from("goals")
+      .select("id, user_id, title, unit, target_value, current_value, current_progress, current_status"),
+    getRaceStandings(supabase),
+  ]);
+  if (!(goals ?? []).some((g) => (g as { user_id: string }).user_id === user.id)) redirect("/welcome");
 
-  const { contest, all } = await getRaceStandings(supabase);
   const today = new Date().toISOString().slice(0, 10);
   const started = today >= CONTEST_START_DAY;
-
-  // business goals + public status (denormalized on goals, readable by all)
-  const { data: goals } = await supabase
-    .from("goals")
-    .select("id, user_id, title, unit, target_value, current_value, current_progress, current_status");
 
   type GoalRow = {
     id: string; user_id: string; title: string; unit: string | null;

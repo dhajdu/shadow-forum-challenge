@@ -42,7 +42,7 @@ html, body {
   background-position: center;
 }
 .hero.has-image {
-  /* set as inline style: background-image: url(/hero.png) */
+  /* set as inline style: background-image: url(/hero.webp) */
   background-blend-mode: normal;
 }
 .scrim {

@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
+import { USER_ID_HEADER, USER_EMAIL_HEADER } from "@/lib/supabase/session";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -43,5 +44,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return response;
+  // Hand the verified user to pages/routes so they don't re-check with Supabase.
+  // Always overwrite, so a client can't send these headers itself.
+  const headers = new Headers(request.headers);
+  headers.delete(USER_ID_HEADER);
+  headers.delete(USER_EMAIL_HEADER);
+  if (user) {
+    headers.set(USER_ID_HEADER, user.id);
+    if (user.email) headers.set(USER_EMAIL_HEADER, user.email);
+  }
+  const forwarded = NextResponse.next({ request: { headers } });
+  response.cookies.getAll().forEach((c) => forwarded.cookies.set(c));
+  return forwarded;
 }

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { selectAll } from "@/lib/supabase/selectAll";
+import { getSessionUser } from "@/lib/supabase/session";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +29,7 @@ function stats(vals: number[]) {
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const body = (await req.json().catch(() => ({}))) as { messages?: ChatMsg[] };
   const messages = (body.messages ?? [])
-    .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+    .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim() !== "")
     .slice(-16)
     .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
   if (messages.length === 0 || messages[messages.length - 1].role !== "user") {
@@ -128,6 +127,7 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       model: "claude-sonnet-5",
       max_tokens: 900,
+      stream: true,
       system,
       messages,
     }),
@@ -137,12 +137,34 @@ export async function POST(req: NextRequest) {
     const text = await resp.text();
     return NextResponse.json({ error: `Assistant error: ${resp.status}`, detail: text.slice(0, 200) }, { status: 502 });
   }
-  const data = (await resp.json()) as { content?: { type: string; text?: string }[] };
-  const reply = (data.content ?? [])
-    .filter((c) => c.type === "text")
-    .map((c) => c.text ?? "")
-    .join("\n")
-    .trim();
+  // Stream the reply to the browser as plain text, token by token (Anthropic sends SSE).
+  const upstream = resp.body!.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let buf = "";
+      try {
+        for (;;) {
+          const { done, value } = await upstream.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() ?? "";
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const ev = JSON.parse(line.slice(6)) as { type: string; delta?: { type: string; text?: string } };
+            if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta" && ev.delta.text) {
+              controller.enqueue(encoder.encode(ev.delta.text));
+            }
+          }
+        }
+      } catch {
+        controller.enqueue(encoder.encode("\n\n(reply interrupted)"));
+      }
+      controller.close();
+    },
+  });
 
-  return NextResponse.json({ reply: reply || "…" });
+  return new Response(stream, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
 }

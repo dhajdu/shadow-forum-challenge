@@ -5,6 +5,7 @@ import { ScoreTrend } from "@/components/ScoreTrend";
 import { NavBar } from "@/components/NavBar";
 import { getStandings } from "@/lib/standings";
 import type { GoalStatus } from "@/lib/database.types";
+import { getSessionUser } from "@/lib/supabase/session";
 
 const STATUS_LABEL: Record<GoalStatus, string> = {
   on_track: "on track",
@@ -18,24 +19,24 @@ type Day = { day: string; score: number | null; recovery: number | null };
 export default async function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
-  const { data: prof } = await supabase
-    .from("profiles")
-    .select("full_name, avatar_url")
-    .eq("id", id)
-    .maybeSingle();
+  // independent reads — run them together
+  const [{ data: prof }, { data: dayRows }, { data: goalRow }, standings] = await Promise.all([
+    supabase.from("profiles").select("full_name, avatar_url").eq("id", id).maybeSingle(),
+    supabase.from("whoop_days").select("day, score, recovery").eq("user_id", id).order("day", { ascending: true }),
+    supabase
+      .from("goals")
+      .select("id, title, unit, target_value, current_value, current_status, current_progress")
+      .eq("user_id", id)
+      .maybeSingle(),
+    getStandings(supabase),
+  ]);
+
   const profile = prof as { full_name: string; avatar_url: string | null } | null;
   if (!profile) notFound();
 
-  const { data: dayRows } = await supabase
-    .from("whoop_days")
-    .select("day, score, recovery")
-    .eq("user_id", id)
-    .order("day", { ascending: true });
   const days = (dayRows ?? []) as Day[];
   const scored = days.filter((d) => d.score != null) as { score: number }[];
   const avg = scored.length
@@ -44,11 +45,6 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
   const recoveries = days.filter((d) => d.recovery != null).map((d) => d.recovery as number);
   const latestRecovery = recoveries.length ? recoveries[recoveries.length - 1] : null;
 
-  const { data: goalRow } = await supabase
-    .from("goals")
-    .select("id, title, unit, target_value, current_value, current_status, current_progress")
-    .eq("user_id", id)
-    .maybeSingle();
   const goal = goalRow as
     | {
         id: string; title: string; unit: string | null; target_value: number | null;
@@ -56,7 +52,7 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
       }
     | null;
 
-  // coaching notes — RLS returns rows only if the viewer is the owner or coach
+  // coaching notes (needs the goal id) — RLS returns rows only if the viewer is the owner or coach
   const { data: noteRows } = goal
     ? await supabase
         .from("coaching_notes")
@@ -66,7 +62,6 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
     : { data: [] };
   const notes = (noteRows ?? []) as { body: string; session_month: string | null; created_at: string }[];
 
-  const standings = await getStandings(supabase);
   const rank = standings.findIndex((s) => s.user_id === id) + 1;
 
   return (
