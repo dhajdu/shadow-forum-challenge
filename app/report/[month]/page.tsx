@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NavBar } from "@/components/NavBar";
 import { buildReport } from "@/lib/report";
 import type { GoalStatus } from "@/lib/database.types";
+import { getSessionUser } from "@/lib/supabase/session";
 
 const STATUS_LABEL: Record<GoalStatus, string> = {
   on_track: "on track",
@@ -22,9 +23,7 @@ function deltaLabel(d: number | null): string {
 export default async function ReportPage({ params }: { params: Promise<{ month: string }> }) {
   const { month } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
   const report = await buildReport(supabase);

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
 import { createClient } from "@/lib/supabase/server";
 import { PLACEMENT_PENALTIES, MISSED_GOAL_PENALTY, COACH_SHARE_PENALTY, CONTEST_START, CONTEST_END } from "@/lib/contest";
+import { getSessionUser } from "@/lib/supabase/session";
 
 const fmt = (d: Date) =>
   d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -9,9 +10,7 @@ const ordinal = (n: number) => ["1st", "2nd", "3rd", "4th", "5th"][n] ?? `${n + 
 
 export default async function RulesPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
   return (

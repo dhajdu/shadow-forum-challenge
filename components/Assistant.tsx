@@ -54,9 +54,24 @@ export function Assistant() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ messages: next }),
       });
-      const data = await res.json();
-      if (!res.ok) setError(data.error || "Something went wrong.");
-      else setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Something went wrong.");
+      } else {
+        // stream the reply in as it arrives
+        setMessages((m) => [...m, { role: "assistant", content: "" }]);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          setMessages((m) => {
+            const last = m[m.length - 1];
+            return [...m.slice(0, -1), { ...last, content: last.content + chunk }];
+          });
+        }
+      }
     } catch {
       setError("Network error.");
     }
@@ -74,7 +89,9 @@ export function Assistant() {
         {messages.map((m, i) => (
           <div key={i} className={`bubble ${m.role}`}>{m.content}</div>
         ))}
-        {busy && <div className="bubble assistant loading">Thinking…</div>}
+        {busy && messages[messages.length - 1]?.role !== "assistant" && (
+          <div className="bubble assistant loading">Thinking…</div>
+        )}
         {error && <div className="msg err">{error}</div>}
         <div ref={endRef} />
       </div>

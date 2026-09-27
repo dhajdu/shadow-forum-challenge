@@ -10,21 +10,42 @@ import { getStandings } from "@/lib/standings";
 import { CONTEST_START_DAY } from "@/lib/contest";
 import { coachNameFor } from "@/lib/roster";
 import type { GoalStatus } from "@/lib/database.types";
+import { getSessionUser } from "@/lib/supabase/session";
 
 type Upload = { id: string; file_name: string; status: string; created_at: string };
 
 export default async function MyZone() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
-  const { data: goalRow } = await supabase
-    .from("goals")
-    .select("id, title, unit, target_value, current_value, current_status")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // independent reads — run them together
+  const [{ data: goalRow }, { data: me }, { data: uploadRows }, { data: dayRows }, standings, { data: pgRows }] =
+    await Promise.all([
+      supabase
+        .from("goals")
+        .select("id, title, unit, target_value, current_value, current_status")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+      supabase
+        .from("uploads")
+        .select("id, file_name, status, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("whoop_days")
+        .select("day, score, recovery, sleep, strain, resting_hr, hrv, missed")
+        .eq("user_id", user.id)
+        .order("day", { ascending: true }),
+      getStandings(supabase),
+      supabase
+        .from("personal_goals")
+        .select("id, title, unit, target_value, current_value")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }),
+    ]);
+
   const goal = goalRow as
     | {
         id: string;
@@ -37,35 +58,10 @@ export default async function MyZone() {
     | null;
   if (!goal) redirect("/welcome");
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .single();
   const name = (me as { full_name: string | null } | null)?.full_name || "Rider";
-
-  const { data: uploadRows } = await supabase
-    .from("uploads")
-    .select("id, file_name, status, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
   const uploads = (uploadRows ?? []) as Upload[];
-
-  const { data: dayRows } = await supabase
-    .from("whoop_days")
-    .select("day, score, recovery, sleep, strain, resting_hr, hrv, missed")
-    .eq("user_id", user.id)
-    .order("day", { ascending: true });
   const days = (dayRows ?? []) as WhoopDay[];
-
-  const standings = await getStandings(supabase);
   const rank = standings.findIndex((s) => s.user_id === user.id) + 1;
-
-  const { data: pgRows } = await supabase
-    .from("personal_goals")
-    .select("id, title, unit, target_value, current_value")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: true });
   const personalGoals = (pgRows ?? []) as PersonalGoal[];
 
   return (

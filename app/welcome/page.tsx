@@ -1,27 +1,20 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/OnboardingForm";
+import { getSessionUser } from "@/lib/supabase/session";
 
 export default async function Welcome() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
+  const [{ data: goal }, { data: me }] = await Promise.all([
+    supabase.from("goals").select("id").eq("user_id", user.id).maybeSingle(),
+    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+  ]);
   // already onboarded? skip.
-  const { data: goal } = await supabase
-    .from("goals")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
   if (goal) redirect("/race");
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .single();
   const name = (me as { full_name: string | null } | null)?.full_name || "";
 
   return (

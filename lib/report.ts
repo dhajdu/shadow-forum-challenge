@@ -20,24 +20,27 @@ export type Report = {
 };
 
 export async function buildReport(supabase: SupabaseClient<Database>): Promise<Report> {
-  const standings = await getStandings(supabase);
+  // movement: compare against the oldest snapshot in the last ~35 days
+  const since = new Date();
+  since.setDate(since.getDate() - 35);
 
-  // public goal statuses
-  const { data: goals } = await supabase.from("goals").select("user_id, current_status");
+  // independent reads — run them together
+  const [standings, { data: goals }, { data: snaps }] = await Promise.all([
+    getStandings(supabase),
+    // public goal statuses
+    supabase.from("goals").select("user_id, current_status"),
+    supabase
+      .from("standings_snapshots")
+      .select("day, data")
+      .gte("day", since.toISOString().slice(0, 10))
+      .order("day", { ascending: true })
+      .limit(1),
+  ]);
+
   const statusByUser = new Map<string, GoalStatus>();
   for (const g of (goals ?? []) as { user_id: string; current_status: GoalStatus }[]) {
     statusByUser.set(g.user_id, g.current_status);
   }
-
-  // movement: compare against the oldest snapshot in the last ~35 days
-  const since = new Date();
-  since.setDate(since.getDate() - 35);
-  const { data: snaps } = await supabase
-    .from("standings_snapshots")
-    .select("day, data")
-    .gte("day", since.toISOString().slice(0, 10))
-    .order("day", { ascending: true })
-    .limit(1);
 
   const prevRank = new Map<string, number>();
   const first = (snaps ?? [])[0] as { data: unknown } | undefined;

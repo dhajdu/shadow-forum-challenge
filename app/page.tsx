@@ -53,7 +53,7 @@ export default function Home() {
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: "url(/hero.png)",
+          backgroundImage: "url(/hero.webp)",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
