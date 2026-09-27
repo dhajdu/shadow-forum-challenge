@@ -1,0 +1,16 @@
+/* Race home: standings (main) + You / KPIs / This week (side); one column under 900px. */
+.layout { display: grid; grid-template-columns: minmax(0, 2.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.youStats { display: flex; gap: 22px; margin-bottom: 10px; }
+.youStats b { display: block; font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.youStats span { font-size: 11px; color: var(--muted); }
+.btn { display: block; margin-top: 14px; text-align: center; text-decoration: none; }
+
+.kpis { flex-wrap: nowrap; }
+.kpis > * { flex: 1; min-width: 0; }
+
+.line { line-height: 1.5; }
+.line + .line { margin-top: 8px; }
+.ink { color: var(--ink); }
