@@ -29,18 +29,21 @@ async function fetchView(supabase: SupabaseClient<Database>): Promise<ViewRow[]>
   return (data ?? []) as ViewRow[];
 }
 
-const allTimeOf = (r: ViewRow): Standing => ({
+// The race uses contest days only (from the contest start).
+const contestOf = (r: ViewRow): Standing => ({
   user_id: r.user_id,
   full_name: r.full_name,
-  avg: r.all_avg,
-  days: r.all_days,
+  avg: r.contest_avg,
+  days: r.contest_days,
   missed: r.contest_missed,
   stale: isStale(r.last_data_day),
 });
 
-const byAvg = (x: Standing, y: Standing) => y.avg - x.avg;
+// Highest average first; riders with no scored days yet go last, by name.
+const byAvg = (x: Standing, y: Standing) =>
+  Number(y.days > 0) - Number(x.days > 0) || y.avg - x.avg || x.full_name.localeCompare(y.full_name);
 
-/** The race placing — overall (all-time) average. Used by the race, rider pages, reports, agents. */
+/** The race placing — average daily score since the contest start. Used by the race, rider pages, reports, agents. */
 export async function getStandings(supabase: SupabaseClient<Database>): Promise<Standing[]> {
-  return (await fetchView(supabase)).map(allTimeOf).sort(byAvg);
+  return (await fetchView(supabase)).map(contestOf).sort(byAvg);
 }
