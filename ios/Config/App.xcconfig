@@ -1,0 +1,8 @@
+// Shared build settings. Secrets live in Secrets.xcconfig (gitignored) —
+// copy Secrets.example.xcconfig to Secrets.xcconfig and fill it in.
+// Note: "//" starts a comment in xcconfig, so URLs are written https:/$()/host.
+
+SF_API_BASE_URL = https:/$()/eoshadowforum.com
+SF_APP_GROUP = group.org.eoshadowforum.app
+
+#include? "Secrets.xcconfig"
