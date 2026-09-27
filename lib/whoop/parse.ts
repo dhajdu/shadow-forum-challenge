@@ -14,7 +14,7 @@ export type WhoopDay = {
 // Blend weights — the daily score averages these normalised 0-100 components.
 // Recovery % and Sleep performance % are already 0-100; strain (0-21) is scaled.
 export const SCORE_WEIGHTS = { recovery: 1, sleep: 1, strain: 1 };
-const STRAIN_MAX = 21;
+export const STRAIN_MAX = 21;
 
 /**
  * Blended daily score from the three components. A day only scores when WHOOP
