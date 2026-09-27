@@ -108,54 +108,108 @@ export type TrendRow = {
   all: number[]; // every value, for the expanded chart
 };
 
-/** Per-metric 7- vs 30-day view, anchored on the newest uploaded day (uploads lag behind today). */
-export function trends(days: WhoopDay[]): TrendRow[] {
+/**
+ * Per-metric trend rows, anchored on the newest uploaded day (uploads lag behind today).
+ * "recent": last 30 days as daily bars, 7-day vs 30-day average.
+ * "all": up to 26 weekly-average bars, 7-day vs all-time average.
+ */
+export function trends(days: WhoopDay[], mode: "recent" | "all" = "recent"): TrendRow[] {
   const end = days.length ? days[days.length - 1].day : null;
   const byDay = new Map(days.map((d) => [d.day, d]));
   return METRICS.map((m) => {
-    const bars = end ? lastN(byDay, m.key, end, 30) : [];
-    const a7 = mean(present(bars.slice(-7)));
-    const a30 = mean(present(bars));
-    const delta = a7 != null && a30 != null ? round1(a7 - a30) : null;
+    const daily = end ? lastN(byDay, m.key, end, 30) : [];
+    const all = present(days.map((d) => d[m.key]));
+    const bars = mode === "recent" ? daily : end ? weekly(byDay, m.key, end, 26) : [];
+    const a7 = mean(present(daily.slice(-7)));
+    const base = mode === "recent" ? mean(present(daily)) : mean(all);
+    const delta = a7 != null && base != null ? round1(a7 - base) : null;
     return {
       key: m.key,
       label: m.label,
       unit: m.unit ?? "",
       bars,
       avg7: a7 != null ? round1(a7) : null,
-      avg30: a30 != null ? round1(a30) : null,
+      avg30: base != null ? round1(base) : null,
       delta,
       good: delta == null || delta === 0 ? null : m.lowerBetter ? delta < 0 : delta > 0,
-      all: present(days.map((d) => d[m.key])),
+      all,
     };
   });
 }
 
-const MIN_SAMPLES = 3;
+/** Weekly averages of one metric for the n weeks ending at `end` (oldest → newest, null = no data). */
+function weekly(byDay: Map<string, WhoopDay>, key: MetricKey, end: string, n: number): (number | null)[] {
+  const daily = lastN(byDay, key, end, n * 7);
+  return Array.from({ length: n }, (_, w) => mean(present(daily.slice(w * 7, w * 7 + 7))));
+}
+
+export type MonthRow = { month: string; label: string; avg: number; days: number };
+
+/** Average race score per calendar month, oldest → newest (only months with scored days). */
+export function monthly(days: WhoopDay[]): MonthRow[] {
+  const byMonth = new Map<string, number[]>();
+  for (const d of days) {
+    if (d.score == null) continue;
+    const m = d.day.slice(0, 7);
+    byMonth.set(m, [...(byMonth.get(m) ?? []), d.score]);
+  }
+  return Array.from(byMonth, ([month, xs]) => ({
+    month,
+    label: new Date(`${month}-01T00:00:00Z`).toLocaleString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" }),
+    avg: round1(mean(xs) as number),
+    days: xs.length,
+  })).sort((a, b) => (a.month < b.month ? -1 : 1));
+}
+
+const MIN_SAMPLES = 5; // yes days and no days each, so one-offs don't read as insights
+
+export type JournalImpact = {
+  question: string;
+  yesDays: number;
+  answered: number;
+  recoveryDiff: number; // next-day recovery on "yes" days minus "no" days
+  sleepDiff: number | null; // same for next-day sleep performance
+  thisWeek: number; // "yes" answers in the last 7 journal days
+};
 
 /**
- * The journal question whose "yes" days show the biggest next-day recovery difference,
- * e.g. alcohol. Null when no question has enough yes and no days to compare.
+ * For each journal question with enough "yes" and "no" days, how next-day recovery
+ * (and sleep) differ — e.g. alcohol. Biggest effect first.
  */
-export function journalInsight(journal: JournalRow[], days: WhoopDay[]): string | null {
-  const reco = new Map(days.filter((d) => d.recovery != null).map((d) => [d.day, d.recovery as number]));
-  const byQuestion = new Map<string, { yes: number[]; no: number[] }>();
+export function journalImpacts(journal: JournalRow[], days: WhoopDay[]): JournalImpact[] {
+  const next = new Map(days.map((d) => [d.day, d]));
+  const lastJournalDay = journal.reduce((m, j) => (j.day > m ? j.day : m), "");
+  const weekStart = lastJournalDay ? addDays(lastJournalDay, -6) : "";
+  const byQuestion = new Map<string, { yes: WhoopDay[]; no: WhoopDay[]; answered: number; yesDays: number; week: number }>();
   for (const j of journal) {
-    const next = reco.get(addDays(j.day, 1));
-    if (j.answered_yes == null || next == null) continue;
-    const q = byQuestion.get(j.question) ?? { yes: [], no: [] };
-    (j.answered_yes ? q.yes : q.no).push(next);
+    if (j.answered_yes == null) continue;
+    const q = byQuestion.get(j.question) ?? { yes: [], no: [], answered: 0, yesDays: 0, week: 0 };
+    q.answered++;
+    if (j.answered_yes) {
+      q.yesDays++;
+      if (j.day >= weekStart) q.week++;
+    }
+    const nd = next.get(addDays(j.day, 1));
+    if (nd) (j.answered_yes ? q.yes : q.no).push(nd);
     byQuestion.set(j.question, q);
   }
-  let best: { question: string; diff: number } | null = null;
-  for (const [question, { yes, no }] of byQuestion) {
-    if (yes.length < MIN_SAMPLES || no.length < MIN_SAMPLES) continue;
-    const diff = (mean(yes) as number) - (mean(no) as number);
-    if (Math.abs(diff) >= 1 && (!best || Math.abs(diff) > Math.abs(best.diff))) best = { question, diff };
+  const avgOf = (ds: WhoopDay[], k: "recovery" | "sleep") => mean(present(ds.map((d) => d[k])));
+  const out: JournalImpact[] = [];
+  for (const [question, q] of byQuestion) {
+    if (q.yes.length < MIN_SAMPLES || q.no.length < MIN_SAMPLES) continue;
+    const ry = avgOf(q.yes, "recovery");
+    const rn = avgOf(q.no, "recovery");
+    if (ry == null || rn == null) continue;
+    const sy = avgOf(q.yes, "sleep");
+    const sn = avgOf(q.no, "sleep");
+    out.push({
+      question,
+      yesDays: q.yesDays,
+      answered: q.answered,
+      recoveryDiff: round1(ry - rn),
+      sleepDiff: sy != null && sn != null ? round1(sy - sn) : null,
+      thisWeek: q.week,
+    });
   }
-  if (!best) return null;
-  const pts = Math.round(Math.abs(best.diff));
-  return `On days you answered yes to “${best.question}”, next-day recovery averaged ${pts} points ${
-    best.diff < 0 ? "lower" : "higher"
-  }.`;
+  return out.sort((a, b) => Math.abs(b.recoveryDiff) - Math.abs(a.recoveryDiff));
 }

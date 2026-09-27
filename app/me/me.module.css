@@ -72,3 +72,25 @@
   .thead .tbars { display: none; }
   .tiles { grid-template-columns: 1fr; }
 }
+
+/* Contest / All time switch */
+.viewToggle { margin-top: 10px; }
+.viewToggle a { text-decoration: none; }
+
+/* All time: monthly averages */
+.months { display: flex; align-items: flex-end; gap: 6px; height: 120px; margin-top: 6px; }
+.month { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; }
+.month b { font-size: 11px; font-variant-numeric: tabular-nums; }
+.month span:last-child { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.monthBar { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.monthBar i { display: block; width: 100%; border-radius: 4px 4px 0 0; }
+
+/* Journal insights */
+.journal { margin-top: 16px; }
+.jlist { display: flex; flex-direction: column; margin-top: 8px; }
+.jrow { display: grid; grid-template-columns: minmax(0, 1fr) 72px 72px; gap: 10px; align-items: center;
+  padding: 10px 0; border-top: 1px solid var(--line); }
+.jrow > div:first-child b { display: block; font-size: 13.5px; font-weight: 600; }
+.jrow span { font-size: 11px; color: var(--muted); }
+.jstat { text-align: right; }
+.jstat b { display: block; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
