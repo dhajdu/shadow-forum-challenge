@@ -1,0 +1,122 @@
+name: ShadowForum
+options:
+  bundleIdPrefix: org.eoshadowforum
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/App.xcconfig
+  Release: Config/App.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
+targets:
+  ShadowForum:
+    type: application
+    platform: iOS
+    sources:
+      - ShadowForum
+      - Shared
+    dependencies:
+      - package: Supabase
+        product: Supabase
+      - target: ShareExtension
+        embed: true
+      - target: Widgets
+        embed: true
+    entitlements:
+      path: ShadowForum/ShadowForum.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(SF_APP_GROUP)
+    info:
+      path: ShadowForum/Info.plist
+      properties:
+        CFBundleDisplayName: Shadow Forum
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIUserInterfaceStyle: Dark
+        ITSAppUsesNonExemptEncryption: false
+        SFSupabaseURL: $(SF_SUPABASE_URL)
+        SFSupabaseAnonKey: $(SF_SUPABASE_ANON_KEY)
+        SFAPIBaseURL: $(SF_API_BASE_URL)
+        SFAppGroup: $(SF_APP_GROUP)
+        CFBundleURLTypes:
+          - CFBundleURLName: org.eoshadowforum.app
+            CFBundleURLSchemes: [shadowforum]
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: WHOOP export
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.zip-archive, public.comma-separated-values-text]
+        LSSupportsOpeningDocumentsInPlace: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.eoshadowforum.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1"
+  ShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - ShareExtension
+    entitlements:
+      path: ShareExtension/ShareExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(SF_APP_GROUP)
+    info:
+      path: ShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Shadow Forum
+        SFAppGroup: $(SF_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsFileWithMaxCount: 1
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.eoshadowforum.app.share
+        TARGETED_DEVICE_FAMILY: "1"
+  Widgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Widgets
+      - Shared
+    entitlements:
+      path: Widgets/Widgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(SF_APP_GROUP)
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Shadow Forum
+        SFAppGroup: $(SF_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.eoshadowforum.app.widgets
+        TARGETED_DEVICE_FAMILY: "1"
+schemes:
+  ShadowForum:
+    build:
+      targets:
+        ShadowForum: all
+    run:
+      config: Debug
