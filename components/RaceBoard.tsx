@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { STALE_DAYS, type Standing } from "@/lib/standings";
 import { placementPenalty } from "@/lib/contest";
+import type { GoalStatus } from "@/lib/database.types";
+import styles from "./RaceBoard.module.css";
 
 const RUNNER = (
   <svg viewBox="0 0 18 26" aria-hidden>
@@ -9,14 +11,21 @@ const RUNNER = (
   </svg>
 );
 
-export function RaceBoard({
-  standings,
-  showMissed = false,
-}: {
-  standings: Standing[];
-  showMissed?: boolean;
-}) {
-  const max = Math.max(100, ...standings.map((s) => s.avg));
+const STATUS_LABEL: Record<GoalStatus, string> = {
+  on_track: "on track",
+  at_risk: "at risk",
+  behind: "behind",
+  hit: "hit",
+};
+
+export type RaceRow = Standing & {
+  goal: { title: string; status: GoalStatus } | null;
+  coach: string | null;
+};
+
+// One standings table — each rider appears once: place, name (+ goal & coach), lane, avg, days, owes.
+export function RaceBoard({ rows }: { rows: RaceRow[] }) {
+  const max = Math.max(100, ...rows.map((s) => s.avg));
 
   return (
     <div className="board">
@@ -24,72 +33,76 @@ export function RaceBoard({
         <h2>Standings</h2>
         <span className="lanelbl-r">deepest into the shadow leads</span>
       </div>
-      <div className="lanelbl">
-        <span>◐ the light</span>
-        <span>the shadow ●</span>
+      <div className={styles.head}>
+        <span />
+        <span>Rider</span>
+        <span className={styles.lanes}>
+          <span>◐ the light</span>
+          <span>the shadow ●</span>
+        </span>
+        <span className={styles.r}>Avg</span>
+        <span className={styles.r}>Days</span>
+        <span className={styles.r}>Owes</span>
       </div>
 
-      {standings.map((s, i) => {
-        const pos = max > 0 ? (s.avg / max) * 100 : 0;
-        return (
-          <Link key={s.user_id} href={`/rider/${s.user_id}`} className={`lane p${i + 1}`}>
-            <div className="medal">{i + 1}</div>
-            <div className="rname">
-              {s.full_name}
-              {s.stale && (
-                <span className="stale" title={`No WHOOP upload in over ${STALE_DAYS} days`} aria-label="Overdue upload">
-                  !
-                </span>
+      <div className={styles.rows}>
+        {rows.map((s, i) => {
+          const pos = max > 0 ? (s.avg / max) * 100 : 0;
+          const owes = placementPenalty(i);
+          return (
+            <div key={s.user_id} className={`lane p${i + 1} ${styles.row}`}>
+              <div className={`medal ${styles.medal}`}>{i + 1}</div>
+              <div className={`rname ${styles.name}`}>
+                <Link href={`/rider/${s.user_id}`}>{s.full_name}</Link>
+                {s.stale && (
+                  <span className="stale" title={`No WHOOP upload in over ${STALE_DAYS} days`} aria-label="Overdue upload">
+                    !
+                  </span>
+                )}
+                <small>
+                  Goal{" "}
+                  {s.goal ? (
+                    <span className={`chip ${s.goal.status} ${styles.chip}`} title={s.goal.title}>
+                      {STATUS_LABEL[s.goal.status]}
+                    </span>
+                  ) : (
+                    "not set"
+                  )}
+                  {s.coach && <> · coach {s.coach}</>}
+                </small>
+              </div>
+              {s.days > 0 ? (
+                <div className={`track ${styles.track}`}>
+                  <div className="trail" style={{ width: `${pos}%` }} />
+                  <div className="runner" style={{ left: `${pos}%` }}>
+                    {RUNNER}
+                  </div>
+                  <div className="finish" />
+                </div>
+              ) : (
+                <div className={styles.pending}>Upload pending</div>
               )}
-              <small>{s.days} days</small>
-            </div>
-            <div className="track">
-              <div className="trail" style={{ width: `${pos}%` }} />
-              <div className="runner" style={{ left: `${pos}%` }}>
-                {RUNNER}
+              <div className={`score ${styles.avg}`}>
+                {s.avg || "—"}
+                <small>avg</small>
               </div>
-              <div className="finish" />
-            </div>
-            <div className="score">
-              {s.avg || "—"}
-              <small>avg</small>
-            </div>
-            {showMissed && (
-              <div className="missed" title="Contest days WHOOP didn't record">
-                {s.missed}
-                <small>missed</small>
+              <div className={styles.days} title="Days scored · contest days WHOOP didn't record">
+                {s.days}
+                <small>{s.missed} missed</small>
               </div>
-            )}
-          </Link>
-        );
-      })}
+              <div className={`${styles.owes} ${owes === 0 ? styles.free : styles.owe}`}>
+                {owes === 0 ? "0" : `${owes}M`}
+                <small>owes</small>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       <div className="board-foot">
-        Each lane runs from the light into the shadow · a rider&apos;s silhouette sits at their average
-        WHOOP score · deepest in the shadow leads &amp; pays nothing.
+        A rider&apos;s silhouette sits at their average WHOOP score, from the light into the shadow · pot: 1st pays 0,
+        then 2M–5M · business goal miss = 5M rider + 5M coach, settled at year end.
       </div>
-
-      <table className="ladder">
-        <thead>
-          <tr>
-            <th>Place</th>
-            <th>Rider</th>
-            <th className="r">Owes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standings.map((s, i) => {
-            const owes = placementPenalty(i);
-            return (
-              <tr key={s.user_id}>
-                <td>{i + 1}</td>
-                <td>{s.full_name}</td>
-                <td className={`r amt ${owes === 0 ? "free" : "owe"}`}>{owes === 0 ? "0" : `${owes}M`}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }

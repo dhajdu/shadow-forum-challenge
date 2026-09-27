@@ -1,0 +1,44 @@
+/* Unified standings table — reuses the global lane/track/runner/medal look, laid out as a grid. */
+.head,
+.rows > .row {
+  display: grid;
+  grid-template-columns: 30px minmax(120px, 170px) minmax(0, 1fr) 48px 52px 44px;
+  grid-template-areas: "medal name track avg days owes";
+  align-items: center;
+  column-gap: 12px;
+}
+.head { padding: 10px 0 8px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #59617e; }
+.lanes { grid-area: track; display: flex; justify-content: space-between; }
+.r { text-align: right; }
+
+.rows > .row { padding: 10px 0; }
+.medal { grid-area: medal; }
+.row .name { grid-area: name; width: auto; min-width: 0; }
+.name a { color: inherit; text-decoration: none; }
+.name a:hover { text-decoration: underline; }
+.name small { margin-top: 3px; line-height: 1.5; }
+.chip { font-size: 9.5px; padding: 1px 7px; }
+.row .track { grid-area: track; }
+.pending { grid-area: track; height: 32px; border-radius: 9px; border: 1px dashed var(--line); display: grid; place-items: center;
+  font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+.row .avg { grid-area: avg; width: auto; }
+.days, .owes { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.days { grid-area: days; font-size: 15px; }
+.owes { grid-area: owes; font-size: 15px; font-weight: 800; }
+.days small, .owes small { display: block; font-size: 10px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.free { color: #57d38c; }
+.owe { color: #ff8f7d; }
+
+/* Phone: name + numbers on one line, the lane full-width underneath. */
+@media (max-width: 600px) {
+  .head { display: none; }
+  .rows > .row {
+    grid-template-columns: 30px minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      "medal name avg days owes"
+      ". track track track track";
+    column-gap: 10px;
+    row-gap: 8px;
+  }
+  .row .track, .pending { height: 26px; }
+}
