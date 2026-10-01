@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { signUpWithCode } from "@/app/actions/signup";
 import { PasswordField } from "@/components/PasswordField";
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "forgot";
 
 export default function Home() {
   const router = useRouter();
@@ -19,12 +19,26 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
+  // /auth/confirm bounces here when a reset link is invalid or used up
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("reset") === "expired") {
+      setMode("forgot");
+      setMsg({ text: "That reset link has expired. Request a new one.", ok: false });
+    }
+  }, []);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setMsg(null);
 
-    if (mode === "signin") {
+    if (mode === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/confirm?next=/reset-password`,
+      });
+      if (error) setMsg({ text: error.message, ok: false });
+      else setMsg({ text: "If that email has an account, a reset link is on its way.", ok: true });
+    } else if (mode === "signin") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMsg({ text: error.message, ok: false });
       else router.push("/race");
@@ -97,16 +111,18 @@ export default function Home() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <PasswordField
-            placeholder="Password"
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          {mode !== "forgot" && (
+            <PasswordField
+              placeholder="Password"
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          )}
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? "…" : mode === "signin" ? "Enter" : "Join the Forum"}
+            {busy ? "…" : mode === "signin" ? "Enter" : mode === "forgot" ? "Send reset link" : "Join the Forum"}
           </button>
         </form>
 
@@ -120,8 +136,19 @@ export default function Home() {
                 Sign in
               </button>
             </>
+          ) : mode === "forgot" ? (
+            <>
+              Remembered it?{" "}
+              <button onClick={() => { setMode("signin"); setMsg(null); }}>
+                Sign in
+              </button>
+            </>
           ) : (
             <>
+              <button onClick={() => { setMode("forgot"); setMsg(null); }}>
+                Forgot password?
+              </button>
+              <br />
               Have an access code?{" "}
               <button onClick={() => { setMode("signup"); setMsg(null); }}>
                 Join
