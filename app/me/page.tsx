@@ -70,6 +70,7 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
     standings,
     { data: pgRows },
     journalRows,
+    { data: analysisRow },
   ] = await Promise.all([
     supabase
       .from("goals")
@@ -104,6 +105,14 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
         .order("question")
         .range(from, to)
     ),
+    // latest weekly analysis from the Analyst (Claude)
+    supabase
+      .from("journal_analyses")
+      .select("week_of, headline, insights, suggestion")
+      .eq("user_id", user.id)
+      .order("week_of", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const goal = goalRow as
@@ -147,6 +156,12 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
   const scoredAll = days.filter((d) => d.score != null).map((d) => d.score as number);
   const allAvg = scoredAll.length ? round1(scoredAll.reduce((a, b) => a + b, 0) / scoredAll.length) : null;
   const firstDay = days.find((d) => d.score != null)?.day ?? null;
+  const analysis = analysisRow as {
+    week_of: string;
+    headline: string;
+    insights: { title: string; detail: string; effect: "helps" | "hurts" | "mixed" }[];
+    suggestion: string;
+  } | null;
   const lastUpload = uploads[0] ? shortDate(uploads[0].created_at.slice(0, 10)) : null;
 
   return (
@@ -360,8 +375,28 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
       </div>
 
       <section className={`zone-card ${s.journal}`}>
-        <h2>Journal insights · {view === "all" ? "last 6 months" : "last 3 months"}</h2>
-        <p className={s.note}>How your WHOOP journal answers line up with the next morning&apos;s recovery and sleep.</p>
+        <h2>Journal insights</h2>
+        {analysis ? (
+          <div className={s.analysis}>
+            <p className={s.aHead}>{analysis.headline}</p>
+            <ul className={s.aList}>
+              {analysis.insights.map((i) => (
+                <li key={i.title} className={i.effect === "helps" ? s.aHelps : i.effect === "hurts" ? s.aHurts : s.aMixed}>
+                  <b>{i.title}</b>
+                  <span>{i.detail}</span>
+                </li>
+              ))}
+            </ul>
+            <p className={s.aTry}>
+              <b>Try this week:</b> {analysis.suggestion}
+            </p>
+            <p className={s.aMeta}>Weekly analysis by Claude · {shortDate(analysis.week_of)} · journal vs scores, last 90 days</p>
+          </div>
+        ) : (
+          <p className={s.note}>Your weekly analysis arrives Monday morning, once you&apos;ve uploaded a week of journal answers.</p>
+        )}
+        <h3 className={s.jNumbers}>The numbers · {view === "all" ? "last 6 months" : "last 3 months"}</h3>
+        <p className={s.note}>How your journal answers line up with the next morning&apos;s recovery and sleep.</p>
         {impacts.length === 0 ? (
           <p className="trend-empty">
             Not enough journal answers yet — keep answering the WHOOP journal each morning and upload your export.
