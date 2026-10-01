@@ -6,7 +6,7 @@ import { USER_ID_HEADER, USER_EMAIL_HEADER } from "@/lib/supabase/session";
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 // Protected areas — unauthenticated visitors get bounced to the landing page.
-const PROTECTED = ["/dashboard", "/race", "/me", "/profile", "/welcome", "/rider", "/report", "/rules"];
+const PROTECTED = ["/dashboard", "/race", "/me", "/profile", "/welcome", "/rider", "/report", "/rules", "/reset-password"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
