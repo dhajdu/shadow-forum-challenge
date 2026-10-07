@@ -86,11 +86,11 @@
 .monthBar i { display: block; width: 100%; border-radius: 4px 4px 0 0; }
 
 /* Journal insights */
-.journal { margin-top: 16px; }
-.jlist { display: flex; flex-direction: column; margin-top: 8px; }
-.jrow { display: grid; grid-template-columns: minmax(0, 1fr) 72px 72px; gap: 10px; align-items: center;
-  padding: 10px 0; border-top: 1px solid var(--line); }
-.jrow > div:first-child b { display: block; font-size: 13.5px; font-weight: 600; }
-.jrow span { font-size: 11px; color: var(--muted); }
+.journal .note { margin-top: 0; font-size: 12px; }
+.jlist { display: flex; flex-direction: column; margin-top: 6px; }
+.jrow { display: grid; grid-template-columns: minmax(0, 1fr) 60px 52px; gap: 8px; align-items: center;
+  padding: 6px 0; border-top: 1px solid var(--line); }
+.jrow > div:first-child b { display: block; font-size: 12.5px; font-weight: 600; }
+.jrow span { font-size: 10.5px; color: var(--muted); }
 .jstat { text-align: right; }
-.jstat b { display: block; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.jstat b { display: block; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }

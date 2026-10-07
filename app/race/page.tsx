@@ -111,7 +111,7 @@ export default async function RacePage() {
                 "none yet"
               )}
             </p>
-            <Link href="/me" className={`btn ${styles.btn}`}>
+            <Link href="/me?upload=1" className={`btn ${styles.btn}`}>
               Upload WHOOP
             </Link>
           </section>
