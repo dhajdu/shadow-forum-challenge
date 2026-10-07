@@ -51,12 +51,13 @@ function scoreColor(score: number, alpha = 1): string {
 
 const signed = (n: number) => `${n > 0 ? "+" : ""}${n}`;
 
-export default async function MyZone({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+export default async function MyZone({ searchParams }: { searchParams: Promise<{ view?: string; upload?: string }> }) {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
-  const view = (await searchParams).view === "all" ? "all" : "contest";
+  const params = await searchParams;
+  const view = params.view === "all" ? "all" : "contest";
   const today = new Date().toISOString().slice(0, 10);
   // journal window: ~3 months for the contest view, ~6 months for all time
   const journalSince = addDays(today, view === "all" ? -182 : -90);
@@ -179,7 +180,7 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
           </div>
         </div>
         <div className={s.actions}>
-          <details className={s.upload}>
+          <details className={s.upload} open={params.upload != null}>
             <summary className="btn-ghost">{lastUpload ? `Upload · last ${lastUpload}` : "Upload WHOOP data"}</summary>
             <div className={s.uploadPanel}>
               <UploadWhoop userId={user.id} uploads={uploads} />
@@ -291,51 +292,86 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
       </div>
 
       <div className={s.row2}>
-        <section className="zone-card">
-          <h2>{view === "all" ? "Trends · last 7 days vs all time" : "Trends · last 7 vs 30 days"}</h2>
-          {days.length === 0 ? (
-            <p className="trend-empty">No data yet — upload your WHOOP export.</p>
+        <div className={s.side}>
+          <section className="zone-card">
+            <h2>{view === "all" ? "Trends · last 7 days vs all time" : "Trends · last 7 vs 30 days"}</h2>
+            {days.length === 0 ? (
+              <p className="trend-empty">No data yet — upload your WHOOP export.</p>
+            ) : (
+              <>
+                <div className={`${s.trow} ${s.thead}`}>
+                  <span className={s.tlabel} />
+                  <span className={s.tbars}>{view === "all" ? "26 weeks" : "30 days"}</span>
+                  <span className={s.t7}>7d</span>
+                  <span className={s.t30}>{view === "all" ? "all" : "30d"}</span>
+                  <span className={s.tdelta}>trend</span>
+                </div>
+                {trendRows.map((t) => {
+                  const vals = t.bars.filter((v): v is number => v != null);
+                  const min = Math.min(...vals);
+                  const range = Math.max(...vals) - min || 1;
+                  return (
+                    <details className={s.tdetails} key={t.key}>
+                      <summary className={s.trow}>
+                        <span className={s.tlabel}>{t.label}</span>
+                        <span className={s.tbars} aria-hidden>
+                          {t.bars.map((v, i) => (
+                            <i
+                              key={i}
+                              className={i >= t.bars.length - (view === "all" ? 1 : 7) ? s.recent : undefined}
+                              style={{ height: v == null ? "2px" : `${20 + ((v - min) / range) * 80}%` }}
+                            />
+                          ))}
+                        </span>
+                        <b className={s.t7}>{t.avg7 ?? "—"}</b>
+                        <span className={`${s.t30} ${s.muted}`}>{t.avg30 ?? "—"}</span>
+                        <span className={`${s.tdelta} ${t.good == null ? s.muted : t.good ? s.up : s.down}`}>
+                          {t.delta == null ? "—" : `${t.delta > 0 ? "▲" : t.delta < 0 ? "▼" : "▶"} ${signed(t.delta)}${t.unit}`}
+                        </span>
+                      </summary>
+                      <div className={s.full}>
+                        <ScoreTrend scores={t.all} />
+                      </div>
+                    </details>
+                  );
+                })}
+              </>
+            )}
+          </section>
+
+        <section className={`zone-card ${s.journal}`}>
+          <h2>Journal insights · {view === "all" ? "last 6 months" : "last 3 months"}</h2>
+          <p className={s.note}>How your WHOOP journal answers line up with the next morning&apos;s recovery and sleep.</p>
+          {impacts.length === 0 ? (
+            <p className="trend-empty">
+              Not enough journal answers yet — keep answering the WHOOP journal each morning and upload your export.
+            </p>
           ) : (
-            <>
-              <div className={`${s.trow} ${s.thead}`}>
-                <span className={s.tlabel} />
-                <span className={s.tbars}>{view === "all" ? "26 weeks" : "30 days"}</span>
-                <span className={s.t7}>7d</span>
-                <span className={s.t30}>{view === "all" ? "all" : "30d"}</span>
-                <span className={s.tdelta}>trend</span>
-              </div>
-              {trendRows.map((t) => {
-                const vals = t.bars.filter((v): v is number => v != null);
-                const min = Math.min(...vals);
-                const range = Math.max(...vals) - min || 1;
-                return (
-                  <details className={s.tdetails} key={t.key}>
-                    <summary className={s.trow}>
-                      <span className={s.tlabel}>{t.label}</span>
-                      <span className={s.tbars} aria-hidden>
-                        {t.bars.map((v, i) => (
-                          <i
-                            key={i}
-                            className={i >= t.bars.length - (view === "all" ? 1 : 7) ? s.recent : undefined}
-                            style={{ height: v == null ? "2px" : `${20 + ((v - min) / range) * 80}%` }}
-                          />
-                        ))}
-                      </span>
-                      <b className={s.t7}>{t.avg7 ?? "—"}</b>
-                      <span className={`${s.t30} ${s.muted}`}>{t.avg30 ?? "—"}</span>
-                      <span className={`${s.tdelta} ${t.good == null ? s.muted : t.good ? s.up : s.down}`}>
-                        {t.delta == null ? "—" : `${t.delta > 0 ? "▲" : t.delta < 0 ? "▼" : "▶"} ${signed(t.delta)}${t.unit}`}
-                      </span>
-                    </summary>
-                    <div className={s.full}>
-                      <ScoreTrend scores={t.all} />
-                    </div>
-                  </details>
-                );
-              })}
-            </>
+            <div className={s.jlist}>
+              {impacts.map((j) => (
+                <div className={s.jrow} key={j.question}>
+                  <div>
+                    <b>{j.question}</b>
+                    <span>
+                      yes on {j.yesDays} of {j.answered} days · {j.thisWeek} this week
+                    </span>
+                  </div>
+                  <div className={s.jstat}>
+                    <b className={j.recoveryDiff >= 0 ? s.up : s.down}>{signed(j.recoveryDiff)}</b>
+                    <span>recovery</span>
+                  </div>
+                  <div className={s.jstat}>
+                    <b className={j.sleepDiff == null ? s.muted : j.sleepDiff >= 0 ? s.up : s.down}>
+                      {j.sleepDiff == null ? "—" : signed(j.sleepDiff)}
+                    </b>
+                    <span>sleep</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </section>
+        </div>
 
         <div className={s.side}>
           <section className="zone-card">
@@ -359,38 +395,6 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
         </div>
       </div>
 
-      <section className={`zone-card ${s.journal}`}>
-        <h2>Journal insights · {view === "all" ? "last 6 months" : "last 3 months"}</h2>
-        <p className={s.note}>How your WHOOP journal answers line up with the next morning&apos;s recovery and sleep.</p>
-        {impacts.length === 0 ? (
-          <p className="trend-empty">
-            Not enough journal answers yet — keep answering the WHOOP journal each morning and upload your export.
-          </p>
-        ) : (
-          <div className={s.jlist}>
-            {impacts.map((j) => (
-              <div className={s.jrow} key={j.question}>
-                <div>
-                  <b>{j.question}</b>
-                  <span>
-                    yes on {j.yesDays} of {j.answered} days · {j.thisWeek} this week
-                  </span>
-                </div>
-                <div className={s.jstat}>
-                  <b className={j.recoveryDiff >= 0 ? s.up : s.down}>{signed(j.recoveryDiff)}</b>
-                  <span>recovery</span>
-                </div>
-                <div className={s.jstat}>
-                  <b className={j.sleepDiff == null ? s.muted : j.sleepDiff >= 0 ? s.up : s.down}>
-                    {j.sleepDiff == null ? "—" : signed(j.sleepDiff)}
-                  </b>
-                  <span>sleep</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
     </main>
   );
 }
