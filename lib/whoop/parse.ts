@@ -17,9 +17,8 @@ export const SCORE_WEIGHTS = { recovery: 1, sleep: 1, strain: 1 };
 export const STRAIN_MAX = 21;
 
 /**
- * Blended daily score from the three components. A day only scores when WHOOP
- * recorded all three — an incomplete day (e.g. the cycle still in progress at
- * export, or a number WHOOP didn't record) is left unscored rather than zero-filled.
+ * Blended daily score from the three components. Null unless WHOOP recorded all
+ * three; parseCycles then falls back to partialScore rather than zero-filling.
  */
 export function blendScore(
   recovery: number | null,
@@ -34,7 +33,7 @@ export function blendScore(
   return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;
 }
 
-/** Average of whichever components are present — only for the in-progress newest day. */
+/** Average of whichever components are present, for a day WHOOP didn't fully record. */
 function partialScore(recovery: number | null, sleep: number | null, strain: number | null): number | null {
   const parts = [recovery, sleep, strain == null ? null : Math.min(100, (strain / STRAIN_MAX) * 100)].filter(
     (v): v is number => v != null
@@ -69,14 +68,42 @@ function splitLine(line: string): string[] {
 }
 
 // WHOOP cycles run sleep-to-sleep, so a cycle that starts in the evening is the
-// next day you wake up to. Label cycles by that wake day: start at/after 6pm → next date.
+// next day you wake up to. Label cycles by that wake day. The cycles CSV has a
+// "Wake onset" column (see wakeDay); without it, start at/after 6pm → next date.
 const WAKE_CUTOFF_HOUR = 18;
+
+// The calendar date of the cycle's wake onset. Survives time zone changes that
+// push bedtime before the 6pm cutoff (e.g. flying west, asleep at 5pm local).
+function wakeDay(wake: string | undefined): string | null {
+  const parts = cycleStart(wake);
+  if (!parts) return null;
+  const [y, mo, d] = parts;
+  return new Date(Date.UTC(y, mo - 1, d)).toISOString().slice(0, 10);
+}
+
 export function cycleDay(start: string | undefined): string | null {
-  const m = start?.trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2})/);
-  if (!m) return null;
-  const date = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-  if (+m[4] >= WAKE_CUTOFF_HOUR) date.setUTCDate(date.getUTCDate() + 1);
+  const parts = cycleStart(start);
+  if (!parts) return null;
+  const [y, mo, d, h] = parts;
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  if (h >= WAKE_CUTOFF_HOUR) date.setUTCDate(date.getUTCDate() + 1);
   return date.toISOString().slice(0, 10);
+}
+
+// WHOOP writes ISO "2026-10-11 22:05:00". A CSV that was opened and re-saved in
+// Excel/Numbers comes back as "10/11/26 22:05" (US month-first, 2- or 4-digit
+// year). Accept both; if the first number can't be a month, read it day-first.
+function cycleStart(start: string | undefined): [number, number, number, number] | null {
+  const t = start?.trim() ?? "";
+  const iso = t.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2})/);
+  if (iso) return [+iso[1], +iso[2], +iso[3], +iso[4]];
+  const us = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})(?:[ T](\d{1,2}))?/);
+  if (!us) return null;
+  let mo = +us[1];
+  let d = +us[2];
+  if (mo > 12) [mo, d] = [d, mo];
+  const y = us[3].length === 2 ? 2000 + +us[3] : +us[3];
+  return [y, mo, d, us[4] == null ? 0 : +us[4]];
 }
 
 const num = (v: string | undefined): number | null => {
@@ -150,12 +177,13 @@ export function parseCycles(text: string): WhoopDay[] {
   const iRhr = idx("resting heart rate (bpm)");
   const iHrv = idx("heart rate variability (ms)");
   const iStrain = idx("day strain");
+  const iWake = idx("wake onset");
 
   const byDay = new Map<string, WhoopDay>();
 
   for (let r = 1; r < lines.length; r++) {
     const cols = splitLine(lines[r]);
-    const day = cycleDay(cols[iStart]); // the wake day, YYYY-MM-DD
+    const day = (iWake >= 0 ? wakeDay(cols[iWake]) : null) ?? cycleDay(cols[iStart]); // the wake day, YYYY-MM-DD
     if (!day) continue;
 
     const recovery = num(cols[iRec]);
@@ -176,11 +204,11 @@ export function parseCycles(text: string): WhoopDay[] {
     if (!prev || (prev.score == null && row.score != null)) byDay.set(day, row);
   }
 
-  // The newest day is usually still in progress at export time (strain still
-  // building). Count it with the numbers it has; the next upload overwrites it.
+  // A day missing a component still counts with the numbers it has: the newest
+  // day is usually still in progress at export time (the next upload overwrites
+  // it), and WHOOP sometimes records strain but never scores the night's sleep.
   const days = Array.from(byDay.values());
-  const newest = days.reduce<WhoopDay | null>((a, d) => (!a || d.day > a.day ? d : a), null);
-  if (newest && newest.score == null) newest.score = partialScore(newest.recovery, newest.sleep, newest.strain);
+  for (const d of days) if (d.score == null) d.score = partialScore(d.recovery, d.sleep, d.strain);
 
   return days;
 }
