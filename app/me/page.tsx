@@ -7,6 +7,7 @@ import { ScoreTrend } from "@/components/ScoreTrend";
 import { GoalProgress } from "@/components/GoalProgress";
 import { ExtraCredit, type PersonalGoal } from "@/components/ExtraCredit";
 import { SignOutButton } from "@/components/SignOutButton";
+import { AddPasskeyButton } from "@/components/AddPasskeyButton";
 import { getStandings } from "@/lib/standings";
 import { CONTEST_START_DAY } from "@/lib/contest";
 import { coachNameFor } from "@/lib/roster";
@@ -186,6 +187,7 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
               <UploadWhoop userId={user.id} uploads={uploads} />
             </div>
           </details>
+          <AddPasskeyButton />
           <SignOutButton />
         </div>
       </header>
