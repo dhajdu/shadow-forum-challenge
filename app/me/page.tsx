@@ -199,14 +199,14 @@ export default async function MyZone({
             external={isExternallySynced(user.id)}
             notice={whoopNotice(params.whoop)}
           />
-          <details className={s.upload} open={params.upload != null}>
+          <details className={s.pop} open={params.upload != null}>
             <summary className="btn-ghost">{lastUpload ? `Upload · last ${lastUpload}` : "Upload WHOOP data"}</summary>
-            <div className={s.uploadPanel}>
+            <div className={s.panel}>
               <p className={s.fallbackNote}>Fallback if Connect WHOOP is off or a day needs a manual correction.</p>
               <UploadWhoop userId={user.id} uploads={uploads} />
             </div>
           </details>
-          <SignOutButton />
+          <SignOutButton className="btn-ghost" />
         </div>
       </header>
 

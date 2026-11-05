@@ -20,3 +20,5 @@ next-env.d.ts
 *.tsbuildinfo
 supabase/.temp/
 supabase/.branches/
+.env*
+!.env.example
