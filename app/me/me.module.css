@@ -10,7 +10,19 @@
   color: #cdd5f5; border: 1px solid var(--line); background: linear-gradient(135deg, #1a2136, #0e1424) center/cover no-repeat;
   box-shadow: 0 0 18px rgba(245, 165, 36, .25); }
 .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
-.actions { display: flex; gap: 8px; align-items: center; }
+.actions { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; }
+.whoop { display: grid; gap: 6px; justify-items: end; max-width: 340px; }
+.whoopRow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.whoopOn { font-size: 12px; font-weight: 700; color: #57d38c; }
+.whoopOff { font-size: 12px; font-weight: 600; color: var(--muted); }
+.whoopPrivacy, .whoopNotice { font-size: 11px; line-height: 1.45; color: var(--muted); text-align: right; margin: 0; }
+.whoopNotice { color: #cdd5f5; }
+.connectBtn { text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
+.fallbackNote { font-size: 12px; color: var(--muted); margin: 0 0 10px; line-height: 1.4; }
+@media (max-width: 700px) {
+  .whoop, .whoopRow { justify-items: start; justify-content: flex-start; }
+  .whoopPrivacy, .whoopNotice { text-align: left; }
+}
 .upload > summary { list-style: none; white-space: nowrap; }
 .upload > summary::-webkit-details-marker { display: none; }
 .upload[open] > summary { border-color: rgba(47, 125, 255, .6); }
