@@ -6,6 +6,7 @@
 export type GoalStatus = "on_track" | "at_risk" | "behind" | "hit";
 export type UploadStatus = "uploaded" | "processing" | "parsed" | "error";
 export type PenaltyKind = "placement" | "missed_goal" | "coach_share";
+export type WhoopConnectionStatus = "connected" | "disconnected" | "revoked";
 
 export type Json = string | number | boolean | null | { [k: string]: Json | undefined } | Json[];
 
@@ -222,6 +223,48 @@ export interface Database {
         };
         Relationships: [];
       };
+      whoop_connections: {
+        Row: {
+          user_id: string;
+          whoop_user_id: number | null;
+          status: WhoopConnectionStatus;
+          access_token_enc: string | null;
+          refresh_token_enc: string | null;
+          token_expires_at: string | null;
+          scopes: string | null;
+          connected_at: string | null;
+          last_sync_at: string | null;
+          last_error: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          whoop_user_id?: number | null;
+          status?: WhoopConnectionStatus;
+          access_token_enc?: string | null;
+          refresh_token_enc?: string | null;
+          token_expires_at?: string | null;
+          scopes?: string | null;
+          connected_at?: string | null;
+          last_sync_at?: string | null;
+          last_error?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          whoop_user_id?: number | null;
+          status?: WhoopConnectionStatus;
+          access_token_enc?: string | null;
+          refresh_token_enc?: string | null;
+          token_expires_at?: string | null;
+          scopes?: string | null;
+          connected_at?: string | null;
+          last_sync_at?: string | null;
+          last_error?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       uploads: {
         Row: {
           id: string;
@@ -317,6 +360,19 @@ export interface Database {
       };
     };
     Views: {
+      whoop_connection_status: {
+        Row: {
+          user_id: string;
+          whoop_user_id: number | null;
+          status: WhoopConnectionStatus;
+          scopes: string | null;
+          connected_at: string | null;
+          last_sync_at: string | null;
+          last_error: string | null;
+          updated_at: string;
+        };
+        Relationships: [];
+      };
       race_standings: {
         Row: {
           user_id: string;

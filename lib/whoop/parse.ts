@@ -34,12 +34,24 @@ export function blendScore(
 }
 
 /** Average of whichever components are present, for a day WHOOP didn't fully record. */
-function partialScore(recovery: number | null, sleep: number | null, strain: number | null): number | null {
+export function partialScore(recovery: number | null, sleep: number | null, strain: number | null): number | null {
   const parts = [recovery, sleep, strain == null ? null : Math.min(100, (strain / STRAIN_MAX) * 100)].filter(
     (v): v is number => v != null
   );
   if (parts.length === 0) return null;
   return Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 10) / 10;
+}
+
+/**
+ * The newest day is usually still in progress, so it scores from whatever WHOOP
+ * has recorded. Older incomplete days stay unscored. Used by the API sync; the
+ * zip parser partial-scores every incomplete day (see parseCycles).
+ */
+export function applyNewestPartial(days: WhoopDay[]): WhoopDay[] {
+  let newest: WhoopDay | null = null;
+  for (const day of days) if (!newest || day.day > newest.day) newest = day;
+  if (newest && newest.score == null) newest.score = partialScore(newest.recovery, newest.sleep, newest.strain);
+  return days;
 }
 
 // minimal CSV line splitter that respects double-quoted fields
