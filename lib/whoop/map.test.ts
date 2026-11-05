@@ -17,56 +17,36 @@ function sleep(partial: Partial<WhoopSleepRecord> & Pick<WhoopSleepRecord, "cycl
 }
 
 describe("WHOOP API → whoop_days", () => {
-  it("labels days with main's 6pm local-start rule and reuses blendScore", () => {
-    const days = daysFromWhoop(
-      {
-        cycles: [
-          cycle({
-            id: 1,
-            // 17:09 local +07 — under the cutoff, so the day stays 10-18 (PR #58's wake-onset rule would move it).
-            start: "2026-10-18T10:09:00.000Z",
-            score: { strain: 10.5 },
-          }),
-          cycle({
-            id: 2,
-            // 19:00 local +07 — at/after 18:00 rolls to the next date.
-            start: "2026-10-18T12:00:00.000Z",
-            score: { strain: 5.2951527 },
-          }),
-        ],
-        recoveries: [
-          recovery({
-            cycle_id: 1,
-            score: { recovery_score: 80, resting_heart_rate: 50.4, hrv_rmssd_milli: 40.04 },
-          }),
-          recovery({
-            cycle_id: 2,
-            score: { recovery_score: 44, resting_heart_rate: 64, hrv_rmssd_milli: 31.813562 },
-          }),
-        ],
-        sleeps: [
-          sleep({ cycle_id: 1, end: "2026-10-18T23:00:00.000Z", score: { sleep_performance_percentage: 70 } }),
-          sleep({ cycle_id: 2, end: "2026-10-19T01:00:00.000Z", score: { sleep_performance_percentage: 98 } }),
-        ],
-      },
-      { partialNewest: true }
-    );
+  it("labels days by the main sleep's local wake date and reuses blendScore", () => {
+    // Dave, 10-18: flew UTC+11 → UTC+07, went to bed at 17:09 local and woke on the 19th.
+    const days = daysFromWhoop({
+      cycles: [
+        cycle({ id: 1, start: "2026-10-17T13:57:16.000Z", timezone_offset: "+11:00", score: { strain: 5.5 } }),
+        cycle({ id: 2, start: "2026-10-18T10:09:00.000Z", timezone_offset: "+07:00", score: { strain: 5.7 } }),
+        // no sleep at all: falls back to the 6pm local-start rule (19:00 +07 → next date)
+        cycle({ id: 3, start: "2026-10-20T12:00:00.000Z", timezone_offset: "+07:00", score: { strain: 4.2 } }),
+      ],
+      recoveries: [
+        recovery({ cycle_id: 1, score: { recovery_score: 19, resting_heart_rate: 72.4, hrv_rmssd_milli: 33.04 } }),
+        recovery({ cycle_id: 2, score: { recovery_score: 36, resting_heart_rate: 66, hrv_rmssd_milli: 22 } }),
+      ],
+      sleeps: [
+        sleep({ cycle_id: 1, end: "2026-10-17T16:44:47.000Z", score: { sleep_performance_percentage: 27 } }),
+        sleep({ cycle_id: 2, end: "2026-10-18T18:00:02.000Z", score: { sleep_performance_percentage: 72 } }),
+      ],
+    });
 
     const eighteenth = days.find((day) => day.day === "2026-10-18");
     const nineteenth = days.find((day) => day.day === "2026-10-19");
     assert.ok(eighteenth);
     assert.ok(nineteenth);
-    assert.equal(eighteenth.recovery, 80);
-    assert.equal(eighteenth.sleep, 70);
-    assert.equal(eighteenth.strain, 10.5);
-    assert.equal(eighteenth.resting_hr, 50);
-    assert.equal(eighteenth.hrv, 40);
-    assert.equal(eighteenth.score, blendScore(80, 70, 10.5));
-
-    assert.equal(nineteenth.recovery, 44);
-    assert.equal(nineteenth.sleep, 98);
-    assert.equal(nineteenth.strain, 5.3);
-    assert.equal(nineteenth.score, blendScore(44, 98, 5.3));
+    assert.equal(eighteenth.recovery, 19);
+    assert.equal(eighteenth.resting_hr, 72);
+    assert.equal(eighteenth.hrv, 33);
+    assert.equal(eighteenth.score, blendScore(19, 27, 5.5));
+    assert.equal(nineteenth.recovery, 36);
+    assert.equal(nineteenth.score, blendScore(36, 72, 5.7));
+    assert.equal(days.find((day) => day.day === "2026-10-21")?.strain, 4.2);
   });
 
   it("ignores naps and keeps the scored cycle when two land on one day", () => {
@@ -90,21 +70,19 @@ describe("WHOOP API → whoop_days", () => {
     assert.equal(days[0].score, blendScore(60, 88, 8));
   });
 
-  it("partial-scores only the newest incomplete day", () => {
-    const days = daysFromWhoop(
-      {
-        cycles: [
-          cycle({ id: 1, start: "2026-10-17T01:00:00.000Z", timezone_offset: "+00:00", score: { strain: 12 } }),
-          cycle({ id: 2, start: "2026-10-18T01:00:00.000Z", timezone_offset: "+00:00", score_state: "PENDING_SCORE", score: null }),
-        ],
-        recoveries: [recovery({ cycle_id: 2, score: { recovery_score: 90, resting_heart_rate: 48, hrv_rmssd_milli: 70 } })],
-        sleeps: [],
-      },
-      { partialNewest: true }
-    );
+  it("partial-scores every incomplete day, not only the newest", () => {
+    const days = daysFromWhoop({
+      cycles: [
+        cycle({ id: 1, start: "2026-10-17T01:00:00.000Z", timezone_offset: "+00:00", score: { strain: 12 } }),
+        cycle({ id: 2, start: "2026-10-18T01:00:00.000Z", timezone_offset: "+00:00", score_state: "PENDING_SCORE", score: null }),
+      ],
+      recoveries: [recovery({ cycle_id: 2, score: { recovery_score: 90, resting_heart_rate: 48, hrv_rmssd_milli: 70 } })],
+      sleeps: [],
+    });
     const older = days.find((day) => day.day === "2026-10-17");
     const newest = days.find((day) => day.day === "2026-10-18");
-    assert.equal(older?.score, null);
+    // strain-only: WHOOP never scored the sleep
+    assert.equal(older?.score, partialScore(null, null, 12));
     assert.equal(newest?.score, partialScore(90, null, null));
     assert.equal(newest?.score, 90);
   });

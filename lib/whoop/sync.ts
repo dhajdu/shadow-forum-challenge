@@ -12,7 +12,7 @@ import {
   type WhoopSleepRecord,
   type WhoopWindow,
 } from "@/lib/whoop/map";
-import { applyNewestPartial, type WhoopDay } from "@/lib/whoop/parse";
+import type { WhoopDay } from "@/lib/whoop/parse";
 import { revokeWhoopAccess } from "@/lib/whoop/oauth";
 import { ensureFreshAccess, forceRefreshAccess, type TokenStore } from "@/lib/whoop/refresh";
 import type { WhoopEvent } from "@/lib/whoop/webhook";
@@ -77,25 +77,6 @@ async function withAccess<T>(admin: Admin, userId: string, run: (accessToken: st
   }
 }
 
-/**
- * Partial-score only when this batch holds the member's newest day. An older
- * incomplete day stays unscored, matching the zip parser on main.
- */
-async function finalizeNewest(admin: Admin, userId: string, days: WhoopDay[]): Promise<WhoopDay[]> {
-  if (days.length === 0) return days;
-  const newest = days.reduce((best, day) => (day.day > best.day ? day : best));
-  const { data, error } = await admin
-    .from("whoop_days")
-    .select("day")
-    .eq("user_id", userId)
-    .order("day", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data?.day || newest.day >= data.day) applyNewestPartial(days);
-  return days;
-}
-
 async function upsertDays(admin: Admin, userId: string, days: WhoopDay[]): Promise<number> {
   if (isExternallySynced(userId)) return 0;
   const rows = toWhoopDayRows(userId, days);
@@ -106,8 +87,7 @@ async function upsertDays(admin: Admin, userId: string, days: WhoopDay[]): Promi
 }
 
 async function writeWindow(admin: Admin, userId: string, window: WhoopWindow): Promise<number> {
-  const days = await finalizeNewest(admin, userId, daysFromWhoop(window));
-  return upsertDays(admin, userId, days);
+  return upsertDays(admin, userId, daysFromWhoop(window));
 }
 
 function lookbackStart(days: number, now = Date.now()): string {

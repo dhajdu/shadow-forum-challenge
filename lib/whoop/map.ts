@@ -1,13 +1,11 @@
 import type { WhoopDay } from "@/lib/whoop/parse";
-import { applyNewestPartial, blendScore, cycleDay } from "@/lib/whoop/parse";
+import { applyPartialScores, blendScore, cycleDay, wakeDay } from "@/lib/whoop/parse";
 
 /**
- * Day labels follow main: shift the cycle's UTC `start` by `timezone_offset`
- * (the CSV export is in that local clock), then `cycleDay`, which rolls a
- * start at or after 18:00 onto the next date.
- *
- * Open PR #58 labels by Wake onset instead, and partial-scores every incomplete
- * day rather than only the newest. This mapping follows main on purpose.
+ * Day labels match the zip parser: the local date of the main sleep's end (the
+ * CSV's Wake onset), shifting UTC by the cycle's `timezone_offset`. A cycle with
+ * no sleep falls back to `cycleDay` on its local start (18:00 or later rolls to
+ * the next date). Every incomplete day gets a partial score.
  */
 
 export type WhoopCycleRecord = {
@@ -90,7 +88,8 @@ function dayFromCycle(
   sleep: WhoopSleepRecord | undefined
 ): WhoopDay | null {
   if (!cycle.start) return null;
-  const day = cycleDay(localCycleStart(cycle.start, cycle.timezone_offset));
+  const wake = sleep?.end ? wakeDay(localCycleStart(sleep.end, cycle.timezone_offset)) : null;
+  const day = wake ?? cycleDay(localCycleStart(cycle.start, cycle.timezone_offset));
   if (!day) return null;
 
   const recoveryScore = metric(recovery?.score_state, recovery?.score?.recovery_score);
@@ -116,11 +115,8 @@ function dayFromCycle(
 
 /**
  * Join v2 cycles, recoveries and sleeps into whoop_days-shaped rows.
- * `partialNewest` applies main's in-progress rule to the newest day in this set.
- * Pass false when the set might not include the member's actual newest day;
- * the sync layer decides that against the rows already stored.
  */
-export function daysFromWhoop(window: WhoopWindow, options?: { partialNewest?: boolean }): WhoopDay[] {
+export function daysFromWhoop(window: WhoopWindow): WhoopDay[] {
   const recoveries = new Map<number, WhoopRecoveryRecord>();
   for (const recovery of window.recoveries) recoveries.set(recovery.cycle_id, recovery);
 
@@ -141,7 +137,7 @@ export function daysFromWhoop(window: WhoopWindow, options?: { partialNewest?: b
   }
 
   const days = Array.from(byDay.values()).sort((a, b) => a.day.localeCompare(b.day));
-  return options?.partialNewest ? applyNewestPartial(days) : days;
+  return applyPartialScores(days);
 }
 
 export type WhoopDayInsert = {
