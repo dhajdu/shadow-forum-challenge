@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavBar } from "@/components/NavBar";
 import { UploadWhoop } from "@/components/UploadWhoop";
+import { WhoopConnect, whoopNotice } from "./WhoopConnect";
+import { isExternallySynced } from "@/lib/whoop/config";
 import { ScoreTrend } from "@/components/ScoreTrend";
 import { GoalProgress } from "@/components/GoalProgress";
 import { ExtraCredit, type PersonalGoal } from "@/components/ExtraCredit";
@@ -51,7 +53,11 @@ function scoreColor(score: number, alpha = 1): string {
 
 const signed = (n: number) => `${n > 0 ? "+" : ""}${n}`;
 
-export default async function MyZone({ searchParams }: { searchParams: Promise<{ view?: string; upload?: string }> }) {
+export default async function MyZone({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; upload?: string; whoop?: string }>;
+}) {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
@@ -71,6 +77,7 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
     standings,
     { data: pgRows },
     journalRows,
+    connectionResult,
   ] = await Promise.all([
     supabase
       .from("goals")
@@ -105,6 +112,11 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
         .order("question")
         .range(from, to)
     ),
+    supabase
+      .from("whoop_connection_status")
+      .select("status, last_sync_at, last_error")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
 
   const goal = goalRow as
@@ -168,10 +180,10 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
               {view === "all"
                 ? allAvg != null && firstDay
                   ? `All time · avg ${allAvg} over ${scoredAll.length} scored days since ${shortDate(firstDay)} ${firstDay.slice(0, 4)}`
-                  : "No WHOOP history yet — upload your export."
+                  : "No WHOOP history yet — connect WHOOP, or upload an export."
                 : mine
                   ? `${ordinal(rank)} of ${standings.length} · race avg ${mine.avg} · ${mine.days} scored days · ${mine.missed} missed`
-                  : "Not on the board yet — upload your WHOOP export."}
+                  : "Not on the board yet — connect WHOOP, or upload an export."}
             </p>
             <div className={`seg ${s.viewToggle}`}>
               <Link href="/me" className={`seg-btn ${view === "contest" ? "on" : ""}`}>Contest</Link>
@@ -180,9 +192,17 @@ export default async function MyZone({ searchParams }: { searchParams: Promise<{
           </div>
         </div>
         <div className={s.actions}>
+          <WhoopConnect
+            status={connectionResult.error ? null : (connectionResult.data?.status ?? null)}
+            lastSync={connectionResult.error ? null : (connectionResult.data?.last_sync_at ?? null)}
+            lastError={connectionResult.error ? null : (connectionResult.data?.last_error ?? null)}
+            external={isExternallySynced(user.id)}
+            notice={whoopNotice(params.whoop)}
+          />
           <details className={s.upload} open={params.upload != null}>
             <summary className="btn-ghost">{lastUpload ? `Upload · last ${lastUpload}` : "Upload WHOOP data"}</summary>
             <div className={s.uploadPanel}>
+              <p className={s.fallbackNote}>Fallback if Connect WHOOP is off or a day needs a manual correction.</p>
               <UploadWhoop userId={user.id} uploads={uploads} />
             </div>
           </details>

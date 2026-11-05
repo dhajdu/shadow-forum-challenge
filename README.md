@@ -31,6 +31,7 @@ See [`docs/`](docs/):
 - **Sign-up is gated** by a shared access code — set `SIGNUP_ACCESS_CODE` (verified server-side).
 - **Agents** run as Vercel Cron; `/api/cron/*` is authorized by `CRON_SECRET`.
 - Both must be set in Vercel for production to work.
+- **Connect WHOOP** (`/me`) links a member's own WHOOP account. Set `WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET`, `WHOOP_REDIRECT_URI`, and `WHOOP_TOKEN_ENCRYPTION_KEY`. Webhooks are signed with the client secret unless `WHOOP_WEBHOOK_SECRET` is set. `WHOOP_EXTERNAL_SYNC_USER_IDS` is a comma-separated list of auth user ids (Dave's, for the master-database sync) that the API sync will never overwrite. The zip upload stays as a fallback. Apply `supabase/migrations/0011_whoop_connections.sql` before using it.
 
 ## Ways of working
 - One branch per PR (`feat/*`); small, reviewable diffs.
