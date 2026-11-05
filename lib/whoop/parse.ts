@@ -43,14 +43,13 @@ export function partialScore(recovery: number | null, sleep: number | null, stra
 }
 
 /**
- * The newest day is usually still in progress, so it scores from whatever WHOOP
- * has recorded. Older incomplete days stay unscored. Used by the API sync; the
- * zip parser partial-scores every incomplete day (see parseCycles).
+ * A day missing a component still counts with the numbers it has: the newest
+ * day is usually still in progress (the next upload or sync overwrites it), and
+ * WHOOP sometimes records strain but never scores the night's sleep.
+ * Shared by the zip parser and the API sync.
  */
-export function applyNewestPartial(days: WhoopDay[]): WhoopDay[] {
-  let newest: WhoopDay | null = null;
-  for (const day of days) if (!newest || day.day > newest.day) newest = day;
-  if (newest && newest.score == null) newest.score = partialScore(newest.recovery, newest.sleep, newest.strain);
+export function applyPartialScores(days: WhoopDay[]): WhoopDay[] {
+  for (const d of days) if (d.score == null) d.score = partialScore(d.recovery, d.sleep, d.strain);
   return days;
 }
 
@@ -86,7 +85,7 @@ const WAKE_CUTOFF_HOUR = 18;
 
 // The calendar date of the cycle's wake onset. Survives time zone changes that
 // push bedtime before the 6pm cutoff (e.g. flying west, asleep at 5pm local).
-function wakeDay(wake: string | undefined): string | null {
+export function wakeDay(wake: string | undefined): string | null {
   const parts = cycleStart(wake);
   if (!parts) return null;
   const [y, mo, d] = parts;
@@ -216,11 +215,5 @@ export function parseCycles(text: string): WhoopDay[] {
     if (!prev || (prev.score == null && row.score != null)) byDay.set(day, row);
   }
 
-  // A day missing a component still counts with the numbers it has: the newest
-  // day is usually still in progress at export time (the next upload overwrites
-  // it), and WHOOP sometimes records strain but never scores the night's sleep.
-  const days = Array.from(byDay.values());
-  for (const d of days) if (d.score == null) d.score = partialScore(d.recovery, d.sleep, d.strain);
-
-  return days;
+  return applyPartialScores(Array.from(byDay.values()));
 }
