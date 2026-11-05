@@ -22,6 +22,7 @@ npm run dev                  # http://localhost:3000
 
 ## Design & plan
 See [`docs/`](docs/):
+- `design-system.md` — tokens, type, components (read before writing UI)
 - `plan.html` — the accountability plan (contest, goals, agents, member area)
 - `prototype.html` — lo-fi clickable prototype
 - `design-home.html` — hi-fi home (Race Into the Shadow)

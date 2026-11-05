@@ -7,7 +7,7 @@
   align-items: center;
   column-gap: 12px;
 }
-.head { padding: 10px 0 8px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #59617e; }
+.head { padding: 10px 0 8px; font-size: var(--fs-2xs); letter-spacing: .12em; text-transform: uppercase; color: #59617e; }
 .lanes { grid-area: track; display: flex; justify-content: space-between; }
 .r { text-align: right; }
 
@@ -20,13 +20,13 @@
 .chip { font-size: 9.5px; padding: 1px 7px; }
 .row .track { grid-area: track; }
 .pending { grid-area: track; height: 32px; border-radius: 9px; border: 1px dashed var(--line); display: grid; place-items: center;
-  font-size: 11px; color: var(--muted); letter-spacing: .04em; }
+  font-size: var(--fs-xs); color: var(--muted); letter-spacing: .04em; }
 .row .avg { grid-area: avg; width: auto; }
 .days, .owes { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
-.days { grid-area: days; font-size: 15px; }
-.owes { grid-area: owes; font-size: 15px; font-weight: 800; }
-.days small, .owes small { display: block; font-size: 10px; color: var(--muted); font-weight: 600; white-space: nowrap; }
-.free { color: #57d38c; }
+.days { grid-area: days; font-size: var(--fs-lg); }
+.owes { grid-area: owes; font-size: var(--fs-lg); font-weight: 800; }
+.days small, .owes small { display: block; font-size: var(--fs-2xs); color: var(--muted); font-weight: 600; white-space: nowrap; }
+.free { color: var(--green); }
 .owe { color: #ff8f7d; }
 
 /* Phone: name + numbers on one line, the lane full-width underneath. */
