@@ -42,10 +42,11 @@ export default async function RacePage() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from("whoop_connection_status").select("last_sync_at").eq("user_id", user.id).maybeSingle(),
+    supabase.from("whoop_connection_status").select("status, last_sync_at").eq("user_id", user.id).maybeSingle(),
   ]);
   // Connect WHOOP writes days without an upload row, so show whichever is newer
   const lastSync = whoop?.last_sync_at ?? null;
+  const whoopConnected = whoop?.status === "connected";
   const syncIsNewer =
     lastSync != null && (!lastUpload || new Date(lastSync) > new Date(lastUpload.created_at));
   if (!(goals ?? []).some((g) => (g as { user_id: string }).user_id === user.id)) redirect("/welcome");
@@ -117,9 +118,12 @@ export default async function RacePage() {
                 "Last upload: none yet"
               )}
             </p>
-            <Link href="/me?upload=1" className={`btn ${styles.btn}`}>
-              Upload WHOOP
-            </Link>
+            {/* connected members sync automatically; manual upload stays on /me as a fallback */}
+            {!whoopConnected && (
+              <Link href="/me?upload=1" className={`btn ${styles.btn}`}>
+                Upload WHOOP
+              </Link>
+            )}
           </section>
 
           <div className={`kpis ${styles.kpis}`}>
