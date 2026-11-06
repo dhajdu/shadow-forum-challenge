@@ -23,9 +23,9 @@ export default async function RacePage() {
   const today = new Date().toISOString().slice(0, 10);
 
   // business goals (public status, readable by all), standings, the previous weekly
-  // snapshot and my last upload — independent reads, fetched together.
+  // snapshot, my last upload and my last WHOOP sync — independent reads, fetched together.
   // The rider's own goal is in the same list — no goal yet → onboarding.
-  const [{ data: goals }, standings, { data: snap }, { data: lastUpload }] = await Promise.all([
+  const [{ data: goals }, standings, { data: snap }, { data: lastUpload }, { data: whoop }] = await Promise.all([
     supabase.from("goals").select("user_id, title, current_status"),
     getStandings(supabase),
     supabase
@@ -42,7 +42,13 @@ export default async function RacePage() {
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase.from("whoop_connection_status").select("status, last_sync_at").eq("user_id", user.id).maybeSingle(),
   ]);
+  // Connect WHOOP writes days without an upload row, so show whichever is newer
+  const lastSync = whoop?.last_sync_at ?? null;
+  const whoopConnected = whoop?.status === "connected";
+  const syncIsNewer =
+    lastSync != null && (!lastUpload || new Date(lastSync) > new Date(lastUpload.created_at));
   if (!(goals ?? []).some((g) => (g as { user_id: string }).user_id === user.id)) redirect("/welcome");
 
   type GoalRow = { user_id: string; title: string; current_status: GoalStatus };
@@ -101,19 +107,23 @@ export default async function RacePage() {
               </div>
             </div>
             <p className="dim">
-              Last upload:{" "}
-              {lastUpload ? (
+              {syncIsNewer ? (
+                <>Last WHOOP sync: {fmtDay(lastSync)}</>
+              ) : lastUpload ? (
                 <>
-                  {fmtDay(lastUpload.created_at)}
+                  Last upload: {fmtDay(lastUpload.created_at)}
                   {lastUpload.status === "error" && " (failed)"}
                 </>
               ) : (
-                "none yet"
+                "Last upload: none yet"
               )}
             </p>
-            <Link href="/me?upload=1" className={`btn ${styles.btn}`}>
-              Upload WHOOP
-            </Link>
+            {/* connected members sync automatically; manual upload stays on /me as a fallback */}
+            {!whoopConnected && (
+              <Link href="/me?upload=1" className={`btn ${styles.btn}`}>
+                Upload WHOOP
+              </Link>
+            )}
           </section>
 
           <div className={`kpis ${styles.kpis}`}>
