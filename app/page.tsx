@@ -27,6 +27,21 @@ export default function Home() {
     }
   }, []);
 
+  async function signInWithPasskey() {
+    setBusy(true);
+    setMsg(null);
+    const { error } = await supabase.auth.signInWithPasskey();
+    if (!error) {
+      router.push("/race");
+      return;
+    }
+    // closing the Face ID / Touch ID prompt is not an error worth showing
+    if (!("code" in error && error.code === "ERROR_CEREMONY_ABORTED")) {
+      setMsg({ text: error.message, ok: false });
+    }
+    setBusy(false);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -124,6 +139,11 @@ export default function Home() {
           <button className="btn" type="submit" disabled={busy}>
             {busy ? "…" : mode === "signin" ? "Enter" : mode === "forgot" ? "Send reset link" : "Join the Forum"}
           </button>
+          {mode === "signin" && (
+            <button className="btn-ghost" type="button" onClick={signInWithPasskey} disabled={busy}>
+              Sign in with passkey
+            </button>
+          )}
         </form>
 
         {msg && <div className={`msg ${msg.ok ? "ok" : "err"}`}>{msg.text}</div>}
