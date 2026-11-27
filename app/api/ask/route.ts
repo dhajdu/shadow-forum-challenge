@@ -2,7 +2,6 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireMember } from "@/lib/api";
 import { NO_RECORD, citations, excerptsFor, searchAgendas } from "@/lib/ask";
-import { embeddingsConfigured } from "@/lib/embed";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return gate.res;
   const { supabase, user } = gate.auth;
 
-  if (!process.env.ANTHROPIC_API_KEY || !embeddingsConfigured()) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "Ask is not configured." }, { status: 500 });
   }
   const body = (await req.json().catch(() => ({}))) as { question?: unknown; meetingId?: unknown };

@@ -6,7 +6,6 @@
 // local database first. It refuses to run against anything but localhost.
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
-import { createServer, type Server } from "node:http";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
@@ -27,8 +26,6 @@ if (!["127.0.0.1", "localhost", "::1"].includes(host)) {
 }
 process.env.CRON_SECRET = "leak-suite-cron";
 process.env.ANTHROPIC_API_KEY = "leak-suite-fake";
-delete process.env.EOVN_FORUM_DATES_URL;
-delete process.env.EOVN_FORUM_DATES_TOKEN;
 delete process.env.RESEND_API_KEY;
 
 type DB = SupabaseClient<Database>;
@@ -65,13 +62,12 @@ let q4: Season;
 let q1: Season;
 const goalId: Record<string, string> = {};
 
-const vec = (i: number) => `[${Array.from({ length: 1024 }, (_, k) => (k === i ? 1 : 0.5)).join(",")}]`;
 const ok = <T>(r: { data: T; error: { message: string } | null }, what: string): T => {
   if (r.error) throw new Error(`${what}: ${r.error.message}`);
   return r.data;
 };
 
-// Outside calls (Anthropic, Voyage, Expo) are captured, never sent.
+// Outside calls (Anthropic, Expo) are captured, never sent.
 const realFetch = globalThis.fetch;
 const anthropicBodies: { system: string; messages: { role: string; content: string }[] }[] = [];
 const expoBodies: { to: string; title: string; body: string }[][] = [];
@@ -91,11 +87,6 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     ]);
     return new Response(body, { headers: { "content-type": "text/event-stream" } });
   }
-  if (u.startsWith("https://api.voyageai.com/")) {
-    const { input: texts } = JSON.parse(String(init?.body)) as { input: string[] };
-    const data = texts.map((_, index) => ({ index, embedding: Array(1024).fill(0.5) }));
-    return Response.json({ data });
-  }
   if (u.startsWith("https://exp.host/")) {
     const msgs = JSON.parse(String(init?.body)) as { to: string; title: string; body: string }[];
     expoBodies.push(msgs);
@@ -105,7 +96,6 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   }
   return realFetch(input, init);
 }) as typeof fetch;
-process.env.VOYAGE_API_KEY = "leak-suite-fake";
 
 before(async () => {
   // users and their access
@@ -151,7 +141,7 @@ before(async () => {
   assert.ok(q4 && q1, "seasons seeded");
 
   // meetings, docs, chunks, files
-  for (const [i, m] of MEETINGS.entries()) {
+  for (const m of MEETINGS) {
     const row = ok(
       await admin.from("meetings").insert({ held_on: m.held_on, status: m.status, title: `Leak ${m.key}` }).select("id").single(),
       `meeting ${m.key}`
@@ -159,7 +149,7 @@ before(async () => {
     meetingId[m.key] = row.id;
     meetingHeld[row.id] = m.held_on;
     ok(await admin.from("meeting_docs").insert({ meeting_id: row.id, title: `Agenda ${m.key}`, body_md: `secret agenda ${m.key}` }), "doc");
-    ok(await admin.from("meeting_chunks").insert({ meeting_id: row.id, content: `chunk ${m.key} Manila trip`, embedding: vec(i) }), "chunk");
+    ok(await admin.from("meeting_chunks").insert({ meeting_id: row.id, content: `chunk ${m.key} Manila trip secretword${m.key}` }), "chunk");
     ok(
       await admin.storage.from("meeting-files").upload(`${row.id}/agenda.txt`, new Blob([`file ${m.key}`]), { upsert: true }),
       "file"
@@ -288,14 +278,21 @@ describe("tables, per persona", () => {
         for (const ch of chunks) assert.equal(ch.held_on, meetingHeld[ch.meeting_id], "chunk held_on copied from meeting");
       });
 
-      it("assistant retrieval: match_meeting_chunks", async () => {
-        const q = `[${Array(1024).fill(0.5).join(",")}]`;
-        const hits = ok(await c().rpc("match_meeting_chunks", { query_embedding: q, match_count: 50 }), "match") as { meeting_id: string }[];
+      it("assistant retrieval: match_meeting_chunks (full-text)", async () => {
+        const hits = ok(await c().rpc("match_meeting_chunks", { query: "What about the Manila trip?", match_count: 50 }), "match") as { meeting_id: string }[];
         assert.deepEqual(sorted(hits.map((h) => keyOfMeeting(h.meeting_id))), visibleMeetings(k));
+        // a word that only exists in one meeting's agenda: found only if that meeting is visible
+        for (const m of MEETINGS) {
+          const one = ok(await c().rpc("match_meeting_chunks", { query: `secretword${m.key}` }), "one") as unknown[];
+          assert.equal(one.length, seesDate(k, m.held_on) ? 1 : 0, `${k} secretword${m.key}`);
+        }
         // scoped to a meeting before their time: nothing, and no error that would confirm it exists
-        const pre = await c().rpc("match_meeting_chunks", { query_embedding: q, only_meeting: meetingId.feb });
+        const pre = await c().rpc("match_meeting_chunks", { query: "Manila", only_meeting: meetingId.feb });
         assert.equal(pre.error, null);
         assert.equal((pre.data ?? []).length, seesDate(k, "2026-02-05") ? 1 : 0);
+        // stop words alone match nothing
+        const noise = ok(await c().rpc("match_meeting_chunks", { query: "what is the" }), "noise") as unknown[];
+        assert.equal(noise.length, 0);
       });
 
       it("storage meeting-files", async () => {
@@ -493,64 +490,8 @@ describe("agents (service role) scope to the rule", () => {
   });
 
   it("cron routes reject calls without the secret", async () => {
-    const { GET } = await import("@/app/api/cron/forum-dates/route");
-    assert.equal((await GET(req("/api/cron/forum-dates"))).status, 401);
-  });
-});
-
-describe("EO Vietnam forum dates", () => {
-  let server: Server;
-  let feed: unknown = { meetings: [] };
-  before(async () => {
-    server = createServer((rq, rs) => {
-      if (rq.headers.authorization !== "Bearer eovn-test") {
-        rs.writeHead(401).end();
-        return;
-      }
-      rs.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(feed));
-    });
-    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
-  });
-  after(() => server.close());
-
-  it("skips cleanly when the vars are unset", async () => {
-    const { GET } = await import("@/app/api/cron/forum-dates/route");
-    const body = (await (await GET(req("/api/cron/forum-dates", { cron: true }))).json()) as { ok: boolean; skipped?: string };
-    assert.equal(body.ok, true);
-    assert.ok(body.skipped);
-  });
-
-  it("copies coming dates as planned, links an existing date, and is idempotent", async () => {
-    const addr = server.address() as { port: number };
-    process.env.EOVN_FORUM_DATES_URL = `http://127.0.0.1:${addr.port}/shadow`;
-    process.env.EOVN_FORUM_DATES_TOKEN = "eovn-test";
-    feed = {
-      meetings: [
-        { id: "eovn-1", date: "2026-12-23", place: "Dreamplex" }, // already in meetings: link
-        { id: "eovn-2", date: "2027-02-24", place: "TBC" }, // new: insert planned
-        { id: "eovn-0", date: "2025-01-01" }, // past: ignored
-      ],
-    };
-    const { syncForumDates } = await import("@/lib/eovn");
-    const first = await syncForumDates(admin);
-    assert.deepEqual(first, { fetched: 2, inserted: 1, updated: 0, linked: 1, removed: 0 });
-    const second = await syncForumDates(admin);
-    assert.deepEqual(second, { fetched: 2, inserted: 0, updated: 2, linked: 0, removed: 0 });
-    const rows = ok(await admin.from("meetings").select("held_on, status, eovn_meeting_id").not("eovn_meeting_id", "is", null), "rows") as {
-      held_on: string;
-      status: string;
-      eovn_meeting_id: string;
-    }[];
-    assert.deepEqual(sorted(rows.map((r) => `${r.eovn_meeting_id}:${r.held_on}:${r.status}`)), ["eovn-1:2026-12-23:planned", "eovn-2:2027-02-24:planned"]);
-
-    feed = { meetings: [{ id: "eovn-1", date: "2026-12-23" }] }; // eovn-2 cancelled in EO Vietnam
-    const third = await syncForumDates(admin);
-    assert.equal(third && "removed" in third ? third.removed : -1, 1);
-    // Daniel (joins 2027-01-20) still sees only meetings from his date
-    const dan = ok(await client.january.from("meetings").select("held_on"), "dan") as { held_on: string }[];
-    assert.ok(dan.every((m) => m.held_on >= "2027-01-20"));
-    delete process.env.EOVN_FORUM_DATES_URL;
-    delete process.env.EOVN_FORUM_DATES_TOKEN;
+    const { GET } = await import("@/app/api/cron/chunks/route");
+    assert.equal((await GET(req("/api/cron/chunks"))).status, 401);
   });
 });
 

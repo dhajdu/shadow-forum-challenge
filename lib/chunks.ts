@@ -1,9 +1,9 @@
 // Build the agenda search index: meeting_docs → meeting_chunks (service role).
 // Each chunk carries its meeting's held_on (set by a trigger), so the access rule
-// filters search results without a join.
+// filters search results without a join. Postgres keeps the full-text column
+// (meeting_chunks.search) up to date itself.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { embed, toVector } from "@/lib/embed";
 
 type Admin = SupabaseClient<Database>;
 const TARGET = 1200; // characters per chunk
@@ -32,14 +32,12 @@ export async function reindexMeeting(admin: Admin, meetingId: string): Promise<n
   const { data: docs, error } = await admin.from("meeting_docs").select("title, body_md").eq("meeting_id", meetingId);
   if (error) throw new Error(error.message);
   const texts = (docs ?? []).flatMap((d) => chunkText(d.body_md).map((c) => (d.title ? `${d.title}\n\n${c}` : c)));
-  const vectors = await embed(texts, "document");
-
   const del = await admin.from("meeting_chunks").delete().eq("meeting_id", meetingId);
   if (del.error) throw new Error(del.error.message);
   if (texts.length === 0) return 0;
   const ins = await admin
     .from("meeting_chunks")
-    .insert(texts.map((content, i) => ({ meeting_id: meetingId, content, embedding: toVector(vectors[i]) })));
+    .insert(texts.map((content) => ({ meeting_id: meetingId, content })));
   if (ins.error) throw new Error(ins.error.message);
   return texts.length;
 }
