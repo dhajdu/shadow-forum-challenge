@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getForumContext } from "@/app/_data/context";
-import { listLibrary, listMeetings, listSeasons, touchLastSeen } from "@/app/_data/forum";
+import { listLibrary, listMeetings, listSeasons, memberStatus, touchLastSeen } from "@/app/_data/forum";
 import { shortDay, timeOf, weekdayDay } from "@/app/_data/format";
 import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
 import { ForumAsk } from "@/components/ForumAsk";
@@ -78,6 +78,7 @@ export async function HomeView() {
   }
 
   const first = viewer.full_name.split(/\s+/)[0];
+  const status = memberStatus(viewer, today);
 
   return (
     <main className={`page ${s.withRail}`}>
@@ -87,6 +88,17 @@ export async function HomeView() {
         <div className="eyebrow">The Shadow Forum</div>
         <h1>{greeting()}, {first}</h1>
       </header>
+
+      {status !== "active" && (
+        <section className={`zone-card ${s.notice}`}>
+          <h2>{status === "left" ? "You are no longer in the forum" : "Your access is being set up"}</h2>
+          <p className="note-line">
+            {status === "left"
+              ? "Your forum access has ended. Ask Dave if you think this is a mistake."
+              : "Dave adds your first forum date, and your forums appear here from then on."}
+          </p>
+        </section>
+      )}
 
       <div className={s.grid}>
         <section className={`zone-card ${s.next}`}>

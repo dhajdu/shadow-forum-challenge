@@ -8,7 +8,7 @@ export default async function LibraryPage() {
   return (
     <section className="zone-card">
       {docs.length === 0 ? (
-        <p className="trend-empty">Nothing in the library yet.</p>
+        <p className="trend-empty">Nothing in the library yet. The Constitution and Resources are added soon.</p>
       ) : (
         <ul className="rows">
           {docs.map((d) => (

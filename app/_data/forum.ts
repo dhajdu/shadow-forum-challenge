@@ -15,7 +15,7 @@
 import * as fixtures from "./fixtures";
 import * as live from "./live";
 
-export const SOURCE = "fixtures" as "fixtures" | "live";
+export const SOURCE = "live" as "fixtures" | "live";
 
 const impl = SOURCE === "live" ? live : fixtures;
 

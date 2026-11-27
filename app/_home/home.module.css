@@ -17,3 +17,4 @@
   .rail { display: block; position: sticky; top: var(--sp-24); margin-bottom: 0; }
   .rail :global(.chat) { max-height: calc(100dvh - 260px); }
 }
+.notice { margin-bottom: var(--sp-16); border-color: var(--amber); }

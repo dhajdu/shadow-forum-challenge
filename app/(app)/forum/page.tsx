@@ -30,7 +30,7 @@ export default async function AgendasPage({ searchParams }: { searchParams: Prom
           )
         )}
         {meetings.length === 0 ? (
-          <p className="trend-empty">{query ? "No forum notes match that." : "Your agendas will appear here from your first forum."}</p>
+          <p className="trend-empty">{query ? "No forum notes match that." : "No agendas yet. Each one is added here after its forum."}</p>
         ) : (
           <ul className="rows">
             {meetings.map((m) => (
@@ -45,6 +45,7 @@ export default async function AgendasPage({ searchParams }: { searchParams: Prom
       {/* desktop: the library beside the agendas (wireframe 14); phones use the Library tab */}
       <aside className={`zone-card ${s.rail}`} aria-label="Library">
         <h2>Library</h2>
+        {library.length === 0 && <p className="note-line">Nothing in the library yet.</p>}
         <ul className="rows">
           {library.map((d) => (
             <li key={d.slug}>
