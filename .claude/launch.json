@@ -4,8 +4,39 @@
     {
       "name": "shadow-forum-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000
+    },
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8091"
+      ],
+      "cwd": "mobile",
+      "port": 8091
+    },
+    {
+      "name": "mobile-web-demo",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "EXPO_PUBLIC_DEMO_PERSONA=founding",
+        "npx",
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8092"
+      ],
+      "cwd": "mobile",
+      "port": 8092
     }
   ]
 }
