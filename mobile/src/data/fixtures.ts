@@ -6,6 +6,7 @@ import type { GoalStatus } from "@shared/database.types";
 import type { ForumProfile, LibraryDoc, Meeting, MeetingDoc, Season } from "@shared/forum";
 import type {
   ChatMessage,
+  ForumMessage,
   Goal,
   GoalSummary,
   JournalAnalysis,
@@ -208,7 +209,27 @@ export type FixtureSet = {
   uploads: Upload[];
   members: Member[]; // admin-only API; empty for everyone else
   chat: ChatMessage[];
+  forumChat: ForumMessage[]; // oldest first
 };
+
+const fm = (id: string, author_id: string, author: string, created_at: string, body: string, reply_to: string | null = null): ForumMessage => ({
+  id,
+  author_id,
+  author,
+  body,
+  photo_id: null,
+  photo: null,
+  reply_to,
+  created_at,
+  edited_at: null,
+  deleted_at: null,
+});
+
+const CHAT: ForumMessage[] = [
+  fm("c1", "u-a", "Rider A", "2026-11-25T14:05:00Z", "Sample message. Thanks for hosting at Dreamplex."),
+  fm("c2", ME_NAM, "Nam Trung", "2026-11-26T02:10:00Z", "Sample message. Who is presenting in December?"),
+  fm("c3", ME_FOUNDING, "Dave Hajdu", "2026-11-26T03:00:00Z", "Sample reply. Rider C is up next.", "c2"),
+];
 
 const docsFor = (ms: Meeting[]) => Object.fromEntries(ms.filter((x) => x.status === "held").map((x) => [x.id, AGENDA(x)]));
 const from = (d: string) => ALL_MEETINGS.filter((x) => x.held_on >= d);
@@ -237,6 +258,7 @@ export const fixtures: Record<Persona, FixtureSet> = {
     uploads: [{ id: "up1", file_name: "my_whoop_data_2026_11_20.zip", status: "parsed", rows_ingested: 412, created_at: "2026-11-20T03:00:00Z" }],
     members: MEMBERS,
     chat: [],
+    forumChat: CHAT,
   },
   nam: {
     profile: profile(ME_NAM, "Nam Trung", "2026-07-28", false, false),
@@ -251,6 +273,7 @@ export const fixtures: Record<Persona, FixtureSet> = {
     uploads: [],
     members: [],
     chat: [],
+    forumChat: CHAT,
   },
   minhanh: {
     profile: profile("u-ma", "Minh Anh", "2026-12-23", false, false),
@@ -268,6 +291,7 @@ export const fixtures: Record<Persona, FixtureSet> = {
     uploads: [],
     members: [],
     chat: [],
+    forumChat: [],
   },
 };
 

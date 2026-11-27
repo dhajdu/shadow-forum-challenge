@@ -60,3 +60,17 @@ export type ChatMessage = { role: "user" | "assistant"; content: string; cited?:
 export type Citation = { id: string; held_on: string; title: string | null };
 
 export type { Snapshot };
+
+/** A forum chat message as the member may see it (RLS: from their first forum on). */
+export type ForumMessage = {
+  id: string;
+  author_id: string;
+  author: string | null;
+  body: string; // "" once deleted
+  photo_id: string | null;
+  photo: string | null; // signed thumbnail URL, 1 hour
+  reply_to: string | null;
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+};
