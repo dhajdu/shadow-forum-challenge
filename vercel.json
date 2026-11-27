@@ -7,6 +7,7 @@
   "crons": [
     { "path": "/api/cron/daily", "schedule": "0 1 * * 1" },
     { "path": "/api/cron/chronicler", "schedule": "0 10 1 * *" },
-    { "path": "/api/cron/whoop", "schedule": "15 2 * * *" }
+    { "path": "/api/cron/whoop", "schedule": "15 2 * * *" },
+    { "path": "/api/cron/gallery-cleanup", "schedule": "30 20 * * *" }
   ]
 }

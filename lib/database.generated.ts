@@ -65,6 +65,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"gallery_photos": {
+                  Row: {
+                    "bytes": number | null,"caption": string | null,"created_at": string,"height": number | null,"id": string,"meeting_id": string | null,"original_path": string,"taken_on": string,"thumb_path": string,"uploaded_by": string,"web_path": string,"width": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bytes"?: number | null,"caption"?: string | null,"created_at"?: string,"height"?: number | null,"id"?: string,"meeting_id"?: string | null,"original_path": string,"taken_on": string,"thumb_path": string,"uploaded_by"?: string,"web_path": string,"width"?: number | null
+                  }
+                  Update: {
+                    "bytes"?: number | null,"caption"?: string | null,"created_at"?: string,"height"?: number | null,"id"?: string,"meeting_id"?: string | null,"original_path"?: string,"taken_on"?: string,"thumb_path"?: string,"uploaded_by"?: string,"web_path"?: string,"width"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "gallery_photos_meeting_id_fkey"
+      columns: ["meeting_id"]
+isOneToOne: false
+      referencedRelation: "meetings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gallery_photos_uploaded_by_fkey"
+      columns: ["uploaded_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gallery_photos_uploaded_by_fkey"
+      columns: ["uploaded_by"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"goal_progress": {
                   Row: {
                     "created_at": string,"goal_id": string,"id": string,"note": string | null,"progress": number,"status": string
@@ -525,11 +557,17 @@ isOneToOne: true
 "can_see_date":
 { Args: { "d": string }; Returns: boolean
                            },
+"can_see_gallery_object":
+{ Args: { "object_name": string }; Returns: boolean
+                           },
 "can_see_meeting_object":
 { Args: { "object_name": string }; Returns: boolean
                            },
 "can_see_season":
 { Args: { "s": string }; Returns: boolean
+                           },
+"gallery_object_photo":
+{ Args: { "object_name": string }; Returns: string
                            },
 "is_active_member":
 { Args: Record<PropertyKey, never>; Returns: boolean
@@ -553,6 +591,9 @@ isOneToOne: true
                            },
 "member_is_active":
 { Args: { "uid": string }; Returns: boolean
+                           },
+"owns_gallery_object":
+{ Args: { "object_name": string }; Returns: boolean
                            },
 "season_of":
 { Args: { "d": string }; Returns: string
