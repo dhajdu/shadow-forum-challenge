@@ -10,6 +10,7 @@ import { CONTEST_START_DAY } from "@/lib/contest";
 import { coachNameFor } from "@/lib/roster";
 import type { GoalStatus } from "@/lib/database.types";
 import { selectAll } from "@/lib/supabase/selectAll";
+import type { JournalAnalysis } from "@/lib/analyst";
 import {
   addDays,
   contestStrip,
@@ -76,6 +77,7 @@ export default async function MePage({
     { data: pgRows },
     journalRows,
     connectionResult,
+    { data: analysisRow },
   ] = await Promise.all([
     supabase
       .from("goals")
@@ -110,6 +112,14 @@ export default async function MePage({
       .from("whoop_connection_status")
       .select("status, last_sync_at, last_error")
       .eq("user_id", user.id)
+      .maybeSingle(),
+    // latest weekly analysis from the Analyst (Claude)
+    supabase
+      .from("journal_analyses")
+      .select("week_of, headline, insights, suggestion")
+      .eq("user_id", user.id)
+      .order("week_of", { ascending: false })
+      .limit(1)
       .maybeSingle(),
   ]);
 
@@ -148,6 +158,7 @@ export default async function MePage({
   const streak = currentStreak(strip);
   const trendRows = trends(days, view === "all" ? "all" : "recent");
   const impacts = journalImpacts(journalRows, days).slice(0, 6);
+  const analysis = analysisRow as (JournalAnalysis & { week_of: string }) | null;
   const months = monthly(days);
   const scoredAll = days.filter((d) => d.score != null).map((d) => d.score as number);
   const allAvg = scoredAll.length ? round1(scoredAll.reduce((a, b) => a + b, 0) / scoredAll.length) : null;
@@ -368,7 +379,27 @@ export default async function MePage({
         </section>
         )}
         <section className={`zone-card ${s.journal}`}>
-          <h2>Journal insights · {view === "all" ? "last 6 months" : "last 3 months"}</h2>
+          <h2>Journal insights</h2>
+          {analysis ? (
+            <div className={s.analysis}>
+              <p className={s.aHead}>{analysis.headline}</p>
+              <ul className={s.aList}>
+                {analysis.insights.map((i) => (
+                  <li key={i.title} className={i.effect === "helps" ? s.aHelps : i.effect === "hurts" ? s.aHurts : s.aMixed}>
+                    <b>{i.title}</b>
+                    <span>{i.detail}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className={s.aTry}>
+                <b>Try this week:</b> {analysis.suggestion}
+              </p>
+              <p className={s.aMeta}>Weekly analysis by Claude · {longDay(analysis.week_of)} · journal vs scores, last 90 days</p>
+            </div>
+          ) : (
+            <p className={s.note}>Your weekly analysis arrives Monday morning, once a week of journal answers has synced.</p>
+          )}
+          <h3 className={s.jNumbers}>The numbers · {view === "all" ? "last 6 months" : "last 3 months"}</h3>
           <p className={s.note}>How your WHOOP journal answers line up with the next morning&apos;s recovery and sleep.</p>
           {impacts.length === 0 ? (
             <p className="trend-empty">
