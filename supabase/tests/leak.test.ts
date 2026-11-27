@@ -130,14 +130,10 @@ before(async () => {
     token[k] = s.data.session!.access_token;
   }
 
-  // seasons: Q4 2026 (from the migration) and a test Q1 2027 from Daniel's first forum
-  ok(
-    await admin.from("seasons").upsert({ slug: "leak-2027-q1", name: "Q1 2027", starts_on: "2027-01-20", ends_on: "2027-03-31" }, { onConflict: "slug" }),
-    "season q1"
-  );
+  // seasons: Q4 2026 and Q1 2027, both from the migrations
   seasons = ok(await admin.from("seasons").select("id, slug, name, starts_on, ends_on"), "seasons") as Season[];
   q4 = seasons.find((s) => s.slug === "2026-q4")!;
-  q1 = seasons.find((s) => s.slug === "leak-2027-q1")!;
+  q1 = seasons.find((s) => s.slug === "2027-q1")!;
   assert.ok(q4 && q1, "seasons seeded");
 
   // meetings, docs, chunks, files
@@ -236,6 +232,10 @@ describe("expectations match the plan's table", () => {
   });
   it("Q4 season: founding and Nam Trung only", () => {
     assert.deepEqual(KEYS.filter((k) => seesSeason(k, q4)), ["founding", "nam"]);
+  });
+  it("Q1 2027 (from 1 Jan): every active member, including those whose first forum is in January", () => {
+    assert.equal(q1.starts_on, "2027-01-01");
+    assert.deepEqual(KEYS.filter((k) => seesSeason(k, q1)), ["founding", "nam", "december", "january"]);
   });
 });
 
@@ -983,7 +983,7 @@ describe("seasons", () => {
       assert.deepEqual(seasonsSeen, sorted(seasons.filter((s) => seesSeason(k, s)).map((s) => s.id)), `${k} seasons`);
       for (const s of seasons.filter((x) => seesSeason(k, x))) {
         const riders = mine.filter((r) => r.season_id === s.id).map((r) => KEYS.find((x) => member[x].id === r.user_id)).sort();
-        const expect = KEYS.filter((x) => PERSONAS[x].is_founding || (PERSONAS[x].forum_joined_on !== null && PERSONAS[x].forum_joined_on! <= s.starts_on)).sort();
+        const expect = KEYS.filter((x) => PERSONAS[x].is_founding || (PERSONAS[x].forum_joined_on !== null && PERSONAS[x].forum_joined_on! <= s.ends_on)).sort();
         assert.deepEqual(riders, expect, `${k} riders of ${s.slug}`);
       }
     }
@@ -1022,7 +1022,9 @@ describe("seasons", () => {
     assert.equal(c.dayOfSeason(s, new Date("2027-01-13T05:00:00Z")), 1);
     assert.equal(c.seasonPhase(s, new Date("2026-12-24T00:00:00Z")), "upcoming");
     assert.equal(c.seasonPenalty(s, 7), 2);
-    assert.deepEqual(c.seasonLadder({ ladder: null }), c.PLACEMENT_PENALTIES);
+    assert.deepEqual(c.seasonLadder({ ladder: null }), []);
+    assert.equal(c.hasContest({ ladder: null }), false);
+    assert.equal(c.seasonPenalty({ ladder: null }, 2), 0, "no contest, no penalty");
     assert.equal(c.newestSeason([{ starts_on: "2026-09-23" }, { starts_on: "2027-01-13" }])?.starts_on, "2027-01-13");
   });
 
@@ -1030,6 +1032,26 @@ describe("seasons", () => {
     const { runBookkeeper } = await import("@/lib/agents");
     const r = await runBookkeeper(admin);
     const { seasonPhase } = await import("@/lib/contest");
-    assert.equal(r.seasons.length, seasons.filter((s) => seasonPhase(s) === "over").length);
+    const { hasContest } = await import("@/lib/contest");
+    const full = ok(await admin.from("seasons").select("id, starts_on, ends_on, ladder"), "full") as { starts_on: string; ends_on: string; ladder: unknown }[];
+    assert.equal(r.seasons.length, full.filter((s) => seasonPhase(s) === "over" && hasContest(s)).length);
+  });
+});
+
+describe("personal goals per season", () => {
+  it("any number per season, only into current or coming seasons the member can see", async () => {
+    const add = (k: PersonaKey, season_id: string | null, title: string) =>
+      client[k].from("personal_goals").insert({ user_id: member[k].id, title, season_id: season_id as string });
+    assert.equal((await add("nam", q1.id, "Q1 one")).error, null);
+    assert.equal((await add("nam", q1.id, "Q1 two")).error, null, "more than one per season");
+    assert.equal((await add("nam", q4.id, "Q4 extra")).error, null, "Q4 is still running");
+    assert.ok((await add("nam", null, "no season")).error, "season required");
+    assert.equal((await add("december", q1.id, "Minh Anh Q1")).error, null, "December member can set Q1");
+    assert.ok((await add("december", q4.id, "Q4?")).error, "but not Q4");
+    assert.ok((await add("leaver", q1.id, "x")).error, "leaver cannot");
+    const theirs = ok(await client.december.from("personal_goals").select("user_id, season_id"), "own") as { user_id: string; season_id: string | null }[];
+    assert.ok(theirs.every((g) => g.user_id === member.december.id), "owner only");
+    const q1Count = ok(await client.nam.from("personal_goals").select("id").eq("season_id", q1.id), "q1") as unknown[];
+    assert.equal(q1Count.length, 2);
   });
 });

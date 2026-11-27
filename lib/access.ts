@@ -18,7 +18,7 @@ export type Member = {
   is_admin: boolean;
 };
 
-export type Season = { id: string; slug: string; name: string; starts_on: string; ends_on: string };
+export type Season = { id: string; slug: string; name: string; starts_on: string; ends_on: string; ladder?: unknown };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -34,9 +34,10 @@ export function memberCanSeeDate(m: Member, d: string | null, on = today()): boo
   return m.is_founding || (m.forum_joined_on != null && d >= m.forum_joined_on);
 }
 
-/** Same as public.member_can_see_season(): the season started on or after the first forum. */
-export function memberCanSeeSeason(m: Member, s: Pick<Season, "starts_on"> | null, on = today()): boolean {
-  return !!s && memberCanSeeDate(m, s.starts_on, on);
+/** Same as public.member_can_see_season(): the season is still running on or after the first forum. */
+export function memberCanSeeSeason(m: Member, s: Pick<Season, "ends_on"> | null, on = today()): boolean {
+  if (!s || !isActive(m, on)) return false;
+  return m.is_founding || (m.forum_joined_on != null && m.forum_joined_on <= s.ends_on);
 }
 
 /**
@@ -49,7 +50,8 @@ export function groupScope(recipients: Member[], on = today()) {
     recipients.length > 0 && recipients.every((m) => memberCanSeeDate(m, d, on));
   return {
     canSeeDate,
-    canSeeSeason: (s: Pick<Season, "starts_on"> | null) => !!s && canSeeDate(s.starts_on),
+    canSeeSeason: (s: Pick<Season, "ends_on"> | null) =>
+      !!s && recipients.length > 0 && recipients.every((m) => memberCanSeeSeason(m, s, on)),
   };
 }
 
@@ -76,7 +78,7 @@ export async function loadMembers(admin: Admin): Promise<Member[]> {
 }
 
 export async function loadSeasons(admin: Admin): Promise<Season[]> {
-  const { data, error } = await admin.from("seasons").select("id, slug, name, starts_on, ends_on");
+  const { data, error } = await admin.from("seasons").select("id, slug, name, starts_on, ends_on, ladder");
   if (error) throw new Error(error.message);
   return (data ?? []) as Season[];
 }

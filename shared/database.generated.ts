@@ -432,17 +432,35 @@ isOneToOne: false
                   ]
                 },"personal_goals": {
                   Row: {
-                    "created_at": string,"current_value": number,"id": string,"target_value": number | null,"title": string,"unit": string | null,"user_id": string
+                    "created_at": string,"current_value": number,"id": string,"season_id": string | null,"target_value": number | null,"title": string,"unit": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"current_value"?: number,"id"?: string,"target_value"?: number | null,"title": string,"unit"?: string | null,"user_id": string
+                    "created_at"?: string,"current_value"?: number,"id"?: string,"season_id"?: string | null,"target_value"?: number | null,"title": string,"unit"?: string | null,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"current_value"?: number,"id"?: string,"target_value"?: number | null,"title"?: string,"unit"?: string | null,"user_id"?: string
+                    "created_at"?: string,"current_value"?: number,"id"?: string,"season_id"?: string | null,"target_value"?: number | null,"title"?: string,"unit"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "personal_goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "personal_goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "personal_goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "seasons"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "personal_goals_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
@@ -776,6 +794,9 @@ isOneToOne: true
                            },
 "is_founding_member":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_open_season":
+{ Args: { "s": string }; Returns: boolean
                            },
 "match_meeting_chunks":
 { Args: { "match_count"?: number,"only_meeting"?: string,"query": string }; Returns: {
