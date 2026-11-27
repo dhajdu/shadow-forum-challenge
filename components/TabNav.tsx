@@ -8,6 +8,8 @@ type Tab = { href: string; label: string };
 export const TABS: Tab[] = [
   { href: "/", label: "Home" },
   { href: "/forum", label: "Forum" },
+  { href: "/chat", label: "Chat" },
+  { href: "/gallery", label: "Gallery" },
   { href: "/contest", label: "Contest" },
   { href: "/ask", label: "Ask" },
   { href: "/me", label: "Me" },

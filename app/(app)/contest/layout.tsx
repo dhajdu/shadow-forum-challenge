@@ -1,6 +1,7 @@
 import { getForumContext } from "@/app/_data/context";
 import { listSeasons } from "@/app/_data/forum";
 import { SubTabs } from "@/components/TabNav";
+import { PageBanner } from "@/components/PageBanner";
 import s from "./contest.module.css";
 
 const tabs = () => [
@@ -37,6 +38,9 @@ export default async function ContestLayout({ children }: { children: React.Reac
 
   return (
     <>
+      <PageBanner src="/banners/stances.webp" position="50% 45%">
+        <h1>Contest</h1>
+      </PageBanner>
       <div className={s.bar}>
         <SubTabs items={tabs()} label="Contest" />
       </div>

@@ -4,6 +4,7 @@ import { getMeeting } from "@/app/_data/forum";
 import { longDay, shortDay } from "@/app/_data/format";
 import { Assistant } from "@/components/Assistant";
 import { ForumAsk } from "@/components/ForumAsk";
+import { PageBanner } from "@/components/PageBanner";
 import s from "./ask.module.css";
 
 const FORUM_SUGGESTIONS = ["What did I commit to at the last forum?", "Summarise the newest agenda"];
@@ -17,8 +18,9 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
   const meeting = m ? { id: m.id, label: `the ${shortDay(m.held_on)} ${m.title}` } : null;
 
   return (
-    <main className="page">
-      <header className="page-head">
+    <>
+    <PageBanner src="/banners/back.webp" position="50% 55%">
+      <header>
         <div className="eyebrow">The forum assistant</div>
         <h1>Ask</h1>
         <p className="sub">
@@ -27,6 +29,8 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
             : `It knows the forums you attended${viewer.forum_joined_on ? `, from ${longDay(viewer.forum_joined_on)}` : ""}, and nothing else. Answers cite their agenda.`}
         </p>
       </header>
+    </PageBanner>
+    <main className="page">
       <nav className="seg subtabs" aria-label="Ask about">
         <Link href="/ask" className={`seg-btn ${data ? "" : "on"}`}>Forum</Link>
         <Link href="/ask?about=data" className={`seg-btn ${data ? "on" : ""}`}>My WHOOP data</Link>
@@ -35,5 +39,6 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
         {data ? <Assistant /> : <ForumAsk meeting={meeting} suggestions={FORUM_SUGGESTIONS} />}
       </section>
     </main>
+    </>
   );
 }
