@@ -3,7 +3,6 @@
 // Postgres before anything reaches a model. Never pass the service-role client.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { embed, toVector } from "@/lib/embed";
 
 type MemberClient = SupabaseClient<Database>;
 
@@ -12,10 +11,8 @@ export type AgendaHit = {
   held_on: string;
   title: string | null;
   content: string;
-  similarity: number;
+  rank: number;
 };
-
-const MIN_SIMILARITY = 0.3;
 
 /** The one reply for "nothing found". It never hints that content exists beyond the member's view. */
 export const NO_RECORD = "I have no record of that in your forum agendas.";
@@ -25,14 +22,14 @@ export async function searchAgendas(
   question: string,
   opts: { limit?: number; meetingId?: string | null } = {}
 ): Promise<AgendaHit[]> {
-  const [vector] = await embed([question], "query");
+  // Postgres full-text search; the member's session means RLS filters first.
   const { data, error } = await supabase.rpc("match_meeting_chunks", {
-    query_embedding: toVector(vector),
+    query: question,
     match_count: opts.limit ?? 8,
     only_meeting: opts.meetingId ?? null,
   });
   if (error) throw new Error(error.message);
-  const rows = (data ?? []).filter((r) => r.similarity >= MIN_SIMILARITY);
+  const rows = data ?? [];
   if (rows.length === 0) return [];
 
   const ids = [...new Set(rows.map((r) => r.meeting_id))];

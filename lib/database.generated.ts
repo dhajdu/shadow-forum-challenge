@@ -171,14 +171,14 @@ isOneToOne: false
                   ]
                 },"meeting_chunks": {
                   Row: {
-                    "content": string,"created_at": string,"embedding": string | null,"held_on": string,"id": string,"meeting_id": string
+                    "content": string,"created_at": string,"held_on": string,"id": string,"meeting_id": string,"search": unknown
                   }
                   ComputedFields: never
                   Insert: {
-                    "content": string,"created_at"?: string,"embedding"?: string | null,"held_on": string,"id"?: string,"meeting_id": string
+                    "content": string,"created_at"?: string,"held_on": string,"id"?: string,"meeting_id": string,"search"?: never
                   }
                   Update: {
-                    "content"?: string,"created_at"?: string,"embedding"?: string | null,"held_on"?: string,"id"?: string,"meeting_id"?: string
+                    "content"?: string,"created_at"?: string,"held_on"?: string,"id"?: string,"meeting_id"?: string,"search"?: never
                   }
                   Relationships: [
                     {
@@ -541,8 +541,8 @@ isOneToOne: true
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "match_meeting_chunks":
-{ Args: { "match_count"?: number,"only_meeting"?: string,"query_embedding": string }; Returns: {
-              "content": string,"held_on": string,"id": string,"meeting_id": string,"similarity": number
+{ Args: { "match_count"?: number,"only_meeting"?: string,"query": string }; Returns: {
+              "content": string,"held_on": string,"id": string,"meeting_id": string,"rank": number
             }[]
                            },
 "member_can_see_date":

@@ -4,7 +4,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { NO_RECORD, searchAgendas } from "@/lib/ask";
-import { embeddingsConfigured } from "@/lib/embed";
 
 type MemberClient = SupabaseClient<Database>;
 type Ctx = { supabase: MemberClient; userId: string };
@@ -79,12 +78,11 @@ export async function callTool(name: string, args: Record<string, unknown>, ctx:
     case "search_agendas": {
       const query = typeof args.query === "string" ? args.query.trim().slice(0, 500) : "";
       if (!query) return fail("Give a query.");
-      if (!embeddingsConfigured()) return fail("Search is not configured.");
       const limit = Math.min(10, Math.max(1, Number(args.limit) || 5));
       const hits = await searchAgendas(supabase, query, { limit });
       if (hits.length === 0) return json({ results: [], note: NO_RECORD });
       return json({
-        results: hits.map((h) => ({ meeting_id: h.meeting_id, held_on: h.held_on, title: h.title, excerpt: h.content, similarity: Math.round(h.similarity * 1000) / 1000 })),
+        results: hits.map((h) => ({ meeting_id: h.meeting_id, held_on: h.held_on, title: h.title, excerpt: h.content, rank: Math.round(h.rank * 1000) / 1000 })),
       });
     }
     case "my_contest": {
