@@ -850,3 +850,125 @@ describe("gallery", () => {
     assert.equal((gone.data ?? []).length, 0, "orphan files removed");
   });
 });
+
+// ── Forum chat ───────────────────────────────────────────
+describe("forum chat", () => {
+  const SENT = [
+    { key: "feb", sent_on: "2026-02-05" },
+    { key: "aug", sent_on: "2026-08-24" },
+    { key: "dec", sent_on: "2026-12-24" },
+    { key: "jan", sent_on: "2027-01-25" },
+  ];
+  const mid: Record<string, string> = {};
+  const todayVN = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+
+  before(async () => {
+    for (const s of SENT) {
+      const row = ok(
+        await admin
+          .from("forum_messages")
+          // Nam Trung wrote the August message; the founding member wrote the rest
+          .insert({ author_id: s.key === "aug" ? member.nam.id : member.founding.id, body: `chat ${s.key}`, sent_on: s.sent_on })
+          .select("id")
+          .single(),
+        `msg ${s.key}`
+      ) as { id: string };
+      mid[s.key] = row.id;
+    }
+  });
+
+  for (const k of KEYS) {
+    it(`${k}: reads chat only from their first forum`, async () => {
+      const rows = ok(await client[k].from("forum_messages").select("id"), "chat") as { id: string }[];
+      const seen = rows.map((r) => r.id).filter((id) => Object.values(mid).includes(id));
+      assert.deepEqual(sorted(seen), sorted(SENT.filter((s) => seesDate(k, s.sent_on)).map((s) => mid[s.key])));
+    });
+  }
+
+  it("posting: active members on a day they can see, as themselves, with their own links", async () => {
+    const posted = await client.nam.from("forum_messages").insert({ body: "hello forum" }).select("id, author_id, sent_on").single();
+    assert.equal(posted.error, null);
+    assert.equal(posted.data?.author_id, member.nam.id);
+    assert.equal(posted.data?.sent_on, todayVN);
+    assert.equal(seesDate("december", todayVN), false);
+    assert.ok((await client.december.from("forum_messages").insert({ body: "too early" })).error, "before first forum: cannot post");
+    for (const k of ["leaver", "nodate"] as const) assert.ok((await client[k].from("forum_messages").insert({ body: "x" })).error, `${k} cannot post`);
+    assert.ok((await client.nam.from("forum_messages").insert({ body: "x", author_id: member.founding.id } as never)).error, "not as someone else");
+    assert.ok((await client.nam.from("forum_messages").insert({ body: "x", sent_on: "2026-02-05" } as never)).error, "cannot backdate");
+    assert.ok((await client.nam.from("forum_messages").insert({ body: "" })).error, "empty body refused");
+    assert.ok((await client.nam.from("forum_messages").insert({ body: "re", reply_to: mid.feb })).error, "cannot reply to a hidden message");
+    assert.equal((await client.nam.from("forum_messages").insert({ body: "re", reply_to: mid.aug })).error, null, "can reply to a visible one");
+  });
+
+  it("edit, soft delete, admin delete", async () => {
+    const own = ok(await client.nam.from("forum_messages").insert({ body: "draft" }).select("id").single(), "own") as { id: string };
+    const ed = ok(await client.nam.from("forum_messages").update({ body: "edited" }).eq("id", own.id).select("body, edited_at").single(), "edit") as {
+      body: string;
+      edited_at: string | null;
+    };
+    assert.equal(ed.body, "edited");
+    assert.ok(ed.edited_at, "edited_at stamped");
+    const other = await client.nam.from("forum_messages").update({ body: "hijack" }).eq("id", mid.dec).select("id");
+    assert.equal(other.data?.length ?? 0, 0, "not someone else's message");
+    assert.ok((await client.nam.from("forum_messages").update({ notified_at: null } as never).eq("id", own.id)).error, "server columns locked");
+
+    const del = ok(
+      await client.nam.from("forum_messages").update({ deleted_at: new Date().toISOString() }).eq("id", own.id).select("body, deleted_at").single(),
+      "soft delete"
+    ) as { body: string; deleted_at: string | null };
+    assert.equal(del.body, "", "content wiped");
+    assert.ok(del.deleted_at);
+    const undo = await client.nam.from("forum_messages").update({ deleted_at: null }).eq("id", own.id).select("id");
+    assert.ok(undo.error || (undo.data ?? []).length === 0, "cannot undelete");
+
+    const rewrite = await client.founding.from("forum_messages").update({ body: "admin words" }).eq("id", mid.aug).select("id");
+    assert.ok(rewrite.error || (rewrite.data ?? []).length === 0, "admin cannot rewrite");
+    const byAdmin = ok(
+      await client.founding.from("forum_messages").update({ deleted_at: new Date().toISOString() }).eq("id", mid.aug).select("body").single(),
+      "admin delete"
+    ) as { body: string };
+    assert.equal(byAdmin.body, "");
+  });
+
+  it("read marks are the member's own", async () => {
+    assert.equal((await client.nam.from("forum_read_marks").upsert({ last_read_at: new Date().toISOString() })).error, null);
+    assert.ok((await client.nam.from("forum_read_marks").insert({ user_id: member.founding.id })).error, "not for someone else");
+    const theirs = ok(await client.founding.from("forum_read_marks").select("user_id"), "marks") as { user_id: string }[];
+    assert.ok(theirs.every((r) => r.user_id === member.founding.id));
+    assert.ok((await client.leaver.from("forum_read_marks").upsert({ last_read_at: new Date().toISOString() })).error, "leaver cannot");
+  });
+
+  it("the table is in the realtime publication", async () => {
+    const { data } = await admin.rpc("member_is_active", { uid: member.nam.id }); // keep a round trip on the API
+    assert.equal(data, true);
+    const pub = await import("node:child_process");
+    const out = pub.execSync(
+      `docker exec -i $(docker ps --format '{{.Names}}' | grep supabase_db) psql -U postgres -tAc "select count(*) from pg_publication_tables where pubname='supabase_realtime' and tablename='forum_messages'"`
+    );
+    assert.equal(String(out).trim(), "1");
+  });
+
+  it("chat push: generic text, once, only to others who can see that day", async () => {
+    const { POST } = await import("@/app/api/forum/notify/route");
+    const { render } = await import("@/lib/push");
+    process.env.EXPO_ACCESS_TOKEN = "leak-expo";
+    ok(await admin.from("forum_messages").update({ notified_at: null }).is("deleted_at", null), "reset notified");
+    ok(await admin.from("push_devices").update({ revoked_at: null }).like("expo_token", "ExponentPushToken[leak-%"), "revive devices");
+    const m = ok(await client.nam.from("forum_messages").insert({ body: "push me" }).select("id").single(), "msg") as { id: string };
+    expoBodies.length = 0;
+    const r = await POST(req("/api/forum/notify", { method: "POST", token: token.nam, body: { message_id: m.id } }));
+    const body = (await r.json()) as { pushed: boolean };
+    assert.equal(body.pushed, true);
+    const to = expoBodies.flat().map((x) => x.to);
+    const owners = ok(await admin.from("push_devices").select("user_id").in("expo_token", to), "owners") as { user_id: string }[];
+    const keys = [...new Set(owners.map((o) => KEYS.find((x) => member[x].id === o.user_id)))].sort();
+    assert.deepEqual(keys, KEYS.filter((k) => k !== "nam" && seesDate(k, todayVN)).sort(), "others who can see today");
+    for (const x of expoBodies.flat()) assert.equal(x.body, render({ kind: "forum_message", sentOn: todayVN }).body);
+    assert.doesNotMatch(JSON.stringify(expoBodies), /push me/, "message text never in the push");
+    const again = (await (await POST(req("/api/forum/notify", { method: "POST", token: token.nam, body: { message_id: m.id } }))).json()) as { pushed: boolean };
+    assert.equal(again.pushed, false, "once per message");
+    const notMine = await POST(req("/api/forum/notify", { method: "POST", token: token.founding, body: { message_id: m.id } }));
+    assert.equal(notMine.status, 404, "only the author can trigger it");
+    delete process.env.EXPO_ACCESS_TOKEN;
+  });
+});

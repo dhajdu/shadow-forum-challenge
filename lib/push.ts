@@ -14,7 +14,8 @@ export type PushMessage =
   | { kind: "next_forum"; heldOn: string; startsAt: string | null }
   | { kind: "new_agenda"; heldOn: string }
   | { kind: "whip_nudge" }
-  | { kind: "report_ready"; month: string }; // month YYYY-MM
+  | { kind: "report_ready"; month: string } // month YYYY-MM
+  | { kind: "forum_message"; sentOn: string }; // sentOn YYYY-MM-DD, the message's day
 
 const TZ = "Asia/Ho_Chi_Minh";
 
@@ -33,6 +34,8 @@ export function render(m: PushMessage): { title: string; body: string; data: Rec
       return { title: "The Shadow Forum", body: `Next forum: ${when(m.heldOn, m.startsAt)}`, data: { path: `/forum/${m.heldOn}` } };
     case "new_agenda":
       return { title: "The Shadow Forum", body: "A new agenda is in Forum", data: { path: `/forum/${m.heldOn}` } };
+    case "forum_message":
+      return { title: "The Shadow Forum", body: "New message in the forum chat", data: { path: "/forum/chat" } };
     case "whip_nudge":
       return { title: "The Whip", body: "Time to sync your WHOOP", data: { path: "/me" } };
     case "report_ready":
@@ -47,6 +50,7 @@ export function render(m: PushMessage): { title: string; body: string; data: Rec
 export function mayReceive(m: Member, msg: PushMessage): boolean {
   if (!isActive(m)) return false;
   if (msg.kind === "next_forum" || msg.kind === "new_agenda") return memberCanSeeDate(m, msg.heldOn);
+  if (msg.kind === "forum_message") return memberCanSeeDate(m, msg.sentOn);
   return true;
 }
 
