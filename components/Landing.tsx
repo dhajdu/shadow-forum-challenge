@@ -11,7 +11,7 @@ type Mode = "signin" | "signup" | "forgot";
 export function Landing() {
   const router = useRouter();
   const supabase = createClient();
-  const [mode, setMode] = useState<Mode>("signup");
+  const [mode, setMode] = useState<Mode>("signin");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,7 +27,7 @@ export function Landing() {
     const q = new URLSearchParams(window.location.search);
     const n = q.get("next");
     if (n && n.startsWith("/") && !n.startsWith("//")) setNext(n);
-    if (q.get("mode") === "signin") setMode("signin");
+    if (q.get("mode") === "signup") setMode("signup");
     if (q.get("reset") === "expired") {
       setMode("forgot");
       setMsg({ text: "That reset link has expired. Request a new one.", ok: false });
