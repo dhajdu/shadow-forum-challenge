@@ -34,7 +34,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageBanner src="/banners/front.webp" position="50% 30%">
+      <PageBanner src="/banners/goals.webp" position="50% 45%">
         <h1>Goals</h1>
       </PageBanner>
       <main className={`page ${s.page}`}>
