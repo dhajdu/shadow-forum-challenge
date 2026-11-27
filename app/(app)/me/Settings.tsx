@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Viewer } from "@/app/_data/forum";
 import { AddPasskeyButton } from "@/components/AddPasskeyButton";
-import { SignOutButton } from "@/components/SignOutButton";
 import s from "./me.module.css";
 
 const MCP_URL = `${process.env.NEXT_PUBLIC_SITE_URL || "https://eoshadowforum.com"}/api/mcp`;
@@ -34,9 +33,6 @@ export function Settings({ viewer }: { viewer: Viewer }) {
               <span className={s.passkey}><AddPasskeyButton /></span>
             </li>
           </ul>
-          <div className="signout-row">
-            <SignOutButton className="btn-ghost" />
-          </div>
         </section>
 
         {viewer.is_admin && (

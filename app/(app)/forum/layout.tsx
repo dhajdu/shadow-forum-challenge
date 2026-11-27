@@ -2,6 +2,7 @@ import { SubTabs } from "@/components/TabNav";
 
 const TABS = [
   { href: "/forum", label: "Agendas" },
+  { href: "/forum/chat", label: "Chat" },
   { href: "/forum/dates", label: "Dates" },
   { href: "/forum/gallery", label: "Gallery" },
   { href: "/forum/library", label: "Library" },

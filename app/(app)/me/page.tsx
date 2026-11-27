@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { WhoopConnect, whoopNotice } from "./zone/WhoopConnect";
+import { SignOutButton } from "@/components/SignOutButton";
 import { isExternallySynced } from "@/lib/whoop/config";
 import { ScoreTrend } from "@/components/ScoreTrend";
 import { GoalProgress } from "@/components/GoalProgress";
@@ -176,6 +177,7 @@ export default async function MePage({
             external={isExternallySynced(user.id)}
             notice={whoopNotice(params.whoop)}
           />
+          <SignOutButton className="btn-ghost" />
         </div>
       </header>
 

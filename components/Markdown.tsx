@@ -1,32 +1,76 @@
-// Small, safe Markdown for agenda and library text: headings, lists and paragraphs.
-// Renders text nodes only (no HTML), so imported content cannot inject markup.
-type Block =
-  | { kind: "h"; text: string }
-  | { kind: "ol" | "ul"; items: string[] }
-  | { kind: "p"; text: string };
+// Small, safe Markdown for agenda and library text: headings, nested lists (checkboxes become
+// plain bullets), paragraphs and **bold**. Renders text nodes only, so imported content cannot
+// inject markup.
+import { Fragment } from "react";
+
+type Item = { text: string; children: Item[] };
+type Block = { kind: "h"; text: string } | { kind: "p"; text: string } | { kind: "list"; ordered: boolean; items: Item[] };
+
+const LIST = /^(\s*)(?:([-*+]|--)|(\d+)[.)])\s+(?:\[[ xX]\]\s*)?(.*)$/;
 
 function parse(md: string): Block[] {
   const blocks: Block[] = [];
+  let list: { ordered: boolean; items: Item[] } | null = null;
+  let para: string[] = [];
+  const flush = () => {
+    if (para.length) blocks.push({ kind: "p", text: para.join(" ") });
+    para = [];
+  };
   for (const raw of md.split("\n")) {
-    const line = raw.trim();
-    const last = blocks[blocks.length - 1];
-    if (!line) {
-      blocks.push({ kind: "p", text: "" });
+    const line = raw.replace(/\t/g, "  ");
+    if (!line.trim()) {
+      flush();
       continue;
     }
-    const h = line.match(/^#{1,6}\s+(.*)$/);
-    const ol = line.match(/^\d+[.)]\s+(.*)$/);
-    const ul = line.match(/^[-*]\s+(.*)$/);
-    if (h) blocks.push({ kind: "h", text: h[1] });
-    else if (ol || ul) {
-      const kind = ol ? "ol" : "ul";
-      const text = (ol ?? ul)![1];
-      if (last && last.kind === kind) last.items.push(text);
-      else blocks.push({ kind, items: [text] });
-    } else if (last && last.kind === "p" && last.text) last.text += " " + line;
-    else blocks.push({ kind: "p", text: line });
+    const h = line.trim().match(/^#{1,6}\s+(.*)$/);
+    const li = line.match(LIST);
+    if (h) {
+      flush();
+      list = null;
+      blocks.push({ kind: "h", text: h[1] });
+    } else if (li && li[4].trim()) {
+      flush();
+      const depth = li[2] === "--" ? 1 : Math.floor(li[1].length / 2);
+      const item: Item = { text: li[4].trim(), children: [] };
+      if (!list || (depth === 0 && list.ordered !== Boolean(li[3]))) {
+        list = { ordered: Boolean(li[3]), items: [] };
+        blocks.push({ kind: "list", ...list });
+      }
+      const parent = depth > 0 ? list.items[list.items.length - 1] : null;
+      (parent ? parent.children : list.items).push(item);
+    } else if (!li) {
+      list = null;
+      para.push(line.trim());
+    }
   }
-  return blocks.filter((b) => b.kind !== "p" || b.text);
+  flush();
+  return blocks;
+}
+
+/** **bold** as <b>, everything else as text. */
+function Inline({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.startsWith("**") && p.endsWith("**") ? <b key={i}>{p.slice(2, -2)}</b> : <Fragment key={i}>{p.replace(/\*\*/g, "")}</Fragment>
+      )}
+    </>
+  );
+}
+
+function List({ ordered, items }: { ordered: boolean; items: Item[] }) {
+  const Tag = ordered ? "ol" : "ul";
+  return (
+    <Tag>
+      {items.map((it, i) => (
+        <li key={i}>
+          <Inline text={it.text} />
+          {it.children.length > 0 && <List ordered={false} items={it.children} />}
+        </li>
+      ))}
+    </Tag>
+  );
 }
 
 export function Markdown({ text }: { text: string }) {
@@ -34,13 +78,11 @@ export function Markdown({ text }: { text: string }) {
     <div className="prose">
       {parse(text).map((b, i) =>
         b.kind === "h" ? (
-          <h3 key={i}>{b.text}</h3>
+          <h3 key={i}><Inline text={b.text} /></h3>
         ) : b.kind === "p" ? (
-          <p key={i}>{b.text}</p>
-        ) : b.kind === "ol" ? (
-          <ol key={i}>{b.items.map((t, j) => <li key={j}>{t}</li>)}</ol>
+          <p key={i}><Inline text={b.text} /></p>
         ) : (
-          <ul key={i}>{b.items.map((t, j) => <li key={j}>{t}</li>)}</ul>
+          <List key={i} ordered={b.ordered} items={b.items} />
         )
       )}
     </div>
