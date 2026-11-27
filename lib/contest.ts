@@ -73,13 +73,18 @@ export function seasonPhase(s: Pick<ContestSeason, "starts_on" | "ends_on">, now
   return t < s.starts_on ? "upcoming" : t > s.ends_on ? "over" : "running";
 }
 
-/** Placement penalties (VND millions) for the season, from its ladder; Q4's ladder if unset. */
+/** Placement penalties (VND millions) for the season, from its ladder. Empty: no contest. */
 export function seasonLadder(s: Pick<ContestSeason, "ladder"> | null): number[] {
   const l = s?.ladder;
-  return Array.isArray(l) && l.length && l.every((x) => typeof x === "number") ? (l as number[]) : PLACEMENT_PENALTIES;
+  return Array.isArray(l) && l.length && l.every((x) => typeof x === "number") ? (l as number[]) : [];
+}
+
+/** Whether the season has a contest (a ladder). Q1 2027 has none until Dave picks one. */
+export function hasContest(s: Pick<ContestSeason, "ladder"> | null): boolean {
+  return seasonLadder(s).length > 0;
 }
 
 export function seasonPenalty(s: Pick<ContestSeason, "ladder"> | null, rankIndex: number): number {
   const ladder = seasonLadder(s);
-  return ladder[Math.min(rankIndex, ladder.length - 1)];
+  return ladder.length ? ladder[Math.min(rankIndex, ladder.length - 1)] : 0;
 }
