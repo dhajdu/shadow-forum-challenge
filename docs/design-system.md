@@ -1,12 +1,15 @@
-# Shadow Forum design system
+# Shadow Forum design system: Neon Noir
 
-The source of truth for how the web app looks. It codifies the UI as shipped; it is not a redesign.
+The source of truth for how the web app looks. Direction "A · Neon Noir" (picked by Dave, 27 Nov 2026):
+the night city done properly. Near-black ground, the landing photo bleeding into Home, huge condensed
+uppercase titles and dates, red and blue neon used only as thin accents. No boxed cards: hairlines separate.
 Tokens live in [`app/globals.css`](../app/globals.css) `:root`. The iOS app mirrors the core palette in
 [`ios/ShadowForum/Theme/Theme.swift`](../ios/ShadowForum/Theme/Theme.swift).
 Browsable reference (tokens, brand book): https://claude.ai/artifact/K8kPJELdj1AoFzUXi8M2kX
 
 ## Rules
 
+0. **No boxes.** Sections are separated by `--line` hairlines, not filled cards. Buttons are square (`--r-btn`): primary is solid `--ink` on dark, secondary is an outline. Tabs are uppercase text with a red underline.
 1. **No new literals.** Use a token for every color, radius and font size. If nothing fits, add a token here and in `:root` in the same PR.
 2. **Copy a component, don't hand-roll one.** Reuse the classes below before writing a new card, chip, button or list row.
 3. **Dark only.** The app is a single dark "night city" theme. There is no light mode.
@@ -52,7 +55,10 @@ Goal status: web chips are on track = green, at risk = amber, behind = red, hit 
 
 ## Typography
 
-One family: the system UI stack (`ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, ...`). No web fonts.
+Two families via `next/font` in `app/layout.tsx`: **Archivo** (display, condensed with `font-stretch: var(--display-width)`, 800–900, uppercase)
+for page titles, dates and big numbers; **Inter** (`--font-body`) for everything else. Tokens: `--font-display-stack`, `--font-body-stack`,
+`--fs-display` (page titles), `--fs-hero` (the next-forum date), `--fs-number` (race place), `--fs-date` (day numbers in lists).
+Labels are uppercase Inter 600 at `--fs-xs` with `--track-label` tracking, in `--muted`.
 
 | Token | Size | Use |
 |---|---|---|

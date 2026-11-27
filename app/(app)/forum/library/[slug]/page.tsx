@@ -13,7 +13,7 @@ export default async function LibraryDocPage({ params }: { params: Promise<{ slu
   if (!doc) notFound();
   return (
     <>
-      <Link href="/forum/library" className="back">‹ Library</Link>
+      <Link href="/forum/library" className="back">← Library</Link>
       <section className={`zone-card ${s.below}`}>
         <header className={s.detailHead}>
           <div className="eyebrow">Updated {longDay(doc.updated_at.slice(0, 10))}</div>

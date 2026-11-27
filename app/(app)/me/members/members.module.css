@@ -1,6 +1,6 @@
 /* Members and access (admin). */
 .list { list-style: none; display: grid; gap: var(--sp-10); }
-.member { display: grid; gap: var(--sp-8); padding: var(--sp-12); border-radius: var(--r-md); border: var(--hair) solid var(--line); background: var(--well-soft); min-width: 0; }
+.member { display: grid; gap: var(--sp-8); padding: var(--sp-14) 0; border-bottom: var(--hair) solid var(--line-soft); min-width: 0; }
 .top { display: flex; align-items: center; gap: var(--sp-8); flex-wrap: wrap; }
 .top b { font-size: var(--fs-base); font-weight: 600; margin-right: auto; }
 .inline { display: flex; align-items: center; gap: var(--sp-8); flex-wrap: wrap; }

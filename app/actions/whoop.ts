@@ -13,5 +13,4 @@ export async function disconnectWhoop(): Promise<void> {
   if (!user) return;
   await disconnectUser(createAdminClient(), user.id);
   revalidatePath("/me");
-  revalidatePath("/contest/goal");
 }

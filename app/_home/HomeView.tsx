@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getForumContext } from "@/app/_data/context";
@@ -5,6 +6,7 @@ import { listLibrary, listMeetings, listSeasons, memberStatus, touchLastSeen } f
 import { shortDay, timeOf, weekdayDay } from "@/app/_data/format";
 import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
 import { ForumAsk } from "@/components/ForumAsk";
+import { listGallery } from "@/app/_data/gallery";
 import { getStandings } from "@/lib/standings";
 import { CONTEST_DAYS, dayOfContest } from "@/lib/contest";
 import type { GoalStatus } from "@/lib/database.types";
@@ -25,10 +27,11 @@ type NewItem = { key: string; href: string; text: string; when: string };
 
 export async function HomeView() {
   const { db, user, viewer, today } = await getForumContext();
-  const [meetings, library, seasons] = await Promise.all([
+  const [meetings, library, seasons, photos] = await Promise.all([
     listMeetings(db, viewer),
     listLibrary(db, viewer),
     listSeasons(db, viewer),
+    listGallery(db, 6),
   ]);
 
   const next = [...meetings].reverse().find((m) => m.status === "planned" && m.held_on >= today) ?? null;
@@ -79,119 +82,181 @@ export async function HomeView() {
 
   const first = viewer.full_name.split(/\s+/)[0];
   const status = memberStatus(viewer, today);
+  const suffix = place ? ordinal(place.rank).slice(String(place.rank).length) : "";
 
   return (
-    <main className={`page ${s.withRail}`}>
+    <main className={s.home}>
       <MarkVisit />
-      <div className={s.mainCol}>
-      <header className="page-head">
-        <div className="eyebrow">The Shadow Forum</div>
-        <h1>{greeting()}, {first}</h1>
-      </header>
-
-      {status !== "active" && (
-        <section className={`zone-card ${s.notice}`}>
-          <h2>{status === "left" ? "You are no longer in the forum" : "Your access is being set up"}</h2>
-          <p className="note-line">
-            {status === "left"
-              ? "Your forum access has ended. Ask Dave if you think this is a mistake."
-              : "Dave adds your first forum date, and your forums appear here from then on."}
-          </p>
-        </section>
-      )}
-
-      <div className={s.grid}>
-        <section className={`zone-card ${s.next}`}>
-          <h2>{isFirst ? "Your first forum" : "Next forum"}</h2>
+      <section className={s.hero}>
+        <Image src="/hero.webp" alt="" fill priority sizes="100vw" className={s.heroImg} />
+        <div className={s.heroInner}>
+          <p className={s.greet}>{greeting()}, {first}</p>
+          <span className={s.kicker}>{isFirst ? "Your first forum" : "Next forum"}</span>
           {next ? (
             <>
-              <b className={s.big}>
-                {weekdayDay(next.held_on)}
-                {next.starts_at ? ` · ${timeOf(next.starts_at)}` : ""}
-              </b>
-              <p className="note-line">{next.place ?? "Place to be confirmed"}</p>
-              {isFirst && <p className="note-line">Welcome to the Shadow, {first}.</p>}
-              <div className={`actions-row ${s.actions}`}>
-                <a className="btn inline" href={`${next.path}/calendar.ics`}>Add to calendar</a>
-                <Link className="btn-ghost inline" href="/forum/dates">All dates</Link>
+              <h1 className={s.date}>{weekdayDay(next.held_on)}</h1>
+              <p className={s.meta}>
+                {[next.starts_at && timeOf(next.starts_at), next.place ?? "Place to be confirmed"].filter(Boolean).join(" · ")}
+                {isFirst ? ` · welcome to the Shadow, ${first}` : ""}
+              </p>
+              <div className="actions-row">
+                <a className="btn inline" href={googleCalendarUrl(next)} target="_blank" rel="noreferrer">Add to Google Calendar</a>
+                <a className="btn-ghost inline" href={`${next.path}/calendar.ics`}>Apple / Outlook</a>
               </div>
             </>
           ) : (
-            <p className="note-line">The next forum date is not set yet.</p>
+            <>
+              <h1 className={s.date}>Date not set</h1>
+              <p className={s.meta}>Dave sets the next forum date. It shows here as soon as it is in.</p>
+            </>
           )}
-        </section>
+        </div>
+      </section>
 
-        {season ? (
-          <Link href="/contest" className={`zone-card ${s.cardLink}`}>
-            <h2>Race Into the Shadow · {season.name}</h2>
-            <b className={s.big}>{place ? `${ordinal(place.rank)} of ${place.of} · avg ${place.avg}` : "Not on the board yet"}</b>
-            <p className="note-line">
-              {today <= season.ends_on ? `Day ${dayOfContest()} of ${CONTEST_DAYS}` : "Season over · the kitty settles on 31 Dec"}
-            </p>
-            {goal && (
-              <p className={`note-line ${s.goal}`}>
-                Your goal <span className={`chip ${goal.status}`}>{STATUS_LABEL[goal.status]}</span>
-                {goal.pct != null ? ` · ${goal.pct}%` : ""}
+      <div className={`page ${s.body}`}>
+        <div className={s.mainCol}>
+          {status !== "active" && (
+            <section className={s.notice}>
+              <h2>{status === "left" ? "You are no longer in the forum" : "Your access is being set up"}</h2>
+              <p className="note-line">
+                {status === "left"
+                  ? "Your forum access has ended. Ask Dave if you think this is a mistake."
+                  : "Dave adds your first forum date, and your forums appear here from then on."}
               </p>
-            )}
-            {place?.stale && today <= season.ends_on && (
-              <p className={s.whip}>The Whip: no new WHOOP data for over a week. Open WHOOP to sync.</p>
-            )}
-          </Link>
-        ) : (
-          <section className="zone-card">
-            <h2>Start here</h2>
-            <ul className="rows">
-              {library.slice(0, 2).map((d) => (
-                <li key={d.slug}>
-                  <Link href={`/forum/library/${d.slug}`} className="row">
-                    <span className="row-main"><b>Read the {d.title}</b></span>
-                    <span className="chev" aria-hidden>›</span>
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link href="/me" className="row">
-                  <span className="row-main"><b>Connect WHOOP for the next season</b></span>
-                  <span className="chev" aria-hidden>›</span>
-                </Link>
-              </li>
-            </ul>
-          </section>
-        )}
-
-        <section className="zone-card">
-          <h2>New since your last visit</h2>
-          {fresh.length === 0 ? (
-            <p className="note-line">Nothing new since your last visit.</p>
-          ) : (
-            <ul className="rows">
-              {fresh.slice(0, 5).map((f) => (
-                <li key={f.key}>
-                  <Link href={f.href} className="row">
-                    <span className="row-main"><b>{f.text}</b></span>
-                    <span className="chev" aria-hidden>›</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            </section>
           )}
-        </section>
 
-        {newest && (
-          <section className="zone-card">
-            <h2>Newest agenda</h2>
-            <MeetingRow m={newest} />
+          {season ? (
+            <Link href="/contest" className={s.race}>
+              <span className={s.place}>
+                {place ? (
+                  <>
+                    {place.rank}
+                    <sup>{suffix}</sup>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </span>
+              <span className={s.raceText}>
+                <span className={s.label}>Race into the Shadow · {season.name}</span>
+                <b>{place ? `of ${place.of} riders · avg ${place.avg}` : "Not on the board yet"}</b>
+                <span className="note-line">
+                  {today <= season.ends_on ? `Day ${dayOfContest()} of ${CONTEST_DAYS}` : "Season over · the kitty settles on 31 Dec"}
+                </span>
+              </span>
+            </Link>
+          ) : null}
+
+          {season && (
+            <div className={s.progress} aria-hidden>
+              <i style={{ width: `${Math.min(100, (dayOfContest() / CONTEST_DAYS) * 100)}%` }} />
+            </div>
+          )}
+
+          {goal && (
+            <Link href="/me" className={s.line}>
+              <span>
+                <span className={s.label}>Your goal</span>
+                <b>{goal.pct != null ? `${goal.pct}%` : "In progress"}</b>
+              </span>
+              <span className={`${s.status} ${s[goal.status]}`}>{STATUS_LABEL[goal.status]}</span>
+            </Link>
+          )}
+
+          {season && place?.stale && today <= season.ends_on && (
+            <p className={s.whip}>The Whip — no new WHOOP data for over a week. Open WHOOP to sync.</p>
+          )}
+
+          {!season && (
+            <section className={s.block}>
+              <h2 className={s.label}>Start here</h2>
+              <ul className="rows">
+                {library.slice(0, 2).map((d) => (
+                  <li key={d.slug}>
+                    <Link href={`/forum/library/${d.slug}`} className="row">
+                      <span className="row-main"><b>Read the {d.title}</b></span>
+                      <span className="chev" aria-hidden>→</span>
+                    </Link>
+                  </li>
+                ))}
+                <li>
+                  <Link href="/me" className="row">
+                    <span className="row-main"><b>Connect WHOOP for the next season</b></span>
+                    <span className="chev" aria-hidden>→</span>
+                  </Link>
+                </li>
+              </ul>
+            </section>
+          )}
+
+          <section className={s.block}>
+            <h2 className={s.label}>New since your last visit</h2>
+            {fresh.length === 0 ? (
+              <p className="note-line">Nothing new since your last visit.</p>
+            ) : (
+              <ul className="rows">
+                {fresh.slice(0, 5).map((f) => (
+                  <li key={f.key}>
+                    <Link href={f.href} className="row">
+                      <span className="row-main"><b>{f.text}</b></span>
+                      <span className="chev" aria-hidden>→</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
-        )}
+
+          {photos.length > 0 && (
+            <section className={s.block}>
+              <Link href="/forum/gallery" className={s.galleryHead}>
+                <h2 className={s.label}>Gallery</h2>
+                <span className="note-line">See all →</span>
+              </Link>
+              <ul className={s.gallery}>
+                {photos.map((p) => (
+                  <li key={p.id}>
+                    <Link href="/forum/gallery" aria-label="Open the gallery">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- signed Storage URL, already a thumbnail */}
+                      {p.thumb && <img src={p.thumb} alt={p.caption ?? ""} loading="lazy" />}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {newest && (
+            <section className={s.block}>
+              <h2 className={s.label}>Newest agenda</h2>
+              <MeetingRow m={newest} />
+            </section>
+          )}
+        </div>
+
+        <aside className={s.rail} aria-label="Ask">
+          <h2 className={s.label}>Ask the forum</h2>
+          <ForumAsk suggestions={["What did I commit to at the last forum?"]} />
+        </aside>
       </div>
-      </div>
-      <aside className={`zone-card ${s.rail}`} aria-label="Ask">
-        <h2>Ask</h2>
-        <ForumAsk suggestions={["What did I commit to at the last forum?"]} />
-      </aside>
     </main>
   );
+}
+
+/** Google Calendar "add event" link (opens Google with the forum filled in). */
+function googleCalendarUrl(m: { held_on: string; starts_at: string | null; place: string | null; title: string }): string {
+  const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  let dates: string;
+  if (m.starts_at) {
+    const start = new Date(m.starts_at);
+    dates = `${stamp(start)}/${stamp(new Date(start.getTime() + 3 * 3_600_000))}`;
+  } else {
+    dates = `${m.held_on.replace(/-/g, "")}/${addDays(m.held_on, 1).replace(/-/g, "")}`;
+  }
+  const q = new URLSearchParams({ action: "TEMPLATE", text: `Shadow Forum · ${m.title}`, dates, details: "The Shadow Forum" });
+  if (m.place) q.set("location", m.place);
+  return `https://calendar.google.com/calendar/render?${q.toString()}`;
 }
 
 function addDays(iso: string, n: number): string {

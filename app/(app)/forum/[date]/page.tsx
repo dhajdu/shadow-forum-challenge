@@ -21,7 +21,7 @@ export default async function AgendaPage({ params }: { params: Promise<{ date: s
 
   return (
     <>
-      <Link href="/forum" className="back">‹ Forum</Link>
+      <Link href="/forum" className="back">← Forum</Link>
       <section className={`zone-card ${s.below}`}>
         <header className={s.detailHead}>
           <div className="eyebrow">{when}</div>
@@ -44,7 +44,7 @@ export default async function AgendaPage({ params }: { params: Promise<{ date: s
                   {f.url ? (
                     <a href={f.url} className="row" target="_blank" rel="noreferrer">
                       <span className="row-main"><b>{f.name}</b></span>
-                      <span className="chev" aria-hidden>›</span>
+                      <span className="chev" aria-hidden>→</span>
                     </a>
                   ) : (
                     <span className="row"><span className="row-main"><b>{f.name}</b></span></span>

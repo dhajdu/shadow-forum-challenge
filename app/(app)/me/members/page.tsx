@@ -12,7 +12,7 @@ export default async function MembersPage() {
 
   return (
     <main className="page">
-      <Link href="/me" className="back">‹ Me</Link>
+      <Link href="/me" className="back">← Me</Link>
       <header className="page-head">
         <div className="eyebrow">Admin</div>
         <h1>Members and access</h1>
