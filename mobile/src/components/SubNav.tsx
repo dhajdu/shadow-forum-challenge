@@ -20,6 +20,7 @@ export const FORUM_NAV = [
   { href: "/forum", label: "Agendas" },
   { href: "/forum/dates", label: "Dates" },
   { href: "/forum/library", label: "Library" },
+  { href: "/forum/chat", label: "Chat" },
 ] as const;
 
 export const CONTEST_NAV = [

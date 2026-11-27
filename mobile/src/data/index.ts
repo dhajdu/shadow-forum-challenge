@@ -23,6 +23,7 @@ import type {
   GoalSummary,
   GoalUpdate,
   JournalAnalysis,
+  ForumMessage,
   Member,
   NewGoal,
   PersonalGoal,
@@ -442,4 +443,117 @@ export async function updateAvatar(uri: string, mime: string): Promise<void> {
   must(await supabase.storage.from("avatars").upload(path, await new File(uri).arrayBuffer(), { contentType: mime, upsert: true }));
   const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
   must(await supabase.from("profiles").update({ avatar_url: url }).eq("id", id));
+}
+
+// ── Forum chat ───────────────────────────────────────────
+// One channel for the whole forum. RLS shows messages from the member's first forum on;
+// clients may insert { body, photo_id?, reply_to? }, edit body, or soft-delete (irreversible).
+
+const CHAT_COLS =
+  "id, author_id, body, photo_id, reply_to, created_at, edited_at, deleted_at, " +
+  "author:profiles!forum_messages_author_id_fkey(full_name), photo:gallery_photos!forum_messages_photo_id_fkey(thumb_path)";
+const CHAT_LIMIT = 200;
+
+type ChatRow = Omit<ForumMessage, "author" | "photo"> & {
+  author: { full_name: string } | null;
+  photo: { thumb_path: string } | null;
+};
+
+/** The latest messages, oldest first, with signed photo thumbnails. */
+export async function chatMessages(): Promise<ForumMessage[]> {
+  if (isDemo) return wait([...fx().forumChat]);
+  const r = await supabase.from("forum_messages").select(CHAT_COLS).order("created_at", { ascending: false }).limit(CHAT_LIMIT);
+  if (r.error?.code && SCHEMA_MISSING.has(r.error.code)) {
+    markSample();
+    return fx().forumChat;
+  }
+  const rows = (must(r) as unknown as ChatRow[]).reverse();
+  const paths = rows.flatMap((m) => (m.photo?.thumb_path ? [m.photo.thumb_path] : []));
+  const signed = paths.length ? (await supabase.storage.from("gallery").createSignedUrls(paths, 3600)).data : null;
+  const url = new Map((signed ?? []).map((x) => [x.path, x.signedUrl]));
+  return rows.map((m) => ({
+    ...m,
+    author: m.author?.full_name ?? null,
+    photo: m.photo?.thumb_path ? (url.get(m.photo.thumb_path) ?? null) : null,
+  }));
+}
+
+/** Posts as the member, then asks the server to push the others (it throttles and never sends content). */
+export async function postMessage(body: string, replyTo: string | null): Promise<void> {
+  if (isDemo) {
+    const p = fx().profile;
+    fx().forumChat.push({
+      id: `c${Date.now()}`,
+      author_id: p.id,
+      author: p.full_name,
+      body,
+      photo_id: null,
+      photo: null,
+      reply_to: replyTo,
+      created_at: new Date().toISOString(),
+      edited_at: null,
+      deleted_at: null,
+    });
+    return wait(undefined);
+  }
+  const row = must(await supabase.from("forum_messages").insert({ body, reply_to: replyTo }).select("id").single());
+  api("POST", "/api/forum/notify", { message_id: row.id }).catch(() => {}); // a missed push never blocks the post
+}
+
+export async function editMessage(id: string, body: string): Promise<void> {
+  if (isDemo) {
+    const m = fx().forumChat.find((x) => x.id === id);
+    if (m) Object.assign(m, { body, edited_at: new Date().toISOString() });
+    return wait(undefined);
+  }
+  must(await supabase.from("forum_messages").update({ body }).eq("id", id).select("id").single());
+}
+
+/** Soft delete: the server wipes the content. Cannot be undone. */
+export async function deleteMessage(id: string): Promise<void> {
+  if (isDemo) {
+    const m = fx().forumChat.find((x) => x.id === id);
+    if (m) Object.assign(m, { body: "", photo: null, photo_id: null, deleted_at: new Date().toISOString() });
+    return wait(undefined);
+  }
+  must(await supabase.from("forum_messages").update({ deleted_at: new Date().toISOString() }).eq("id", id).select("id").single());
+}
+
+let chatChannels = 0;
+
+/** New, edited and deleted messages, streamed under RLS on the member's session. Returns unsubscribe. */
+export function onChatChange(cb: () => void): () => void {
+  if (isDemo) return () => {};
+  const ch = supabase
+    .channel(`forum_messages:${++chatChannels}`) // one channel per subscriber, so removing one leaves the rest
+    .on("postgres_changes", { event: "*", schema: "public", table: "forum_messages" }, cb)
+    .subscribe();
+  return () => void supabase.removeChannel(ch);
+}
+
+let demoReadAt: string | null = null;
+
+export async function markChatRead(): Promise<void> {
+  const now = new Date().toISOString();
+  if (isDemo) {
+    demoReadAt = now;
+    return;
+  }
+  const { error } = await supabase.from("forum_read_marks").upsert({ user_id: await uid(), last_read_at: now });
+  if (error && !(error.code && SCHEMA_MISSING.has(error.code))) throw new Error(error.message);
+}
+
+/** Others' live messages since the member last opened the chat. */
+export async function unreadChat(): Promise<number> {
+  if (isDemo) {
+    const me = fx().profile.id;
+    return fx().forumChat.filter((m) => m.author_id !== me && !m.deleted_at && (!demoReadAt || m.created_at > demoReadAt)).length;
+  }
+  const me = await uid();
+  const mark = await supabase.from("forum_read_marks").select("last_read_at").eq("user_id", me).maybeSingle();
+  if (mark.error) return 0; // a badge is never worth an error banner
+  let q = supabase.from("forum_messages").select("id", { count: "exact", head: true }).neq("author_id", me).is("deleted_at", null);
+  if (mark.data?.last_read_at) q = q.gt("created_at", mark.data.last_read_at);
+  const { count, error } = await q;
+  return error ? 0 : (count ?? 0);
 }
