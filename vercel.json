@@ -1,5 +1,9 @@
 {
   "regions": ["sin1"],
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ':(exclude)mobile' ':(exclude).github/workflows/eas-*.yml'",
+  "headers": [
+    { "source": "/.well-known/apple-app-site-association", "headers": [{ "key": "Content-Type", "value": "application/json" }] }
+  ],
   "crons": [
     { "path": "/api/cron/daily", "schedule": "0 1 * * 1" },
     { "path": "/api/cron/chronicler", "schedule": "0 10 1 * *" },

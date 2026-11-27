@@ -1,0 +1,65 @@
+# EAS cloud builds and OTA updates for the Expo app in mobile/.
+# Manual only (Actions → "EAS mobile" → Run workflow) until Dave has set up the Expo org,
+# the Apple account and the EXPO_TOKEN secret. Nothing here builds on a laptop.
+#
+# Needs: repository secret EXPO_TOKEN (Expo org robot token). EXPO_PUBLIC_* values come
+# from the EAS environment for each profile (expo.dev → project → Environment variables).
+name: EAS mobile
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "build = new binary (native change), update = JS-only fix as an EAS Update"
+        type: choice
+        options: [update, build]
+        default: update
+      profile:
+        description: "EAS profile / channel"
+        type: choice
+        options: [preview, production, development]
+        default: preview
+      submit:
+        description: "Submit a production build to TestFlight"
+        type: boolean
+        default: false
+      message:
+        description: "Update message"
+        type: string
+        default: ""
+
+concurrency:
+  group: eas-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  eas:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+      - name: EAS Update (JS-only)
+        if: inputs.action == 'update'
+        run: >
+          eas update --channel "${{ inputs.profile }}" --environment "${{ inputs.profile }}"
+          --message "${{ inputs.message || github.sha }}" --platform ios --non-interactive
+
+      - name: EAS Build (iOS)
+        if: inputs.action == 'build'
+        run: >
+          eas build --platform ios --profile "${{ inputs.profile }}" --non-interactive --no-wait
+          ${{ inputs.submit && inputs.profile == 'production' && '--auto-submit' || '' }}

@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "Shadow Forum",
+    "slug": "shadow-forum",
+    "scheme": "shadowforum",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#06080f",
+    "platforms": [
+      "ios",
+      "web"
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "ios": {
+      "bundleIdentifier": "com.talentedge.shadowforum",
+      "supportsTablet": false,
+      "associatedDomains": [
+        "applinks:eoshadowforum.com",
+        "webcredentials:eoshadowforum.com"
+      ],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCalendarsWriteOnlyAccessUsageDescription": "Adds the next forum to your calendar."
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#2f7dff"
+        }
+      ],
+      "expo-calendar",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#06080f"
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": "SUBQUERY (extensionItems, $extensionItem, SUBQUERY ($extensionItem.attachments, $attachment, ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO \"public.zip-archive\" || ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO \"public.comma-separated-values-text\").@count == 1).@count == 1",
+          "iosAppGroupIdentifier": "group.com.talentedge.shadowforum",
+          "iosShareExtensionName": "ShadowShare",
+          "disableAndroid": true
+        }
+      ],
+      "@bacons/apple-targets",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a profile photo.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

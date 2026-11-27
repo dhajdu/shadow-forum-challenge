@@ -1,0 +1,76 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "TEAMID.com.talentedge.shadowforum"
+        ],
+        "components": [
+          {
+            "/": "/api/*",
+            "exclude": true
+          },
+          {
+            "/": "/auth/*",
+            "exclude": true,
+            "comment": "Sign-in emails finish on the website"
+          },
+          {
+            "/": "/reset-password",
+            "exclude": true
+          },
+          {
+            "/": "/oauth/*",
+            "exclude": true
+          },
+          {
+            "/": "/",
+            "comment": "Home"
+          },
+          {
+            "/": "/forum",
+            "comment": "Forum"
+          },
+          {
+            "/": "/forum/*"
+          },
+          {
+            "/": "/contest",
+            "comment": "Contest"
+          },
+          {
+            "/": "/contest/*"
+          },
+          {
+            "/": "/ask"
+          },
+          {
+            "/": "/me",
+            "comment": "Me, including the WHOOP connect return /me?whoop=ok"
+          },
+          {
+            "/": "/me/*"
+          },
+          {
+            "/": "/race"
+          },
+          {
+            "/": "/rider/*"
+          },
+          {
+            "/": "/report",
+            "comment": "Old paths, redirected in the app"
+          },
+          {
+            "/": "/report/*"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAMID.com.talentedge.shadowforum"
+    ]
+  }
+}
