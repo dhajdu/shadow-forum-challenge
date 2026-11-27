@@ -1,10 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, GoalStatus } from "@/lib/database.types";
 import { getStandings } from "@/lib/standings";
-import { placementPenalty } from "@/lib/contest";
-
-/** The season the monthly report covers (race_standings is this season's board). */
-export const REPORT_SEASON_SLUG = "2026-q4";
+import { seasonForDay, seasonPenalty, type ContestSeason } from "@/lib/contest";
 
 export type ReportRow = {
   user_id: string;
@@ -22,16 +19,30 @@ export type Report = {
   topFaller: ReportRow | null;
 };
 
-export async function buildReport(supabase: SupabaseClient<Database>): Promise<Report> {
+/**
+ * The report for one season's board, with penalties from that season's ladder.
+ * Without a season: the season running today.
+ */
+export async function buildReport(
+  supabase: SupabaseClient<Database>,
+  seasonArg?: Pick<ContestSeason, "id" | "ladder">
+): Promise<Report> {
+  let season = seasonArg;
+  if (!season) {
+    const { data } = await supabase.from("seasons").select("id, starts_on, ladder");
+    const today = seasonForDay(data ?? []);
+    if (!today) return { standings: [], topMover: null, topFaller: null };
+    season = today;
+  }
   // movement: compare against the oldest snapshot in the last ~35 days
   const since = new Date();
   since.setDate(since.getDate() - 35);
 
   // independent reads — run them together
   const [standings, { data: goals }, { data: snaps }] = await Promise.all([
-    getStandings(supabase),
-    // public goal statuses
-    supabase.from("goals").select("user_id, current_status"),
+    getStandings(supabase, season.id),
+    // public goal statuses, this season's goals
+    supabase.from("goals").select("user_id, current_status").eq("season_id", season.id),
     supabase
       .from("standings_snapshots")
       .select("day, data")
@@ -60,7 +71,7 @@ export async function buildReport(supabase: SupabaseClient<Database>): Promise<R
       rank,
       delta: prev != null ? prev - rank : null,
       goalStatus: statusByUser.get(s.user_id) ?? "on_track",
-      owes: placementPenalty(i),
+      owes: seasonPenalty(season, i),
     };
   });
 

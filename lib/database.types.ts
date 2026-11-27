@@ -59,6 +59,24 @@ type Views = Patch<
           all_days: number;
           last_day: string | null;
           last_data_day: string | null;
+          season_id: string;
+        };
+      }
+    >;
+    season_standings: Patch<
+      V["season_standings"],
+      {
+        Row: {
+          user_id: string;
+          full_name: string;
+          contest_avg: number;
+          contest_days: number;
+          contest_missed: number;
+          all_avg: number;
+          all_days: number;
+          last_day: string | null;
+          last_data_day: string | null;
+          season_id: string;
         };
       }
     >;

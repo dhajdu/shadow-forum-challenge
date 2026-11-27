@@ -972,3 +972,64 @@ describe("forum chat", () => {
     delete process.env.EXPO_ACCESS_TOKEN;
   });
 });
+
+// ── Seasons beyond Q4: goals per season, standings per season ─────
+describe("seasons", () => {
+  it("season_standings: each member sees only seasons they can see; riders joined by the season's first day", async () => {
+    for (const k of KEYS) {
+      const rows = ok(await client[k].from("season_standings").select("season_id, user_id"), "season_standings") as { season_id: string; user_id: string }[];
+      const mine = rows.filter((r) => Object.values(member).some((m) => m.id === r.user_id));
+      const seasonsSeen = [...new Set(mine.map((r) => r.season_id))].sort();
+      assert.deepEqual(seasonsSeen, sorted(seasons.filter((s) => seesSeason(k, s)).map((s) => s.id)), `${k} seasons`);
+      for (const s of seasons.filter((x) => seesSeason(k, x))) {
+        const riders = mine.filter((r) => r.season_id === s.id).map((r) => KEYS.find((x) => member[x].id === r.user_id)).sort();
+        const expect = KEYS.filter((x) => PERSONAS[x].is_founding || (PERSONAS[x].forum_joined_on !== null && PERSONAS[x].forum_joined_on! <= s.starts_on)).sort();
+        assert.deepEqual(riders, expect, `${k} riders of ${s.slug}`);
+      }
+    }
+  });
+
+  it("race_standings is today's season", async () => {
+    const rows = ok(await client.founding.from("race_standings").select("season_id"), "race") as { season_id: string }[];
+    const { seasonForDay } = await import("@/lib/contest");
+    const today = seasonForDay(seasons);
+    assert.ok(rows.length > 0 && rows.every((r) => r.season_id === today?.id));
+  });
+
+  it("goals: one per member per season; lock in the next season before it starts", async () => {
+    const goal = await import("@/app/api/goal/route");
+    const post = (k: PersonaKey, body: Record<string, unknown>) => goal.POST(req("/api/goal", { method: "POST", token: token[k], body }));
+    // Nam Trung already has a Q4 goal; the default season for a new goal is the newest (Q1 here)
+    assert.equal((await post("nam", { title: "Q1 goal" })).status, 200);
+    assert.equal((await post("nam", { title: "again" })).status, 409, "one per season");
+    const namGoals = ok(await admin.from("goals").select("season_id").eq("user_id", member.nam.id), "nam goals") as { season_id: string }[];
+    assert.deepEqual(sorted(namGoals.map((g) => g.season_id)), sorted([q4.id, q1.id]));
+    // Minh Anh joins in December: Q1 yes, Q4 no
+    assert.equal((await post("december", { title: "Q1 for Minh Anh" })).status, 200);
+    assert.equal((await post("december", { title: "Q4?", seasonId: q4.id })).status, 400, "cannot pick a season she can't see");
+    assert.ok((await client.december.from("goals").insert({ user_id: member.december.id, title: "direct", season_id: q4.id })).error, "RLS too");
+    // updates default to today's season
+    const patch = await goal.PATCH(req("/api/goal", { method: "PATCH", token: token.nam, body: { currentValue: 7, targetValue: 10, status: "on_track" } }));
+    assert.equal(patch.status, 200);
+    const q4goal = ok(await admin.from("goals").select("current_value").eq("user_id", member.nam.id).eq("season_id", q4.id).single(), "q4") as { current_value: number };
+    assert.equal(Number(q4goal.current_value), 7);
+  });
+
+  it("season helpers", async () => {
+    const c = await import("@/lib/contest");
+    const s = { starts_on: "2027-01-13", ends_on: "2027-03-31", ladder: [0, 1, 2] };
+    assert.equal(c.seasonLength(s), 78);
+    assert.equal(c.dayOfSeason(s, new Date("2027-01-13T05:00:00Z")), 1);
+    assert.equal(c.seasonPhase(s, new Date("2026-12-24T00:00:00Z")), "upcoming");
+    assert.equal(c.seasonPenalty(s, 7), 2);
+    assert.deepEqual(c.seasonLadder({ ladder: null }), c.PLACEMENT_PENALTIES);
+    assert.equal(c.newestSeason([{ starts_on: "2026-09-23" }, { starts_on: "2027-01-13" }])?.starts_on, "2027-01-13");
+  });
+
+  it("Bookkeeper books only seasons that have ended", async () => {
+    const { runBookkeeper } = await import("@/lib/agents");
+    const r = await runBookkeeper(admin);
+    const { seasonPhase } = await import("@/lib/contest");
+    assert.equal(r.seasons.length, seasons.filter((s) => seasonPhase(s) === "over").length);
+  });
+});

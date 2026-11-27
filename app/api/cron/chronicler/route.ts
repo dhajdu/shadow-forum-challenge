@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAuthorizedCron } from "@/lib/cron";
 import { sendEmail } from "@/lib/notify";
-import { buildReport, REPORT_SEASON_SLUG } from "@/lib/report";
+import { buildReport } from "@/lib/report";
+import { seasonForDay } from "@/lib/contest";
 import { groupScope, loadAccess, seasonAudience } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
@@ -18,14 +19,19 @@ export async function GET(req: NextRequest) {
 
   // Recipients: only active members who can see the report's season. Members who
   // joined after it started are left out rather than the report being trimmed.
+  // The report covers the month just ended, so the season that month's last day belonged to.
   const { members, seasons } = await loadAccess(admin);
-  const season = seasons.find((s) => s.slug === REPORT_SEASON_SLUG) ?? null;
+  const now = new Date();
+  const lastOfPrevMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)).toISOString().slice(0, 10);
+  const season = seasonForDay(seasons, lastOfPrevMonth);
   const audience = seasonAudience(members, season);
   // Group output: everything in it must be visible to the latest-joined recipient.
   if (!groupScope(audience).canSeeSeason(season)) {
     return NextResponse.json({ ok: true, dry, skipped: "no recipient can see the season", recipients: 0, sent: 0 });
   }
-  const report = await buildReport(admin);
+  if (!season) return NextResponse.json({ ok: true, dry, skipped: "no season", recipients: 0, sent: 0 });
+  const { data: full } = await admin.from("seasons").select("id, ladder").eq("id", season.id).single();
+  const report = await buildReport(admin, full ?? { id: season.id, ladder: null });
 
   const monthLabel = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
   const site = process.env.NEXT_PUBLIC_SITE_URL || "";
