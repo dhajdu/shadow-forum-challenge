@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getForumContext } from "@/app/_data/context";
@@ -36,6 +37,21 @@ export async function HomeView() {
     getLibraryDoc(db, viewer, "home"),
   ]);
   const vision = home ? parseVision(home.body_md) : null;
+
+  // goals for the quarter that is running, else the next one
+  const goalSeason =
+    seasons.find((x) => x.starts_on <= today && today <= x.ends_on && !x.slug.endsWith("q4")) ??
+    [...seasons].reverse().find((x) => x.starts_on > today) ??
+    null;
+  let goalCount = 0;
+  if (goalSeason) {
+    const { count } = await (db as unknown as SupabaseClient)
+      .from("personal_goals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("season_id", goalSeason.id);
+    goalCount = count ?? 0;
+  }
 
   const next = [...meetings].reverse().find((m) => m.status === "planned" && m.held_on >= today) ?? null;
   const newest = meetings.find((m) => m.status === "held") ?? null;
@@ -147,6 +163,16 @@ export async function HomeView() {
                   : "Dave adds your first forum date, and your forums appear here from then on."}
               </p>
             </section>
+          )}
+
+          {goalSeason && (
+            <Link href={`/goals?season=${goalSeason.slug}`} className={s.line}>
+              <span>
+                <span className={s.label}>Your {goalSeason.name} goals</span>
+                <b>{goalCount ? `${goalCount} goal${goalCount === 1 ? "" : "s"} locked in` : "Lock in your goals"}</b>
+              </span>
+              <span className={`${s.status} ${goalCount ? s.on_track : s.at_risk}`}>{goalCount ? "Update" : "Set now"} →</span>
+            </Link>
           )}
 
           {season ? (

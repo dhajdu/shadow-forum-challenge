@@ -4,7 +4,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { isExternallySynced } from "@/lib/whoop/config";
 import { ScoreTrend } from "@/components/ScoreTrend";
 import { GoalProgress } from "@/components/GoalProgress";
-import { ExtraCredit, type PersonalGoal } from "@/components/ExtraCredit";
+import type { PersonalGoal } from "@/components/ExtraCredit";
 import { getStandings } from "@/lib/standings";
 import { CONTEST_START_DAY } from "@/lib/contest";
 import { coachNameFor } from "@/lib/roster";
@@ -280,8 +280,11 @@ export default async function MePage({
           </section>
 
           <section className="zone-card">
-            <h2>Extra Credit</h2>
-            <ExtraCredit goals={personalGoals} />
+            <h2>Your goals</h2>
+            <Link href="/goals" className="row">
+              <span className="row-main"><b>{personalGoals.length ? `${personalGoals.length} goal${personalGoals.length === 1 ? "" : "s"} set` : "Set your goals"}</b><small>Add as many as you like for each quarter</small></span>
+              <span className="chev" aria-hidden>→</span>
+            </Link>
           </section>
         </div>
       </div>
