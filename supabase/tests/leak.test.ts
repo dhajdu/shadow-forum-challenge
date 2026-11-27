@@ -724,3 +724,129 @@ describe("WHOOP app flow", () => {
     assert.ok(read.error, "members have no access to the states table at all");
   });
 });
+
+// ── Gallery ──────────────────────────────────────────────
+describe("gallery", () => {
+  const img = (type = "image/webp") => new Blob([new Uint8Array([1, 2, 3, 4])], { type });
+  const photo = (id: string, taken_on: string, uploaded_by: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    uploaded_by,
+    taken_on,
+    original_path: `${id}/original.jpg`,
+    web_path: `${id}/web.webp`,
+    thumb_path: `${id}/thumb.webp`,
+    ...extra,
+  });
+  const SEED = [
+    { key: "feb", taken_on: "2026-02-05" },
+    { key: "aug", taken_on: "2026-08-24" },
+    { key: "dec", taken_on: "2026-12-24" },
+    { key: "jan", taken_on: "2027-01-25" },
+  ];
+  const pid: Record<string, string> = {};
+
+  before(async () => {
+    for (const s of SEED) {
+      const id = crypto.randomUUID();
+      pid[s.key] = id;
+      ok(await admin.from("gallery_photos").insert(photo(id, s.taken_on, member.founding.id)), `photo ${s.key}`);
+      const store = admin.storage.from("gallery");
+      ok(await store.upload(`${id}/original.jpg`, img("image/jpeg")), "orig");
+      ok(await store.upload(`${id}/web.webp`, img()), "web");
+      ok(await store.upload(`${id}/thumb.webp`, img()), "thumb");
+    }
+  });
+
+  for (const k of KEYS) {
+    it(`${k}: sees photos and files only from their first forum`, async () => {
+      const rows = ok(await client[k].from("gallery_photos").select("id"), "rows") as { id: string }[];
+      const seen = rows.map((r) => r.id).filter((id) => Object.values(pid).includes(id));
+      assert.deepEqual(sorted(seen), sorted(SEED.filter((s) => seesDate(k, s.taken_on)).map((s) => pid[s.key])));
+      for (const s of SEED) {
+        const dl = await client[k].storage.from("gallery").download(`${pid[s.key]}/thumb.webp`);
+        assert.equal(!dl.error && !!dl.data, seesDate(k, s.taken_on), `${k} thumb ${s.key}`);
+        const url = await client[k].storage.from("gallery").createSignedUrl(`${pid[s.key]}/web.webp`, 60);
+        assert.equal(!url.error && !!url.data, seesDate(k, s.taken_on), `${k} signed url ${s.key}`);
+      }
+    });
+  }
+
+  it("a member posts only inside their own time, only their own three files", async () => {
+    const c = client.december;
+    const mine = crypto.randomUUID();
+    assert.equal((await c.from("gallery_photos").insert(photo(mine, "2026-12-24", member.december.id))).error, null, "own date ok");
+    const st = c.storage.from("gallery");
+    assert.equal((await st.upload(`${mine}/thumb.webp`, img())).error, null, "own thumb ok");
+    assert.ok((await st.upload(`${mine}/thumb.webp`, img(), { upsert: true })).error, "no overwrite");
+    assert.ok((await st.upload(`${mine}/evil.webp`, img())).error, "only the three names");
+    assert.ok((await st.upload(`${pid.dec}/extra.webp`, img())).error, "not into another photo's folder");
+    assert.ok((await st.upload(`${crypto.randomUUID()}/thumb.webp`, img())).error, "not without a row");
+
+    const past = crypto.randomUUID();
+    assert.ok((await c.from("gallery_photos").insert(photo(past, "2026-02-05", member.december.id))).error, "no posting into the past");
+    const asOther = crypto.randomUUID();
+    assert.ok((await c.from("gallery_photos").insert(photo(asOther, "2026-12-24", member.nam.id))).error, "not as someone else");
+    const badPath = crypto.randomUUID();
+    assert.ok(
+      (await c.from("gallery_photos").insert({ ...photo(badPath, "2026-12-24", member.december.id), web_path: `${pid.feb}/web.webp` })).error,
+      "paths must be the row's own"
+    );
+    const hidden = crypto.randomUUID();
+    assert.ok(
+      (await client.nam.from("gallery_photos").insert(photo(hidden, "2026-12-24", member.nam.id, { meeting_id: meetingId.feb }))).error,
+      "cannot link a meeting you can't see"
+    );
+    for (const k of ["leaver", "nodate"] as const) {
+      const id = crypto.randomUUID();
+      assert.ok((await client[k].from("gallery_photos").insert(photo(id, "2026-12-24", member[k].id))).error, `${k} cannot post`);
+    }
+  });
+
+  it("edits: uploader or admin, caption/date/meeting only, never into the past", async () => {
+    const own = crypto.randomUUID();
+    ok(await client.nam.from("gallery_photos").insert(photo(own, "2026-08-25", member.nam.id)), "nam photo");
+    const cap = await client.nam.from("gallery_photos").update({ caption: "hello" }).eq("id", own).select("id");
+    assert.equal(cap.data?.length, 1, "uploader edits caption");
+    assert.ok((await client.nam.from("gallery_photos").update({ uploaded_by: member.founding.id }).eq("id", own)).error, "uploaded_by locked");
+    assert.ok((await client.nam.from("gallery_photos").update({ original_path: `${own}/original.png` }).eq("id", own)).error, "paths locked");
+    assert.ok((await client.nam.from("gallery_photos").update({ taken_on: "2026-02-05" }).eq("id", own)).error, "no moving into the past");
+    const other = await client.nam.from("gallery_photos").update({ caption: "x" }).eq("id", pid.aug).select("id");
+    assert.equal(other.data?.length ?? 0, 0, "not someone else's photo");
+    const byAdmin = await client.founding.from("gallery_photos").update({ caption: "admin" }).eq("id", own).select("id");
+    assert.equal(byAdmin.data?.length, 1, "admin edits any");
+  });
+
+  it("deletes: uploader or admin, files too", async () => {
+    const id = crypto.randomUUID();
+    ok(await client.nam.from("gallery_photos").insert(photo(id, "2026-08-26", member.nam.id)), "nam photo");
+    assert.equal((await client.nam.storage.from("gallery").upload(`${id}/web.webp`, img())).error, null);
+    const dec = await client.december.from("gallery_photos").delete().eq("id", pid.dec).select("id");
+    assert.equal(dec.data?.length ?? 0, 0, "december cannot delete founding's photo");
+    const notMine = await client.december.storage.from("gallery").remove([`${id}/web.webp`]);
+    assert.equal((notMine.data ?? []).length, 0, "nor nam's files");
+    const files = await client.nam.storage.from("gallery").remove([`${id}/web.webp`]);
+    assert.equal((files.data ?? []).length, 1, "uploader removes own file");
+    const row = await client.nam.from("gallery_photos").delete().eq("id", id).select("id");
+    assert.equal(row.data?.length, 1, "uploader removes own row");
+    const byAdmin = await client.founding.from("gallery_photos").delete().eq("id", pid.jan).select("id");
+    assert.equal(byAdmin.data?.length, 1, "admin removes any row");
+  });
+
+  it("cleanup removes rows without files and files without rows, after the grace period", async () => {
+    const { cleanupGallery } = await import("@/lib/gallery");
+    const noFiles = crypto.randomUUID();
+    ok(await admin.from("gallery_photos").insert(photo(noFiles, "2026-12-24", member.december.id)), "row without files");
+    const orphan = crypto.randomUUID();
+    ok(await admin.storage.from("gallery").upload(`${orphan}/thumb.webp`, img()), "orphan file");
+
+    const early = await cleanupGallery(admin);
+    assert.deepEqual(early, { rowsRemoved: 0, filesRemoved: 0 }, "nothing inside the grace period");
+
+    const later = await cleanupGallery(admin, Date.now() + 2 * 60 * 60 * 1000);
+    assert.ok(later.rowsRemoved >= 1 && later.filesRemoved >= 1, JSON.stringify(later));
+    const left = ok(await admin.from("gallery_photos").select("id").in("id", [noFiles, pid.feb, pid.aug, pid.dec]), "left") as { id: string }[];
+    assert.deepEqual(sorted(left.map((r) => r.id)), sorted([pid.feb, pid.aug, pid.dec]), "complete photos stay");
+    const gone = await admin.storage.from("gallery").list(orphan);
+    assert.equal((gone.data ?? []).length, 0, "orphan files removed");
+  });
+});
