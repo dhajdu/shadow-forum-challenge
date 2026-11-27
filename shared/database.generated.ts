@@ -66,6 +66,70 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"forum_messages": {
+                  Row: {
+                    "author_id": string,"body": string,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"id": string,"notified_at": string | null,"photo_id": string | null,"reply_to": string | null,"sent_on": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id"?: string,"body": string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"id"?: string,"notified_at"?: string | null,"photo_id"?: string | null,"reply_to"?: string | null,"sent_on"?: string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"deleted_at"?: string | null,"edited_at"?: string | null,"id"?: string,"notified_at"?: string | null,"photo_id"?: string | null,"reply_to"?: string | null,"sent_on"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "forum_messages_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "forum_messages_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "forum_messages_photo_id_fkey"
+      columns: ["photo_id"]
+isOneToOne: false
+      referencedRelation: "gallery_photos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "forum_messages_reply_to_fkey"
+      columns: ["reply_to"]
+isOneToOne: false
+      referencedRelation: "forum_messages"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"forum_read_marks": {
+                  Row: {
+                    "last_read_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "last_read_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "last_read_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "forum_read_marks_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "forum_read_marks_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"gallery_photos": {
                   Row: {
                     "bytes": number | null,"caption": string | null,"created_at": string,"height": number | null,"id": string,"meeting_id": string | null,"original_path": string,"taken_on": string,"thumb_path": string,"uploaded_by": string,"web_path": string,"width": number | null
