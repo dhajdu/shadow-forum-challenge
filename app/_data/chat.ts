@@ -1,9 +1,5 @@
 // Forum group chat: forum_messages under the same date rule as agendas, read on the member's session.
-// `t()` drops the generated types until lib/database.types.ts has forum_messages.
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Db } from "./types";
-
-const t = (db: Db) => db as unknown as SupabaseClient;
 
 export type ChatMessage = {
   id: string;
@@ -18,7 +14,7 @@ export const CHAT_PAGE = 100;
 
 /** The newest messages the member may see, oldest first. Empty until the table exists. */
 export async function listChat(db: Db): Promise<ChatMessage[]> {
-  const { data, error } = await t(db)
+  const { data, error } = await db
     .from("forum_messages")
     .select("id, author_id, body, created_at, edited_at, deleted_at")
     .order("created_at", { ascending: false })
