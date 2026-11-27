@@ -104,7 +104,7 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
           <div className="kpi"><b>{rank > 0 ? `#${rank}` : "—"}</b><span>of {standings.length}</span></div>
         </div>
         <div className="trend-wrap"><ScoreTrend scores={scored.map((d) => d.score)} /></div>
-        <p className={styles.caption}>All uploaded history</p>
+        <p className={styles.caption}>All synced history</p>
       </section>
 
       <section className="card" style={{ marginTop: 16 }}>
@@ -112,10 +112,10 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
         <p className={styles.formula}>
           Day score = (Recovery % + Sleep % + Strain ÷ {STRAIN_MAX} × 100) ÷ 3 · Race avg = average of scored days since{" "}
           {new Date(CONTEST_START_DAY).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}.
-          The newest day, if still in progress, averages the numbers it has until the next upload.
+          The newest day, if still in progress, averages the numbers it has until the next sync.
         </p>
         {contestRows.length === 0 ? (
-          <p className="dim">No contest days uploaded yet.</p>
+          <p className="dim">No contest days synced yet.</p>
         ) : (
           <table className="ladder">
             <thead>

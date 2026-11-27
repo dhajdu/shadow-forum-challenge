@@ -30,7 +30,7 @@ export default async function DatesPage() {
               <b>{weekdayDay(next.held_on)}{next.starts_at ? ` · ${timeOf(next.starts_at)}` : ""}</b>
               <span>{next.place ?? "Place to be confirmed"}</span>
             </span>
-            <span className="chev" aria-hidden>›</span>
+            <span className="chev" aria-hidden>→</span>
           </Link>
         ) : (
           <p className="note-line">The next forum date is not set yet.</p>

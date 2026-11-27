@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
+import { Archivo, Inter } from "next/font/google";
 import "./globals.css";
+
+// Neon Noir type: Archivo (condensed, via its width axis) for display, Inter for text.
+const display = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-display", display: "swap" });
+const body = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-body", display: "swap" });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://eoshadowforum.com";
 const TITLE = "The Shadow Forum";
@@ -31,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>{children}</body>
     </html>
   );

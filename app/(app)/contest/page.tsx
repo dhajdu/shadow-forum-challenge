@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStandings } from "@/lib/standings";
@@ -108,19 +107,18 @@ export default async function RacePage() {
               {syncIsNewer ? (
                 <>Last WHOOP sync: {fmtDay(lastSync)}</>
               ) : lastUpload ? (
-                <>
-                  Last upload: {fmtDay(lastUpload.created_at)}
-                  {lastUpload.status === "error" && " (failed)"}
-                </>
+                <>Last WHOOP data: {fmtDay(lastUpload.created_at)}</>
+              ) : whoopConnected ? (
+                "WHOOP connected · first sync pending"
               ) : (
-                "Last upload: none yet"
+                "WHOOP not connected yet"
               )}
             </p>
-            {/* connected members sync automatically; manual upload stays on /me as a fallback */}
+            {/* connected members sync automatically */}
             {!whoopConnected && (
-              <Link href="/contest/goal?upload=1" className={`btn ${styles.btn}`}>
-                Upload WHOOP
-              </Link>
+              <a href="/api/whoop/connect" className={`btn ${styles.btn}`}>
+                Connect WHOOP
+              </a>
             )}
           </section>
 
@@ -140,8 +138,8 @@ export default async function RacePage() {
             </p>
             <p className={`dim ${styles.line}`}>
               {overdue === 0
-                ? "Everyone's uploads are current."
-                : `${overdue} rider${overdue === 1 ? "" : "s"} overdue on uploads.`}
+                ? "Everyone's WHOOP data is current."
+                : `${overdue} rider${overdue === 1 ? " has" : "s have"} no WHOOP data this week.`}
             </p>
           </section>
         </aside>

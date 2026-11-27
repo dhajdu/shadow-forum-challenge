@@ -55,7 +55,7 @@ export function RaceBoard({ rows }: { rows: RaceRow[] }) {
               <div className={`rname ${styles.name}`}>
                 <Link href={`/contest/rider/${s.user_id}`}>{s.full_name}</Link>
                 {s.stale && (
-                  <span className="stale" title={`No WHOOP upload in over ${STALE_DAYS} days`} aria-label="Overdue upload">
+                  <span className="stale" title={`No WHOOP data in over ${STALE_DAYS} days`} aria-label="No recent WHOOP data">
                     !
                   </span>
                 )}
@@ -80,7 +80,7 @@ export function RaceBoard({ rows }: { rows: RaceRow[] }) {
                   <div className="finish" />
                 </div>
               ) : (
-                <div className={styles.pending}>Upload pending</div>
+                <div className={styles.pending}>No WHOOP data yet</div>
               )}
               <div className={`score ${styles.avg}`}>
                 {s.avg || "—"}

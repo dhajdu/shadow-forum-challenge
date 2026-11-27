@@ -1,10 +1,11 @@
 /* ── My Zone dashboard ── */
-.page { max-width: 1120px; margin: 0 auto; padding: 0 20px 60px; }
+.page { max-width: var(--content-w); margin: 0 auto; padding: 0 var(--sp-24) var(--sp-60); }
+@media (min-width: 768px) { .page { padding-left: var(--sp-48); padding-right: var(--sp-48); } }
 .page :global(.zone-card) { margin-bottom: 0; min-width: 0; }
 
 .head { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin: 4px 0 20px; }
-.head h1 { font-size: var(--fs-3xl); font-weight: 800; margin-top: 4px;
-  background: linear-gradient(90deg, #fff, var(--ink-soft)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.head h1 { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-size: var(--fs-display); font-weight: 900; line-height: .9;
+  text-transform: uppercase; margin-top: 4px; color: var(--ink); }
 .who { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .avatar { width: 56px; height: 56px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 800; font-size: var(--fs-xl);
   color: var(--ink-soft); border: 1px solid var(--line); background: linear-gradient(135deg, var(--avatar-from), var(--avatar-to)) center/cover no-repeat;
@@ -12,7 +13,7 @@
 .sub { font-size: var(--fs-md); color: var(--muted); margin-top: 2px; }
 .actions { display: flex; gap: 8px; align-items: center; align-self: flex-start; flex-wrap: wrap; justify-content: flex-end; }
 
-/* Header popovers: WHOOP and Upload. Anchored to .head (position: relative). */
+/* Header popover: WHOOP. Anchored to .head (position: relative). */
 .pop > summary { list-style: none; white-space: nowrap; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
 .pop > summary::-webkit-details-marker { display: none; }
 .pop[open] > summary { border-color: var(--blue-edge); }
@@ -30,11 +31,31 @@
   .panel { right: auto; left: 0; }
 }
 
-.row1, .row2 { display: grid; gap: 16px; margin-bottom: 16px; }
-.row1 { grid-template-columns: 1fr 1fr; }
-.row2 { grid-template-columns: 1.8fr 1fr; align-items: start; }
-.side { display: grid; gap: 16px; min-width: 0; }
-@media (max-width: 900px) { .row1, .row2 { grid-template-columns: 1fr; } }
+/* Me layout: stat strip, biometrics beside goals, detail folded away. */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: var(--hair) solid var(--line); border-bottom: var(--hair) solid var(--line); margin-bottom: var(--sp-24); }
+.stat { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-16) var(--sp-16) var(--sp-16) 0; min-width: 0; }
+.stat + .stat { border-left: var(--hair) solid var(--line-soft); padding-left: var(--sp-16); }
+.stat > span { font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-date); line-height: 1; font-variant-numeric: tabular-nums; text-transform: uppercase; }
+.stat b.hero { color: var(--blue); text-shadow: 0 0 24px rgba(47, 125, 255, .5); }
+.stat small { font-size: var(--fs-sm); }
+@media (max-width: 640px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat:nth-child(3) { border-left: 0; padding-left: 0; border-top: var(--hair) solid var(--line-soft); }
+  .stat:nth-child(4) { border-top: var(--hair) solid var(--line-soft); }
+}
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-48); align-items: start; }
+.cols :global(.zone-card) { margin-bottom: 0; }
+.side { display: grid; gap: var(--sp-24); min-width: 0; }
+@media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); gap: var(--sp-24); } }
+.trendBlock { margin-top: var(--sp-24); }
+.more { margin-top: var(--sp-32); border-top: var(--hair) solid var(--line); }
+.more > summary { cursor: pointer; list-style: none; padding: var(--sp-16) 0; font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::after { content: " +"; }
+.more[open] > summary::after { content: " −"; }
+.more > summary:hover { color: var(--ink); }
+.more > .cols { margin-top: var(--sp-16); }
 
 .up { color: var(--green); }
 .down { color: var(--red); }
@@ -59,12 +80,12 @@
 .missed { border-style: dashed; border-color: rgba(255, 67, 38, .5); background: transparent; color: var(--muted); }
 .pending { background: rgba(255, 255, 255, .03); }
 .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
-.tile { min-width: 0; background: var(--well); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 10px 12px; }
+.tile { min-width: 0; border-left: 1px solid var(--line); padding: 4px 12px; }
 .tile b { display: block; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile span { display: block; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* trends */
-.trow { display: grid; grid-template-columns: 84px minmax(0, 1fr) 48px 48px 72px; grid-template-areas: "label bars t7 t30 delta";
+.trow { display: grid; grid-template-columns: minmax(0, 1fr) 56px 56px 80px; grid-template-areas: "label t7 t30 delta";
   align-items: center; gap: 10px; padding: 8px 4px; font-size: var(--fs-md); font-variant-numeric: tabular-nums; }
 .thead { font-size: var(--fs-xs); color: var(--muted); padding-top: 0; }
 .tdetails { border-top: 1px solid var(--line); }
@@ -81,8 +102,6 @@
 .tdelta { grid-area: delta; text-align: right; white-space: nowrap; font-size: var(--fs-sm); }
 .full { padding: 4px 4px 12px; }
 @media (max-width: 520px) {
-  .trow { grid-template-columns: 1fr 44px 44px 72px; grid-template-areas: "label t7 t30 delta" "bars bars bars bars"; row-gap: 6px; }
-  .thead .tbars { display: none; }
   .tiles { grid-template-columns: 1fr; }
 }
 
@@ -107,3 +126,4 @@
 .jrow span { font-size: 10.5px; color: var(--muted); }
 .jstat { text-align: right; }
 .jstat b { display: block; font-size: var(--fs-base); font-weight: 800; font-variant-numeric: tabular-nums; }
+.settings { margin-top: var(--sp-32); }

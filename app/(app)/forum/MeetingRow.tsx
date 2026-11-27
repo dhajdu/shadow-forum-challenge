@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Meeting } from "@/app/_data/forum";
-import { shortDay } from "@/app/_data/format";
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function MeetingRow({ m }: { m: Meeting }) {
   const meta = [
@@ -11,13 +12,16 @@ export function MeetingRow({ m }: { m: Meeting }) {
     .join(" · ");
   return (
     <Link href={m.path} className="row">
-      <span className="row-when">{shortDay(m.held_on)}</span>
+      <span className={`row-when ${m.status === "planned" ? "planned" : ""}`}>
+        {m.held_on.slice(8, 10)}
+        <small>{MONTHS[Number(m.held_on.slice(5, 7)) - 1]}</small>
+      </span>
       <span className="row-main">
         <b>{m.title}</b>
         {meta && <small>{meta}</small>}
       </span>
-      {m.status === "planned" && <span className="tag planned">planned</span>}
-      <span className="chev" aria-hidden>›</span>
+      {m.status === "planned" && <span className="tag planned">Planned</span>}
+      <span className="chev" aria-hidden>→</span>
     </Link>
   );
 }

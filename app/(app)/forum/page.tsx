@@ -51,7 +51,7 @@ export default async function AgendasPage({ searchParams }: { searchParams: Prom
             <li key={d.slug}>
               <Link href={`/forum/library/${d.slug}`} className="row">
                 <span className="row-main"><b>{d.title}</b></span>
-                <span className="chev" aria-hidden>›</span>
+                <span className="chev" aria-hidden>→</span>
               </Link>
             </li>
           ))}

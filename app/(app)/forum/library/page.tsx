@@ -16,7 +16,7 @@ export default async function LibraryPage() {
               <Link href={`/forum/library/${d.slug}`} className="row">
                 <span className="row-main"><b>{d.title}</b></span>
                 {d.audience === "founding" && <span className="tag founding">founding</span>}
-                <span className="chev" aria-hidden>›</span>
+                <span className="chev" aria-hidden>→</span>
               </Link>
             </li>
           ))}

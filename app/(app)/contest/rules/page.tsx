@@ -36,7 +36,7 @@ export default async function RulesPage() {
         <h3>2 · Race Into the Shadow — payment by position</h3>
         <p className="rule-p">
           Final standings rank on your average daily <b>WHOOP score — a blend of Recovery, Sleep performance and Strain</b>.
-          Only days from the contest start count. A day scores once WHOOP has recorded all three numbers; your newest day (still in progress when you export) counts with what it has and is updated on your next upload. Where you finish, you pay:
+          Only days from the contest start count. A day scores once WHOOP has recorded all three numbers; your newest day (still in progress when WHOOP syncs) counts with what it has and is updated on the next sync. Where you finish, you pay:
         </p>
         <table className="ladder">
           <thead>
@@ -56,7 +56,7 @@ export default async function RulesPage() {
       <section className="card">
         <h3>3 · Keep your data current</h3>
         <p className="rule-p">
-          Upload your WHOOP export regularly. You&apos;ll get a <b>weekly nudge</b> to upload — keep your data
+          Keep <b>WHOOP connected</b> so every day syncs by itself. If your data goes quiet you&apos;ll get a <b>nudge</b> — keep your data
           current so the race stays honest.
         </p>
       </section>

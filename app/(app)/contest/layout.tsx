@@ -5,7 +5,6 @@ import s from "./contest.module.css";
 
 const tabs = () => [
   { href: "/contest", label: "Race" },
-  { href: "/contest/goal", label: "My goal" },
   { href: "/contest/kitty", label: "Kitty" },
   { href: "/contest/rules", label: "Rules" },
   {
@@ -14,7 +13,7 @@ const tabs = () => [
   },
 ];
 
-// The race, rider, goal, rules and report pages are unchanged; this adds the season and sub-tabs.
+// The race, rider, goal, rules and report pages keep their logic; this adds the sub-tabs.
 // A member with no season they can see gets the next-season card instead of the pages.
 export default async function ContestLayout({ children }: { children: React.ReactNode }) {
   const { db, viewer } = await getForumContext();
@@ -39,8 +38,6 @@ export default async function ContestLayout({ children }: { children: React.Reac
   return (
     <>
       <div className={s.bar}>
-        {/* one visible season today; a picker comes with season 2 (pages would need a season param) */}
-        <span className={s.season}>Contest · {season.name}</span>
         <SubTabs items={tabs()} label="Contest" />
       </div>
       {children}

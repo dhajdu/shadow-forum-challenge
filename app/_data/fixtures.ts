@@ -61,7 +61,6 @@ const MEETINGS: Row[] = [
     updated_at: "2026-11-26T09:00:00+07:00",
   }),
   m("2026-12-23", "Forum", {
-    place: "Dreamplex",
     starts_at: "2026-12-23T18:00:00+07:00",
     status: "planned",
     body_md: null,

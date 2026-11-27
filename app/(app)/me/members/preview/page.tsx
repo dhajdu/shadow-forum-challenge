@@ -16,7 +16,7 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
 
   return (
     <main className="page">
-      <Link href="/me/members" className="back">‹ Members and access</Link>
+      <Link href="/me/members" className="back">← Members and access</Link>
       <header className="page-head">
         <div className="eyebrow">Admin</div>
         <h1>{member ? `Preview as ${member.full_name}` : "Preview as member"}</h1>

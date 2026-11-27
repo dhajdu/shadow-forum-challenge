@@ -1,6 +1,6 @@
 import { disconnectWhoop } from "@/app/actions/whoop";
 import { shortDate } from "./stats";
-import s from "./goal.module.css";
+import s from "./zone.module.css";
 
 type Status = "connected" | "disconnected" | "revoked" | null;
 
@@ -57,8 +57,8 @@ export function WhoopConnect({
         {connected && lastError && <p className={s.whoopWarn}>{lastError}</p>}
         <p className={s.fallbackNote}>
           {external
-            ? "Daily scores for this account come from an external sync. Connect WHOOP will not overwrite them. The export upload is still here as a fallback."
-            : "Connecting stores an encrypted link to your WHOOP account on this server and syncs each day of recovery, sleep performance, strain, resting heart rate, and HRV. The leaderboard shows the blended daily score and how many days were scored or missed. It does not show heart rate, HRV, or journal answers. Disconnect revokes access at WHOOP and deletes the stored tokens. The export upload remains as a fallback."}
+            ? "Daily scores for this account come from an external sync. Connect WHOOP will not overwrite them."
+            : "Connecting stores an encrypted link to your WHOOP account on this server and syncs each day of recovery, sleep performance, strain, resting heart rate, and HRV. The leaderboard shows the blended daily score and how many days were scored or missed. It does not show heart rate, HRV, or journal answers. Disconnect revokes access at WHOOP and deletes the stored tokens."}
         </p>
         {connected ? (
           <form action={disconnectWhoop} className={s.panelActions}>
