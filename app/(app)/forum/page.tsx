@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getForumContext } from "@/app/_data/context";
-import { listLibrary, listMeetings, searchMeetings } from "@/app/_data/forum";
+import { getMeeting, listLibrary, listMeetings, searchMeetings } from "@/app/_data/forum";
+import { parseRecap, visibleParking } from "@/app/_data/recap";
+import { ParkingLot } from "./ParkingLot";
 import { longDay } from "@/app/_data/format";
 import { MeetingRow } from "./MeetingRow";
 import s from "./forum.module.css";
@@ -13,6 +15,13 @@ export default async function AgendasPage({ searchParams }: { searchParams: Prom
     query ? searchMeetings(db, viewer, query) : listMeetings(db, viewer),
     listLibrary(db, viewer),
   ]);
+
+  // the newest agenda carries the forum's running Parking Lot
+  const newest = (query ? await listMeetings(db, viewer) : meetings).find((m) => m.status === "held" && m.has_agenda);
+  const doc = newest ? await getMeeting(db, viewer, newest.id) : null;
+  const parking = doc?.body_md
+    ? visibleParking(parseRecap(doc.body_md, doc.held_on).parking, viewer.forum_joined_on, viewer.is_founding)
+    : [];
 
   return (
     <div className={s.withRail}>
@@ -43,8 +52,19 @@ export default async function AgendasPage({ searchParams }: { searchParams: Prom
       </section>
 
       {/* desktop: the library beside the agendas (wireframe 14); phones use the Library tab */}
-      <aside className={`zone-card ${s.rail}`} aria-label="Library">
-        <h2>Library</h2>
+      <aside className={`zone-card ${s.rail}`} aria-label="Parking lot and library">
+        {parking.length > 0 && (
+          <>
+            <h2>Parking lot</h2>
+            <ParkingLot groups={parking} compact />
+            {newest && (
+              <p className={`note-line ${s.lead}`}>
+                <Link href={newest.path} className="back">Full parking lot →</Link>
+              </p>
+            )}
+          </>
+        )}
+        <h2 className={s.railGap}>Library</h2>
         {library.length === 0 && <p className="note-line">Nothing in the library yet.</p>}
         <ul className="rows">
           {library.map((d) => (
