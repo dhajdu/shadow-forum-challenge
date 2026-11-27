@@ -212,14 +212,14 @@ isOneToOne: false
                   ]
                 },"meetings": {
                   Row: {
-                    "created_at": string,"eovn_meeting_id": string | null,"held_on": string,"id": string,"kind": string,"lark_node_token": string | null,"place": string | null,"starts_at": string | null,"status": string,"title": string | null,"updated_at": string
+                    "created_at": string,"held_on": string,"id": string,"kind": string,"lark_node_token": string | null,"place": string | null,"starts_at": string | null,"status": string,"title": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"eovn_meeting_id"?: string | null,"held_on": string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"held_on": string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"eovn_meeting_id"?: string | null,"held_on"?: string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"held_on"?: string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     

@@ -117,7 +117,7 @@ export async function HomeView() {
               </div>
             </>
           ) : (
-            <p className="note-line">The next forum date is not set yet. The moderator sets it in EO Vietnam.</p>
+            <p className="note-line">The next forum date is not set yet.</p>
           )}
         </section>
 
