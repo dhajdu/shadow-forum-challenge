@@ -84,7 +84,7 @@ export async function HomeView() {
     try {
       const [standings, { data: g }] = await Promise.all([
         getStandings(db),
-        db.from("goals").select("current_status, current_value, target_value").eq("user_id", user.id).maybeSingle(),
+        db.from("goals").select("current_status, current_value, target_value").eq("user_id", user.id).eq("season_id", season.id).maybeSingle(),
       ]);
       const i = standings.findIndex((st) => st.user_id === user.id);
       if (i >= 0) place = { rank: i + 1, of: standings.length, avg: standings[i].avg, stale: standings[i].stale };

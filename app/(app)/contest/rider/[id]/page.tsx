@@ -1,3 +1,5 @@
+import { getForumContext } from "@/app/_data/context";
+import { contestSeasonId } from "@/app/_data/season";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -23,6 +25,8 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
+  const { viewer } = await getForumContext();
+  const contestSeason = await contestSeasonId(supabase, viewer);
 
   // independent reads — run them together
   const [{ data: prof }, { data: dayRows }, { data: goalRow }, standings] = await Promise.all([
@@ -32,6 +36,7 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
       .from("goals")
       .select("id, title, unit, target_value, current_value, current_status, current_progress")
       .eq("user_id", id)
+      .eq("season_id", contestSeason ?? "")
       .maybeSingle(),
     getStandings(supabase),
   ]);
