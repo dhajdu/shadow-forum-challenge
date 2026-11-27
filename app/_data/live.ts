@@ -2,10 +2,6 @@
 // Real forum queries against shadow-api's migration 0012. Every call uses the member's own
 // Supabase session: RLS (can_see_date, can_see_season, library audience) decides what comes back.
 // Nothing here filters by date or audience itself.
-//
-// `t()` drops the generated types until lib/database.types.ts includes the 0012 tables; remove it
-// after regenerating and the row casts become checked.
-import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   countBeforeJoin,
   withPaths,
@@ -27,8 +23,6 @@ import {
   type Season,
   type Viewer,
 } from "./types";
-
-const t = (db: Db) => db as unknown as SupabaseClient;
 
 const VIEWER_COLS = "id, full_name, forum_joined_on, forum_left_on, is_admin, is_founding";
 const MEETING_COLS = "id, held_on, starts_at, place, title, kind, status, updated_at, meeting_docs(id, body_md, source_updated_at)";
@@ -69,7 +63,7 @@ const fail = (what: string, e: { message: string } | null) => {
 };
 
 export async function getViewer(db: Db, userId: string): Promise<Viewer> {
-  const { data, error } = await t(db).from("profiles").select(VIEWER_COLS).eq("id", userId).maybeSingle();
+  const { data, error } = await db.from("profiles").select(VIEWER_COLS).eq("id", userId).maybeSingle();
   fail("profile", error);
   const v = data as Viewer | null;
   // no row (should not happen): treat as a member with no date, who sees nothing
@@ -77,7 +71,7 @@ export async function getViewer(db: Db, userId: string): Promise<Viewer> {
 }
 
 export async function listMeetings(db: Db, _v: Viewer): Promise<Meeting[]> {
-  const { data, error } = await t(db).from("meetings").select(MEETING_COLS).order("held_on", { ascending: false });
+  const { data, error } = await db.from("meetings").select(MEETING_COLS).order("held_on", { ascending: false });
   fail("meetings", error);
   return withPaths(((data ?? []) as MeetingRow[]).map(toMeeting));
 }
@@ -96,7 +90,7 @@ async function filesFor(db: Db, meetingId: string): Promise<MeetingFile[]> {
 
 /** By date (YYYY-MM-DD, the web URL) or by id (push deep links use /forum/<meeting_id>). */
 export async function getMeeting(db: Db, _v: Viewer, key: string): Promise<MeetingDetail | null> {
-  const q = t(db).from("meetings").select(MEETING_COLS);
+  const q = db.from("meetings").select(MEETING_COLS);
   const { data, error } = await (UUID.test(key) ? q.eq("id", key) : q.eq("held_on", key))
     .order("starts_at", { nullsFirst: false })
     .order("created_at")
@@ -115,15 +109,15 @@ export async function searchMeetings(db: Db, _v: Viewer, q: string): Promise<Mee
   if (!needle) return [];
   const like = `%${needle}%`;
   const [byMeeting, byDoc] = await Promise.all([
-    t(db).from("meetings").select(MEETING_COLS).or(`title.ilike.${like},place.ilike.${like}`),
-    t(db).from("meeting_docs").select("meeting_id").ilike("body_md", like),
+    db.from("meetings").select(MEETING_COLS).or(`title.ilike.${like},place.ilike.${like}`),
+    db.from("meeting_docs").select("meeting_id").ilike("body_md", like),
   ]);
   fail("search", byMeeting.error ?? byDoc.error);
   const ids = new Set(((byDoc.data ?? []) as { meeting_id: string }[]).map((d) => d.meeting_id));
   const found = new Map(((byMeeting.data ?? []) as MeetingRow[]).map((r) => [r.id, r]));
   const missing = [...ids].filter((id) => !found.has(id));
   if (missing.length) {
-    const { data, error } = await t(db).from("meetings").select(MEETING_COLS).in("id", missing);
+    const { data, error } = await db.from("meetings").select(MEETING_COLS).in("id", missing);
     fail("search", error);
     for (const r of (data ?? []) as MeetingRow[]) found.set(r.id, r);
   }
@@ -131,7 +125,7 @@ export async function searchMeetings(db: Db, _v: Viewer, q: string): Promise<Mee
 }
 
 export async function listUpcoming(db: Db, _v: Viewer, day: string): Promise<Meeting[]> {
-  const { data, error } = await t(db)
+  const { data, error } = await db
     .from("meetings")
     .select(MEETING_COLS)
     .eq("status", "planned")
@@ -144,33 +138,33 @@ export async function listUpcoming(db: Db, _v: Viewer, day: string): Promise<Mee
 type LibRow = { slug: string; title: string; audience: LibraryAudience; updated_at: string; body_md: string | null };
 
 export async function listLibrary(db: Db, _v: Viewer): Promise<LibraryDoc[]> {
-  const { data, error } = await t(db).from("library_docs").select("slug, title, audience, updated_at").order("sort").order("title");
+  const { data, error } = await db.from("library_docs").select("slug, title, audience, updated_at").order("sort").order("title");
   fail("library", error);
   return (data ?? []) as LibraryDoc[];
 }
 
 export async function getLibraryDoc(db: Db, _v: Viewer, slug: string): Promise<LibraryDocDetail | null> {
-  const { data, error } = await t(db).from("library_docs").select("slug, title, audience, updated_at, body_md").eq("slug", slug).maybeSingle();
+  const { data, error } = await db.from("library_docs").select("slug, title, audience, updated_at, body_md").eq("slug", slug).maybeSingle();
   fail("library doc", error);
   const r = data as LibRow | null;
   return r ? { ...r, body_md: r.body_md ?? "" } : null;
 }
 
 export async function listSeasons(db: Db, _v: Viewer): Promise<Season[]> {
-  const { data, error } = await t(db).from("seasons").select("id, slug, name, starts_on, ends_on").order("starts_on", { ascending: false });
+  const { data, error } = await db.from("seasons").select("id, slug, name, starts_on, ends_on").order("starts_on", { ascending: false });
   fail("seasons", error);
   return (data ?? []) as Season[];
 }
 
 /** The moderator is the forum's admin (no separate flag yet). */
 export async function getModerator(db: Db): Promise<string> {
-  const { data } = await t(db).from("profiles").select("full_name").eq("is_admin", true).order("forum_joined_on").limit(1);
+  const { data } = await db.from("profiles").select("full_name").eq("is_admin", true).order("forum_joined_on").limit(1);
   return ((data ?? []) as { full_name: string }[])[0]?.full_name ?? "The moderator";
 }
 
 export async function listMembers(db: Db, v: Viewer): Promise<Member[]> {
   if (!v.is_admin) return [];
-  const { data, error } = await t(db).from("profiles").select(`${VIEWER_COLS}, email`).order("forum_joined_on", { ascending: true, nullsFirst: false });
+  const { data, error } = await db.from("profiles").select(`${VIEWER_COLS}, email`).order("forum_joined_on", { ascending: true, nullsFirst: false });
   fail("members", error);
   const day = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
   return ((data ?? []) as (Viewer & { email: string | null })[]).map((r) => ({
@@ -186,7 +180,7 @@ export async function getMember(db: Db, v: Viewer, id: string): Promise<Member |
 
 /** rpc('set_member_access'): admin-only in the database (42501 otherwise). */
 export async function setMemberAccess(db: Db, _v: Viewer, id: string, a: Access): Promise<AdminResult> {
-  const { error } = await t(db).rpc("set_member_access", {
+  const { error } = await db.rpc("set_member_access", {
     member: id,
     joined_on: a.joined_on,
     left_on: a.left_on,
@@ -203,7 +197,7 @@ export async function listAllSeasons(db: Db, v: Viewer): Promise<Season[]> {
 
 /** Insert under the "seasons admin insert" policy. The ladder stays as in lib/contest until it is editable. */
 export async function createSeason(db: Db, _v: Viewer, s: NewSeason): Promise<AdminResult> {
-  const { error } = await t(db).from("seasons").insert({ ...s });
+  const { error } = await db.from("seasons").insert({ ...s });
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
@@ -214,7 +208,7 @@ export async function createSeason(db: Db, _v: Viewer, s: NewSeason): Promise<Ad
  */
 export async function previewAs(db: Db, admin: Viewer, who: Member, day: string): Promise<Preview | null> {
   if (!admin.is_admin) return null;
-  const { data, error } = await t(db).rpc("admin_preview", { member: who.id });
+  const { data, error } = await db.rpc("admin_preview", { member: who.id });
   if (error || !data) return null;
   const r = data as { active: boolean; meetings: { id: string }[] | null; library: string[] | null; seasons: string[] | null };
   const mIds = new Set((r.meetings ?? []).map((m) => m.id));
@@ -233,6 +227,6 @@ export async function previewAs(db: Db, admin: Viewer, who: Member, day: string)
 
 /** rpc('touch_last_seen'): returns the previous visit and stamps now. */
 export async function touchLastSeen(db: Db): Promise<string | null> {
-  const { data, error } = await t(db).rpc("touch_last_seen");
+  const { data, error } = await db.rpc("touch_last_seen");
   return error ? null : ((data as string | null) ?? null);
 }
