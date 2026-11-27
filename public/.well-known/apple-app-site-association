@@ -3,7 +3,7 @@
     "details": [
       {
         "appIDs": [
-          "TEAMID.com.talentedge.shadowforum"
+          "MYBR59DBU2.com.talentedge.shadowforum"
         ],
         "components": [
           {
@@ -70,7 +70,7 @@
   },
   "webcredentials": {
     "apps": [
-      "TEAMID.com.talentedge.shadowforum"
+      "MYBR59DBU2.com.talentedge.shadowforum"
     ]
   }
 }
