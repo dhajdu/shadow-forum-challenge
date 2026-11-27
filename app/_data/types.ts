@@ -32,7 +32,7 @@ export type LibraryAudience = "all" | "founding";
 export type LibraryDoc = { slug: string; title: string; audience: LibraryAudience; updated_at: string };
 export type LibraryDocDetail = LibraryDoc & { body_md: string };
 
-export type Season = { id: string; slug: string; name: string; starts_on: string; ends_on: string };
+export type Season = { id: string; slug: string; name: string; starts_on: string; ends_on: string; ladder: number[] | null };
 
 /** The signed-in member's forum standing (profiles columns). */
 export type Viewer = {

@@ -75,7 +75,7 @@ const LIBRARY: LibraryDocDetail[] = [
 ];
 
 // Matches lib/contest.ts (CONTEST_START / CONTEST_END).
-const SEASONS: Season[] = [{ id: "fx-2026-q4", slug: "2026-q4", name: "Q4 2026", starts_on: "2026-09-23", ends_on: "2026-12-22" }];
+const SEASONS: Season[] = [{ id: "fx-2026-q4", slug: "2026-q4", name: "Q4 2026", starts_on: "2026-09-23", ends_on: "2026-12-22", ladder: [0, 2, 3, 4, 5] }];
 
 const FOUNDED = "2026-01-19";
 const member = (id: string, full_name: string, joined: string | null, extra: Partial<Member> = {}): Member => ({

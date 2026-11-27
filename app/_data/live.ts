@@ -151,7 +151,7 @@ export async function getLibraryDoc(db: Db, _v: Viewer, slug: string): Promise<L
 }
 
 export async function listSeasons(db: Db, _v: Viewer): Promise<Season[]> {
-  const { data, error } = await db.from("seasons").select("id, slug, name, starts_on, ends_on").order("starts_on", { ascending: false });
+  const { data, error } = await db.from("seasons").select("id, slug, name, starts_on, ends_on, ladder").order("starts_on", { ascending: false });
   fail("seasons", error);
   return (data ?? []) as Season[];
 }
