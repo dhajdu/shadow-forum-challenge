@@ -54,7 +54,7 @@ export async function HomeView() {
       })),
     ...library
       .filter((d) => new Date(d.updated_at) > new Date(since))
-      .map((d) => ({ key: d.slug, href: `/forum/library/${d.slug}`, text: `Updated: ${d.title}`, when: d.updated_at })),
+      .map((d) => ({ key: d.slug, href: `/forum/resources/${d.slug}`, text: `Updated: ${d.title}`, when: d.updated_at })),
   ].sort((a, b) => b.when.localeCompare(a.when));
 
   // contest card only while this member has a season that is running (or just finished)
@@ -174,7 +174,7 @@ export async function HomeView() {
               <ul className="rows">
                 {library.slice(0, 2).map((d) => (
                   <li key={d.slug}>
-                    <Link href={`/forum/library/${d.slug}`} className="row">
+                    <Link href={`/forum/resources/${d.slug}`} className="row">
                       <span className="row-main"><b>Read the {d.title}</b></span>
                       <span className="chev" aria-hidden>→</span>
                     </Link>
@@ -210,14 +210,14 @@ export async function HomeView() {
 
           {photos.length > 0 && (
             <section className={s.block}>
-              <Link href="/forum/gallery" className={s.galleryHead}>
+              <Link href="/gallery" className={s.galleryHead}>
                 <h2 className={s.label}>Gallery</h2>
                 <span className="note-line">See all →</span>
               </Link>
               <ul className={s.gallery}>
                 {photos.map((p) => (
                   <li key={p.id}>
-                    <Link href="/forum/gallery" aria-label="Open the gallery">
+                    <Link href="/gallery" aria-label="Open the gallery">
                       {/* eslint-disable-next-line @next/next/no-img-element -- signed Storage URL, already a thumbnail */}
                       {p.thumb && <img src={p.thumb} alt={p.caption ?? ""} loading="lazy" />}
                     </Link>

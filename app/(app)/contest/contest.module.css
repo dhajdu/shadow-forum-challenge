@@ -1,9 +1,9 @@
 /* Contest: title and sub-tabs above the race pages (they keep their own .app container). */
-.bar { max-width: var(--content-w); margin: 0 auto; box-sizing: border-box; padding: var(--sp-24) var(--sp-24) 0; display: flex; flex-direction: column; gap: var(--sp-14); }
+.bar { max-width: var(--content-w); margin: 0 auto; box-sizing: border-box; padding: var(--sp-8) var(--sp-24) 0; display: flex; flex-direction: column; gap: var(--sp-14); }
 .bar :global(.subtabs) { margin-bottom: 0; }
 
 :global(.shell-main) > .bar ~ :global(.app),
 :global(.shell-main) > .bar ~ :global(main) { padding-top: var(--sp-20); }
 @media (min-width: 768px) {
-  .bar { padding: var(--sp-32) var(--sp-48) 0; }
+  .bar { padding: var(--sp-8) var(--sp-48) 0; }
 }

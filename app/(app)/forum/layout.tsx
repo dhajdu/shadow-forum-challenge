@@ -1,21 +1,22 @@
 import { SubTabs } from "@/components/TabNav";
+import { PageBanner } from "@/components/PageBanner";
 
 const TABS = [
-  { href: "/forum", label: "Agendas" },
-  { href: "/forum/chat", label: "Chat" },
-  { href: "/forum/dates", label: "Dates" },
-  { href: "/forum/gallery", label: "Gallery" },
-  { href: "/forum/library", label: "Library" },
+  { href: "/forum", label: "Agenda" },
+  { href: "/forum/parking", label: "Parking Lot" },
+  { href: "/forum/resources", label: "Resources" },
 ];
 
 export default function ForumLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="page">
-      <header className="page-head">
+    <>
+      <PageBanner src="/banners/back.webp" position="50% 40%">
         <h1>Forum</h1>
-      </header>
-      <SubTabs items={TABS} label="Forum" />
-      {children}
-    </main>
+      </PageBanner>
+      <main className="page">
+        <SubTabs items={TABS} label="Forum" />
+        {children}
+      </main>
+    </>
   );
 }

@@ -25,6 +25,7 @@ import {
 } from "./zone/stats";
 import s from "./zone/zone.module.css";
 import { Settings } from "./Settings";
+import { PageBanner } from "@/components/PageBanner";
 import { getForumContext } from "@/app/_data/context";
 import { longDay } from "@/app/_data/format";
 
@@ -151,6 +152,8 @@ export default async function MePage({
   const score7 = trendRows.find((t) => t.key === "score")?.avg7 ?? null;
 
   return (
+    <>
+    <PageBanner src="/banners/front.webp" position="50% 30%" />
     <main className={s.page}>
       <header className={s.head}>
         <div className={s.who}>
@@ -397,5 +400,6 @@ export default async function MePage({
         <Settings viewer={viewer} />
       </div>
     </main>
+    </>
   );
 }

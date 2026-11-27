@@ -55,6 +55,8 @@
   --fs-date: 34px;      /* condensed day numbers in lists */
   --hero-h: 420px;      /* Home hero, phone */
   --hero-h-lg: 460px;   /* Home hero, desktop */
+  --banner-h: 200px;    /* inside-page image band, phone */
+  --banner-h-lg: 260px; /* inside-page image band, desktop */
   --bar-h: 3px;         /* thin progress bars */
 
   /* Spacing and layout (app shell and new pages) */
@@ -446,11 +448,12 @@ a.lane:hover .rname { color: #fff; }
 .side-foot a { font-size: var(--fs-sm); color: var(--muted); text-decoration: none; }
 .side-foot a:hover { color: var(--ink); }
 
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
   background: var(--bg); border-top: var(--hair) solid var(--line-soft); }
 .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-6); font-size: var(--fs-2xs); }
 .tabbar a::before { width: 22px; }
+.tabbar a { letter-spacing: .04em; }
 
 @media (max-width: 767px) {
   .shell-main { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
@@ -512,3 +515,17 @@ a.row:hover .chev { color: var(--ink); transform: translateX(2px); }
 .cites { display: block; margin-top: var(--sp-8); font-size: var(--fs-xs); color: var(--muted); white-space: normal; }
 .cites a { color: var(--blue); text-decoration: none; }
 .subtabs + .zone-card { border-top: 0; padding-top: 0; }
+
+/* ── Page banner: the shadow crew above inside pages ── */
+.banner { position: relative; height: var(--banner-h); overflow: hidden; isolation: isolate; display: flex; align-items: flex-end; }
+.banner-img { object-fit: cover; opacity: .7; z-index: -2; }
+.banner::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(5, 8, 15, .1) 0%, rgba(5, 8, 15, .45) 55%, var(--bg) 100%); }
+.banner-inner { width: 100%; max-width: var(--content-w); margin: 0 auto; box-sizing: border-box; padding: 0 var(--sp-24) var(--sp-16); }
+.banner-inner h1 { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-size: var(--fs-display); font-weight: 900; line-height: .9; text-transform: uppercase; color: var(--ink); }
+.banner-inner .eyebrow { margin-bottom: var(--sp-8); letter-spacing: var(--track-label); }
+.banner-inner .sub { color: var(--ink-soft); font-size: var(--fs-md); margin-top: var(--sp-6); max-width: 60ch; }
+.shell-main > .banner + .page, .shell-main > .banner + main, .shell-main > .banner + div > .page { padding-top: var(--sp-16); }
+@media (min-width: 768px) {
+  .banner { height: var(--banner-h-lg); }
+  .banner-inner { padding: 0 var(--sp-48) var(--sp-20); }
+}
