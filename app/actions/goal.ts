@@ -26,5 +26,5 @@ export async function createGoal(
   // one locked goal per rider — an existing goal just goes to the race
   if (error && error !== "exists") return { error };
 
-  redirect("/race");
+  redirect("/contest");
 }

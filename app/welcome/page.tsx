@@ -13,7 +13,7 @@ export default async function Welcome() {
     supabase.from("profiles").select("full_name").eq("id", user.id).single(),
   ]);
   // already onboarded? skip.
-  if (goal) redirect("/race");
+  if (goal) redirect("/contest");
 
   const name = (me as { full_name: string | null } | null)?.full_name || "";
 

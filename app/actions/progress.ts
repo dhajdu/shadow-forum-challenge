@@ -29,7 +29,7 @@ export async function updateGoalMeasure(
   });
   if (error) return { error, ok: false };
 
-  revalidatePath("/me");
-  revalidatePath("/race");
+  revalidatePath("/contest/goal");
+  revalidatePath("/contest");
   return { error: null, ok: true };
 }

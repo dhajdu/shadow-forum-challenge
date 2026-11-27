@@ -25,7 +25,7 @@ export async function updateProfile(
     .eq("id", user.id);
   if (error) return { error: error.message, ok: false };
 
-  revalidatePath("/profile");
+  revalidatePath("/me/profile");
   return { error: null, ok: true };
 }
 

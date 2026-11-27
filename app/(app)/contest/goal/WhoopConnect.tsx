@@ -1,6 +1,6 @@
 import { disconnectWhoop } from "@/app/actions/whoop";
 import { shortDate } from "./stats";
-import s from "./me.module.css";
+import s from "./goal.module.css";
 
 type Status = "connected" | "disconnected" | "revoked" | null;
 

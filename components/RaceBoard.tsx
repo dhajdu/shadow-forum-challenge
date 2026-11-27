@@ -53,7 +53,7 @@ export function RaceBoard({ rows }: { rows: RaceRow[] }) {
             <div key={s.user_id} className={`lane p${i + 1} ${styles.row}`}>
               <div className={`medal ${styles.medal}`}>{i + 1}</div>
               <div className={`rname ${styles.name}`}>
-                <Link href={`/rider/${s.user_id}`}>{s.full_name}</Link>
+                <Link href={`/contest/rider/${s.user_id}`}>{s.full_name}</Link>
                 {s.stale && (
                   <span className="stale" title={`No WHOOP upload in over ${STALE_DAYS} days`} aria-label="Overdue upload">
                     !

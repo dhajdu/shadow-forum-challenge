@@ -13,7 +13,7 @@ export default function ResetPasswordPage() {
   const [state, action, pending] = useActionState(changePassword, initial);
 
   useEffect(() => {
-    if (state.ok) router.push("/race");
+    if (state.ok) router.push("/");
   }, [state.ok, router]);
 
   return (

@@ -1,0 +1,20 @@
+/* Members and access (admin). */
+.list { list-style: none; display: grid; gap: var(--sp-10); }
+.member { display: grid; gap: var(--sp-8); padding: var(--sp-12); border-radius: var(--r-md); border: var(--hair) solid var(--line); background: var(--well-soft); min-width: 0; }
+.top { display: flex; align-items: center; gap: var(--sp-8); flex-wrap: wrap; }
+.top b { font-size: var(--fs-base); font-weight: 600; margin-right: auto; }
+.inline { display: flex; align-items: center; gap: var(--sp-8); flex-wrap: wrap; }
+.date { width: auto; padding: var(--sp-8) var(--sp-10); font-size: var(--fs-md); }
+.danger { color: var(--red); }
+.add { display: grid; gap: var(--sp-8); }
+.label { display: grid; gap: var(--sp-4); font-size: var(--fs-sm); color: var(--muted); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--sp-16); align-items: start; }
+.grid :global(.zone-card) { margin-bottom: 0; min-width: 0; }
+@media (max-width: 899px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.checklist { list-style: none; display: grid; gap: var(--sp-8); font-size: var(--fs-md); color: var(--ink-soft); }
+.checklist li { display: flex; gap: var(--sp-8); align-items: baseline; }
+.ok { color: var(--green); }
+.bad { color: var(--red); }
+.pick { margin-bottom: var(--sp-16); }
+.check { display: inline-flex; align-items: center; gap: var(--sp-6); font-size: var(--fs-sm); color: var(--muted); }
+.steps { padding-left: var(--sp-20); display: grid; gap: var(--sp-6); font-size: var(--fs-md); color: var(--ink-soft); line-height: 1.45; }

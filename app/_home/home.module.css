@@ -1,0 +1,20 @@
+/* Home: two columns on desktop, one on phones. */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-16); align-items: start; }
+.grid :global(.zone-card) { margin-bottom: 0; min-width: 0; }
+@media (max-width: 899px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.big { display: block; font-size: var(--fs-2xl); font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; margin-bottom: var(--sp-4); }
+.next { border-color: var(--blue-edge); }
+.actions { margin-top: var(--sp-14); }
+.cardLink { display: block; color: inherit; text-decoration: none; }
+.cardLink:hover { border-color: var(--blue-edge); }
+.goal { margin-top: var(--sp-8); display: flex; align-items: center; gap: var(--sp-8); flex-wrap: wrap; }
+.whip { margin-top: var(--sp-10); font-size: var(--fs-sm); color: var(--amber); line-height: 1.45; }
+/* wide screens: Ask sits in a right-hand rail (wireframe 13) */
+.rail { display: none; }
+.mainCol { min-width: 0; }
+@media (min-width: 1280px) {
+  .withRail { max-width: none; display: grid; grid-template-columns: minmax(0, 1fr) var(--rail-w); gap: var(--sp-16); align-items: start; }
+  .rail { display: block; position: sticky; top: var(--sp-24); margin-bottom: 0; }
+  .rail :global(.chat) { max-height: calc(100dvh - 260px); }
+}
+.notice { margin-bottom: var(--sp-16); border-color: var(--amber); }
