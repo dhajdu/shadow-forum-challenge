@@ -93,7 +93,7 @@ export function Landing() {
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: "url(/hero.webp)",
+          backgroundImage: "url(/landing.webp)",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
