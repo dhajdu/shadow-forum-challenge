@@ -2,12 +2,28 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, GoalStatus } from "@/lib/database.types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { reconcileCoaches } from "@/lib/coach";
+import { newestSeason, seasonForDay } from "@/lib/contest";
 
 export const GOAL_STATUSES: GoalStatus[] = ["on_track", "at_risk", "behind", "hit"];
 
 export function goalPct(current: number, target: number | null): number {
   if (!target || target <= 0) return 0;
   return Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+}
+
+type Client = SupabaseClient<Database>;
+
+/**
+ * Which season a goal call is about. An explicit id wins. Otherwise: creating a
+ * goal goes to the newest season the member can see (so Q1 2027 can be locked in
+ * during December); updating progress goes to the season running today. Reads on
+ * the member's own session, so only visible seasons can be chosen.
+ */
+export async function goalSeasonId(supabase: Client, purpose: "create" | "update", seasonId?: string | null): Promise<string | null> {
+  const { data } = await supabase.from("seasons").select("id, starts_on");
+  const seasons = data ?? [];
+  if (seasonId) return seasons.some((s) => s.id === seasonId) ? seasonId : null;
+  return (purpose === "create" ? newestSeason(seasons) : seasonForDay(seasons))?.id ?? null;
 }
 
 export type GoalMeasure = {
@@ -26,9 +42,12 @@ export type GoalMeasure = {
 export async function saveGoalMeasure(
   supabase: SupabaseClient<Database>,
   userId: string,
-  m: GoalMeasure
+  m: GoalMeasure,
+  seasonId?: string | null
 ): Promise<string | null> {
-  const { data: goal } = await supabase.from("goals").select("id").eq("user_id", userId).maybeSingle();
+  const season = await goalSeasonId(supabase, "update", seasonId);
+  if (!season) return "No season to update.";
+  const { data: goal } = await supabase.from("goals").select("id").eq("user_id", userId).eq("season_id", season).maybeSingle();
   const g = goal as { id: string } | null;
   if (!g) return "No goal to update.";
 
@@ -56,22 +75,27 @@ export async function saveGoalMeasure(
 export type NewGoal = { title: string; unit: string | null; targetValue: number | null; targetDate: string | null };
 
 /**
- * Create the rider's one locked Q4 goal and assign their coach from the roster.
- * Returns "exists" if they already have one, another error message, or null.
+ * Create the rider's one locked goal for a season (default: the newest season)
+ * and assign their coach from the roster. Returns "exists" if they already have
+ * one for that season, another error message, or null.
  */
 export async function createRiderGoal(
   supabase: SupabaseClient<Database>,
   userId: string,
-  g: NewGoal
+  g: NewGoal,
+  seasonId?: string | null
 ): Promise<string | null> {
   if (!g.title.trim()) return "Your goal can't be empty.";
   if (g.targetValue != null && Number.isNaN(g.targetValue)) return "Target must be a number.";
 
-  const { data: existing } = await supabase.from("goals").select("id").eq("user_id", userId).maybeSingle();
+  const season = await goalSeasonId(supabase, "create", seasonId);
+  if (!season) return "No season to set a goal for.";
+  const { data: existing } = await supabase.from("goals").select("id").eq("user_id", userId).eq("season_id", season).maybeSingle();
   if (existing) return "exists";
 
   const { error } = await supabase.from("goals").insert({
     user_id: userId,
+    season_id: season,
     title: g.title.trim(),
     unit: g.unit,
     target_value: g.targetValue,
