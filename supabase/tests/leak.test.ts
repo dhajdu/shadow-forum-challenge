@@ -215,6 +215,10 @@ before(async () => {
     ok(await admin.from("whoop_journal").insert({ user_id: member[k].id, day: "2026-10-01", question: "Alcohol?", answered_yes: false }), "journal");
     ok(await admin.from("personal_goals").insert({ user_id: member[k].id, title: `personal ${k}` }), "personal");
     ok(await admin.from("push_devices").insert({ user_id: member[k].id, platform: "ios", expo_token: `ExponentPushToken[leak-${k}]` }), "push");
+    ok(
+      await admin.from("journal_analyses").insert({ user_id: member[k].id, week_of: "2026-10-05", headline: `week ${k}`, insights: [], suggestion: "-", model: "leak" }),
+      "journal analysis"
+    );
   }
 });
 
@@ -357,7 +361,7 @@ describe("tables, per persona", () => {
       });
 
       it("own-only tables: journal, personal goals, push devices, uploads, whoop connection", async () => {
-        for (const t of ["whoop_journal", "personal_goals", "push_devices"] as const) {
+        for (const t of ["whoop_journal", "personal_goals", "push_devices", "journal_analyses"] as const) {
           const rows = ok(await c().from(t).select("user_id"), t) as { user_id: string }[];
           assert.deepEqual(rows.map((r) => r.user_id), active(k) ? [member[k].id] : [], t);
         }
