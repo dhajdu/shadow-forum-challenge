@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getRequestUser } from "@/lib/supabase/request";
+import { requireMember } from "@/lib/api";
 import { createRiderGoal, saveGoalMeasure } from "@/lib/goals";
 import type { GoalStatus } from "@/lib/database.types";
 
@@ -10,8 +10,9 @@ const text = (v: unknown): string | null => (typeof v === "string" && v.trim() !
 
 /** POST { title, unit?, targetValue?, targetDate? } — create the rider's Q4 goal (onboarding). */
 export async function POST(req: NextRequest) {
-  const auth = await getRequestUser(req);
-  if (!auth) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const gate = await requireMember(req);
+  if (!gate.ok) return gate.res;
+  const auth = gate.auth;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   const error = await createRiderGoal(auth.supabase, auth.user.id, {
@@ -26,8 +27,9 @@ export async function POST(req: NextRequest) {
 
 /** PATCH { currentValue, targetValue?, unit?, status, note? } — update goal progress. */
 export async function PATCH(req: NextRequest) {
-  const auth = await getRequestUser(req);
-  if (!auth) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const gate = await requireMember(req);
+  if (!gate.ok) return gate.res;
+  const auth = gate.auth;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   const error = await saveGoalMeasure(auth.supabase, auth.user.id, {

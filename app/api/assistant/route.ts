@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { selectAll } from "@/lib/supabase/selectAll";
-import { getRequestUser } from "@/lib/supabase/request";
+import { requireMember } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +27,10 @@ function stats(vals: number[]) {
 }
 
 export async function POST(req: NextRequest) {
-  // session cookie (web) or Authorization: Bearer <access token> (iOS)
-  const auth = await getRequestUser(req);
-  if (!auth) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  // session cookie (web) or Authorization: Bearer <access token> (iOS); active members only
+  const gate = await requireMember(req);
+  if (!gate.ok) return gate.res;
+  const auth = gate.auth;
   const { supabase, user } = auth;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

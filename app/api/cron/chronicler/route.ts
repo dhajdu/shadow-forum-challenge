@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAuthorizedCron } from "@/lib/cron";
 import { sendEmail } from "@/lib/notify";
-import { buildReport } from "@/lib/report";
+import { buildReport, REPORT_SEASON_SLUG } from "@/lib/report";
+import { groupScope, loadAccess, seasonAudience } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +15,21 @@ export async function GET(req: NextRequest) {
   const dry = req.nextUrl.searchParams.get("dry") === "1";
 
   const admin = createAdminClient();
+
+  // Recipients: only active members who can see the report's season. Members who
+  // joined after it started are left out rather than the report being trimmed.
+  const { members, seasons } = await loadAccess(admin);
+  const season = seasons.find((s) => s.slug === REPORT_SEASON_SLUG) ?? null;
+  const audience = seasonAudience(members, season);
+  // Group output: everything in it must be visible to the latest-joined recipient.
+  if (!groupScope(audience).canSeeSeason(season)) {
+    return NextResponse.json({ ok: true, dry, skipped: "no recipient can see the season", recipients: 0, sent: 0 });
+  }
   const report = await buildReport(admin);
 
   const monthLabel = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
   const site = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const link = `${site}/report/${encodeURIComponent(monthLabel)}`;
+  const link = `${site}/contest/report/${new Date().toISOString().slice(0, 7)}`;
 
   const rowsHtml = report.standings
     .map(
@@ -37,11 +48,7 @@ export async function GET(req: NextRequest) {
     </table>
     <p><a href="${link}">View the full report →</a></p>`;
 
-  // recipients: all members with an email
-  const { data: profs } = await admin.from("profiles").select("email");
-  const recipients = ((profs ?? []) as { email: string | null }[])
-    .map((p) => p.email)
-    .filter((e): e is string => !!e);
+  const recipients = audience.map((m) => m.email).filter((e): e is string => !!e);
 
   let sent = 0;
   if (!dry) {

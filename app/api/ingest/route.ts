@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getRequestUser } from "@/lib/supabase/request";
+import { requireMember } from "@/lib/api";
 import { ingestUpload } from "@/lib/whoop/ingest";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +10,9 @@ export const maxDuration = 60;
  * `whoop` bucket (and recorded in `uploads`). Same code path as the web upload.
  */
 export async function POST(req: NextRequest) {
-  const auth = await getRequestUser(req);
-  if (!auth) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const gate = await requireMember(req);
+  if (!gate.ok) return gate.res;
+  const auth = gate.auth;
 
   const body = (await req.json().catch(() => ({}))) as { uploadId?: unknown };
   if (typeof body.uploadId !== "string" || body.uploadId === "") {

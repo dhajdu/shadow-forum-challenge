@@ -3,6 +3,9 @@ import type { Database, GoalStatus } from "@/lib/database.types";
 import { getStandings } from "@/lib/standings";
 import { placementPenalty } from "@/lib/contest";
 
+/** The season the monthly report covers (race_standings is this season's board). */
+export const REPORT_SEASON_SLUG = "2026-q4";
+
 export type ReportRow = {
   user_id: string;
   name: string;
