@@ -11,7 +11,7 @@ import { color } from "@/theme/tokens";
 
 const monthName = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
 
-// /forum/dates — coming dates only, set by the moderator in EO Vietnam. Past forums live in Agendas.
+// /forum/dates — coming dates only. Past forums live in Agendas.
 export default function Dates() {
   const { data: meetings, error, loading } = useLoad(() => data.meetings());
   const t = today();
@@ -45,7 +45,7 @@ export default function Dates() {
           {unset.map((mo) => (
             <Row key={mo} title={mo} detail="Date not set yet" />
           ))}
-          <Body muted>Dates are set by the moderator in EO Vietnam's My forum.</Body>
+          <Body muted>Past forums are under Agendas.</Body>
           <Row title="Moderator" right={<Body>Dave Hajdu</Body>} />
         </>
       ) : null}

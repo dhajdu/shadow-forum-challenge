@@ -130,6 +130,32 @@ isOneToOne: true
       referencedColumns: ["user_id"]
     }
                   ]
+                },"journal_analyses": {
+                  Row: {
+                    "created_at": string,"headline": string,"id": string,"insights": NonNullable<Json>,"model": string,"suggestion": string,"user_id": string,"week_of": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"headline": string,"id"?: string,"insights": NonNullable<Json>,"model": string,"suggestion": string,"user_id": string,"week_of": string
+                  }
+                  Update: {
+                    "created_at"?: string,"headline"?: string,"id"?: string,"insights"?: NonNullable<Json>,"model"?: string,"suggestion"?: string,"user_id"?: string,"week_of"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "journal_analyses_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "journal_analyses_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"library_docs": {
                   Row: {
                     "audience": string | null,"body_md": string | null,"file_path": string | null,"id": string,"slug": string,"sort": number,"title": string,"updated_at": string
@@ -146,14 +172,14 @@ isOneToOne: true
                   ]
                 },"meeting_chunks": {
                   Row: {
-                    "content": string,"created_at": string,"embedding": string | null,"held_on": string,"id": string,"meeting_id": string
+                    "content": string,"created_at": string,"held_on": string,"id": string,"meeting_id": string,"search": unknown
                   }
                   ComputedFields: never
                   Insert: {
-                    "content": string,"created_at"?: string,"embedding"?: string | null,"held_on": string,"id"?: string,"meeting_id": string
+                    "content": string,"created_at"?: string,"held_on": string,"id"?: string,"meeting_id": string,"search"?: never
                   }
                   Update: {
-                    "content"?: string,"created_at"?: string,"embedding"?: string | null,"held_on"?: string,"id"?: string,"meeting_id"?: string
+                    "content"?: string,"created_at"?: string,"held_on"?: string,"id"?: string,"meeting_id"?: string,"search"?: never
                   }
                   Relationships: [
                     {
@@ -186,14 +212,14 @@ isOneToOne: false
                   ]
                 },"meetings": {
                   Row: {
-                    "created_at": string,"eovn_meeting_id": string | null,"held_on": string,"id": string,"kind": string,"lark_node_token": string | null,"place": string | null,"starts_at": string | null,"status": string,"title": string | null,"updated_at": string
+                    "created_at": string,"held_on": string,"id": string,"kind": string,"lark_node_token": string | null,"place": string | null,"starts_at": string | null,"status": string,"title": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"eovn_meeting_id"?: string | null,"held_on": string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"held_on": string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"eovn_meeting_id"?: string | null,"held_on"?: string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
+                    "created_at"?: string,"held_on"?: string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -516,8 +542,8 @@ isOneToOne: true
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "match_meeting_chunks":
-{ Args: { "match_count"?: number,"only_meeting"?: string,"query_embedding": string }; Returns: {
-              "content": string,"held_on": string,"id": string,"meeting_id": string,"similarity": number
+{ Args: { "match_count"?: number,"only_meeting"?: string,"query": string }; Returns: {
+              "content": string,"held_on": string,"id": string,"meeting_id": string,"rank": number
             }[]
                            },
 "member_can_see_date":

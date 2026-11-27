@@ -57,7 +57,7 @@ export default async function DatesPage() {
         <h2>Moderator</h2>
         <p className="prose">{moderator}</p>
         <p className={`note-line ${s.tight}`}>
-          Dates are set by the moderator in EO Vietnam&apos;s My forum. Past forums are under Agendas.
+          Past forums are under Agendas.
         </p>
       </section>
     </div>
