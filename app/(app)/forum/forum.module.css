@@ -1,8 +1,8 @@
 /* Forum section: agendas, agenda detail, dates, library. */
 .lead { margin-bottom: var(--sp-12); }
 .detailHead { margin-bottom: var(--sp-16); }
-.detailHead h2 { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-size: var(--fs-display); font-weight: 900;
-  line-height: .9; text-transform: uppercase; color: var(--ink); margin-top: var(--sp-8); }
+.detailHead h2 { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-size: var(--fs-recap); font-weight: 900;
+  line-height: .9; text-transform: uppercase; letter-spacing: normal; color: var(--ink); margin-top: var(--sp-8); }
 .files { margin-top: var(--sp-8); }
 .actions { margin-top: var(--sp-16); }
 .next b { display: block; font-family: var(--font-display-stack); font-stretch: var(--display-width); font-size: var(--fs-date); font-weight: 900;
