@@ -1,379 +1,54 @@
-// Types for the public schema. Kept in sync with supabase/migrations/*.sql by hand
-// (CLI type-gen needs Docker, which isn't available in this environment).
-// Shapes follow the supabase-generated convention (explicit Row/Insert/Update)
-// so the supabase-js type helpers resolve correctly.
+// The app's database types: the CLI-generated schema (lib/database.generated.ts,
+// regenerate with `npm run types`) plus a thin override for what the generator
+// cannot see:
+// - CHECK-constrained text columns, typed as their allowed values
+// - view columns, which Postgres reports as nullable even where they never are
+// - meeting_chunks.held_on, which a trigger fills, so inserts may omit it
+// - function arguments that accept null (Postgres has no way to declare it)
+// Add to the override only when the generator is provably wrong; never copy tables here.
+import type { Database as Generated, Json } from "@/lib/database.generated";
+
+export type { Json };
 
 export type GoalStatus = "on_track" | "at_risk" | "behind" | "hit";
 export type UploadStatus = "uploaded" | "processing" | "parsed" | "error";
 export type PenaltyKind = "placement" | "missed_goal" | "coach_share";
 export type WhoopConnectionStatus = "connected" | "disconnected" | "revoked";
+export type MeetingKind = "forum" | "retreat" | "kickoff";
+export type MeetingStatus = "planned" | "held";
+export type LibraryAudience = "all" | "founding";
+export type PushPlatform = "ios" | "android";
 
-export type Json = string | number | boolean | null | { [k: string]: Json | undefined } | Json[];
+type G = Generated["public"];
+type T = G["Tables"];
+type V = G["Views"];
+type F = G["Functions"];
+type Patch<A, B> = Omit<A, keyof B> & B;
+type RowPatch<K extends keyof T, P> = Patch<T[K], { Row: Patch<T[K]["Row"], P> }>;
+type ArgsPatch<K extends keyof F, P> = Patch<F[K], { Args: Patch<F[K]["Args"], P> }>;
 
-export interface Database {
-  public: {
-    Tables: {
-      profiles: {
-        Row: {
-          id: string;
-          full_name: string;
-          email: string | null;
-          avatar_url: string | null;
-          is_coach: boolean;
-          created_at: string;
-        };
-        Insert: {
-          id: string;
-          full_name?: string;
-          email?: string | null;
-          avatar_url?: string | null;
-          is_coach?: boolean;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          full_name?: string;
-          email?: string | null;
-          avatar_url?: string | null;
-          is_coach?: boolean;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      goals: {
-        Row: {
-          id: string;
-          user_id: string;
-          title: string;
-          measure: string | null;
-          unit: string | null;
-          target_value: number | null;
-          current_value: number;
-          target_date: string | null;
-          coach_id: string | null;
-          locked: boolean;
-          current_progress: number;
-          current_status: GoalStatus;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          title: string;
-          measure?: string | null;
-          unit?: string | null;
-          target_value?: number | null;
-          current_value?: number;
-          target_date?: string | null;
-          coach_id?: string | null;
-          locked?: boolean;
-          current_progress?: number;
-          current_status?: GoalStatus;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          title?: string;
-          measure?: string | null;
-          unit?: string | null;
-          target_value?: number | null;
-          current_value?: number;
-          target_date?: string | null;
-          coach_id?: string | null;
-          locked?: boolean;
-          current_progress?: number;
-          current_status?: GoalStatus;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      personal_goals: {
-        Row: {
-          id: string;
-          user_id: string;
-          title: string;
-          unit: string | null;
-          target_value: number | null;
-          current_value: number;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          title: string;
-          unit?: string | null;
-          target_value?: number | null;
-          current_value?: number;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          title?: string;
-          unit?: string | null;
-          target_value?: number | null;
-          current_value?: number;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      goal_progress: {
-        Row: {
-          id: string;
-          goal_id: string;
-          progress: number;
-          status: GoalStatus;
-          note: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          goal_id: string;
-          progress: number;
-          status: GoalStatus;
-          note?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          goal_id?: string;
-          progress?: number;
-          status?: GoalStatus;
-          note?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      whoop_days: {
-        Row: {
-          id: string;
-          user_id: string;
-          day: string;
-          score: number | null;
-          recovery: number | null;
-          sleep: number | null;
-          strain: number | null;
-          resting_hr: number | null;
-          hrv: number | null;
-          missed: boolean;
-          upload_id: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          day: string;
-          score?: number | null;
-          recovery?: number | null;
-          sleep?: number | null;
-          strain?: number | null;
-          resting_hr?: number | null;
-          hrv?: number | null;
-          missed?: boolean;
-          upload_id?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          day?: string;
-          score?: number | null;
-          recovery?: number | null;
-          sleep?: number | null;
-          strain?: number | null;
-          resting_hr?: number | null;
-          hrv?: number | null;
-          missed?: boolean;
-          upload_id?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      whoop_journal: {
-        Row: {
-          id: string;
-          user_id: string;
-          day: string;
-          question: string;
-          answered_yes: boolean | null;
-          notes: string | null;
-          upload_id: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          day: string;
-          question: string;
-          answered_yes?: boolean | null;
-          notes?: string | null;
-          upload_id?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          day?: string;
-          question?: string;
-          answered_yes?: boolean | null;
-          notes?: string | null;
-          upload_id?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      whoop_connections: {
-        Row: {
-          user_id: string;
-          whoop_user_id: number | null;
-          status: WhoopConnectionStatus;
-          access_token_enc: string | null;
-          refresh_token_enc: string | null;
-          token_expires_at: string | null;
-          scopes: string | null;
-          connected_at: string | null;
-          last_sync_at: string | null;
-          last_error: string | null;
-          updated_at: string;
-        };
-        Insert: {
-          user_id: string;
-          whoop_user_id?: number | null;
-          status?: WhoopConnectionStatus;
-          access_token_enc?: string | null;
-          refresh_token_enc?: string | null;
-          token_expires_at?: string | null;
-          scopes?: string | null;
-          connected_at?: string | null;
-          last_sync_at?: string | null;
-          last_error?: string | null;
-          updated_at?: string;
-        };
-        Update: {
-          user_id?: string;
-          whoop_user_id?: number | null;
-          status?: WhoopConnectionStatus;
-          access_token_enc?: string | null;
-          refresh_token_enc?: string | null;
-          token_expires_at?: string | null;
-          scopes?: string | null;
-          connected_at?: string | null;
-          last_sync_at?: string | null;
-          last_error?: string | null;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      uploads: {
-        Row: {
-          id: string;
-          user_id: string;
-          file_path: string;
-          file_name: string;
-          status: UploadStatus;
-          rows_ingested: number | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          file_path: string;
-          file_name: string;
-          status?: UploadStatus;
-          rows_ingested?: number | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          file_path?: string;
-          file_name?: string;
-          status?: UploadStatus;
-          rows_ingested?: number | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      coaching_notes: {
-        Row: {
-          id: string;
-          goal_id: string;
-          author_id: string;
-          body: string;
-          session_month: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          goal_id: string;
-          author_id: string;
-          body: string;
-          session_month?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          goal_id?: string;
-          author_id?: string;
-          body?: string;
-          session_month?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      penalties: {
-        Row: {
-          id: string;
-          user_id: string;
-          kind: PenaltyKind;
-          amount_m: number;
-          reason: string | null;
-          period: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          kind: PenaltyKind;
-          amount_m: number;
-          reason?: string | null;
-          period?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          kind?: PenaltyKind;
-          amount_m?: number;
-          reason?: string | null;
-          period?: string | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-      standings_snapshots: {
-        Row: { id: string; day: string; data: Json; created_at: string };
-        Insert: { id?: string; day: string; data: Json; created_at?: string };
-        Update: { id?: string; day?: string; data?: Json; created_at?: string };
-        Relationships: [];
-      };
-    };
-    Views: {
-      whoop_connection_status: {
-        Row: {
-          user_id: string;
-          whoop_user_id: number | null;
-          status: WhoopConnectionStatus;
-          scopes: string | null;
-          connected_at: string | null;
-          last_sync_at: string | null;
-          last_error: string | null;
-          updated_at: string;
-        };
-        Relationships: [];
-      };
-      race_standings: {
+type Tables = Patch<
+  T,
+  {
+    goals: RowPatch<"goals", { current_status: GoalStatus }>;
+    goal_progress: RowPatch<"goal_progress", { status: GoalStatus }>;
+    uploads: RowPatch<"uploads", { status: UploadStatus }>;
+    penalties: RowPatch<"penalties", { kind: PenaltyKind }>;
+    whoop_connections: RowPatch<"whoop_connections", { status: WhoopConnectionStatus }>;
+    meetings: RowPatch<"meetings", { kind: MeetingKind; status: MeetingStatus }>;
+    library_docs: RowPatch<"library_docs", { audience: LibraryAudience | null }>;
+    push_devices: RowPatch<"push_devices", { platform: PushPlatform }>;
+    chat_messages: RowPatch<"chat_messages", { role: "user" | "assistant" }>;
+    meeting_chunks: Patch<T["meeting_chunks"], { Insert: Patch<T["meeting_chunks"]["Insert"], { held_on?: string } > }>;
+  }
+>;
+
+type Views = Patch<
+  V,
+  {
+    race_standings: Patch<
+      V["race_standings"],
+      {
         Row: {
           user_id: string;
           full_name: string;
@@ -385,11 +60,21 @@ export interface Database {
           last_day: string | null;
           last_data_day: string | null;
         };
-        Relationships: [];
-      };
-    };
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-}
+      }
+    >;
+    whoop_connection_status: Patch<
+      V["whoop_connection_status"],
+      { Row: Patch<V["whoop_connection_status"]["Row"], { user_id: string; status: WhoopConnectionStatus; updated_at: string }> }
+    >;
+  }
+>;
+
+type Functions = Patch<
+  F,
+  {
+    set_member_access: ArgsPatch<"set_member_access", { joined_on: string | null; left_on: string | null }>;
+    match_meeting_chunks: ArgsPatch<"match_meeting_chunks", { only_meeting?: string | null }>;
+  }
+>;
+
+export type Database = Patch<Generated, { public: Patch<G, { Tables: Tables; Views: Views; Functions: Functions }> }>;
