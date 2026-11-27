@@ -49,7 +49,9 @@ export function ForumChat({ initial, people, me, isAdmin }: { initial: ChatMessa
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [messages.length]);
+    // mark the chat read up to now (owner-only row)
+    db.from("forum_read_marks").upsert({ last_read_at: new Date().toISOString() }).then(() => {});
+  }, [messages.length, db]);
 
   async function send() {
     const body = text.trim();
@@ -66,6 +68,12 @@ export function ForumChat({ initial, people, me, isAdmin }: { initial: ChatMessa
       setText("");
       const row = data as ChatMessage;
       setMessages((xs) => (xs.some((x) => x.id === row.id) ? xs : [...xs, row]));
+      // tell the other members' phones (generic text; the server rate-limits and dedupes)
+      fetch("/api/forum/notify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message_id: row.id }),
+      }).catch(() => {});
     }
     setBusy(false);
   }
