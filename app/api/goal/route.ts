@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const num = (v: unknown): number | null => (v == null || v === "" ? null : Number(v));
 const text = (v: unknown): string | null => (typeof v === "string" && v.trim() !== "" ? v.trim() : null);
 
-/** POST { title, unit?, targetValue?, targetDate? } — create the rider's Q4 goal (onboarding). */
+/** POST { title, unit?, targetValue?, targetDate?, seasonId? } — lock in the rider's goal for a season (default: the newest). */
 export async function POST(req: NextRequest) {
   const gate = await requireMember(req);
   if (!gate.ok) return gate.res;
@@ -20,12 +20,12 @@ export async function POST(req: NextRequest) {
     unit: text(b.unit),
     targetValue: num(b.targetValue),
     targetDate: text(b.targetDate),
-  });
+  }, text(b.seasonId));
   if (error === "exists") return NextResponse.json({ error: "You already have a goal." }, { status: 409 });
   return NextResponse.json({ error }, { status: error ? 400 : 200 });
 }
 
-/** PATCH { currentValue, targetValue?, unit?, status, note? } — update goal progress. */
+/** PATCH { currentValue, targetValue?, unit?, status, note?, seasonId? } — update goal progress (default: today's season). */
 export async function PATCH(req: NextRequest) {
   const gate = await requireMember(req);
   if (!gate.ok) return gate.res;
@@ -38,6 +38,6 @@ export async function PATCH(req: NextRequest) {
     unit: text(b.unit),
     status: (typeof b.status === "string" ? b.status : "on_track") as GoalStatus,
     note: text(b.note),
-  });
+  }, text(b.seasonId));
   return NextResponse.json({ error }, { status: error ? 400 : 200 });
 }

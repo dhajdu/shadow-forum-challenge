@@ -2,7 +2,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getStandings } from "@/lib/standings";
-import { placementPenalty, CONTEST_START, CONTEST_END } from "@/lib/contest";
+import { seasonPenalty, seasonPhase } from "@/lib/contest";
 import { sendEmail } from "@/lib/notify";
 import { selectAll } from "@/lib/supabase/selectAll";
 import { loadAccess, seasonAudience } from "@/lib/access";
@@ -58,7 +58,8 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
     })
     .map((p) => ({ id: p.id, name: p.full_name, email: p.email, lastData: latest.get(p.id) ?? null }));
 
-  const contestActive = now >= CONTEST_START && now <= CONTEST_END;
+  // nudges go out only while today's season is running
+  const contestActive = !!current && seasonPhase(current, now) === "running";
   let nudged = 0;
   if (!opts.dry && contestActive) {
     for (const s of stale) {
@@ -78,35 +79,42 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
 }
 
 // ── The Bookkeeper: book the kitty charges ──
-// Nothing is charged until the contest ends — until then the kitty is shown live
-// from race position. At the end it books WHOOP race placement (contest average);
-// business-goal penalties are settled separately.
-const PERIOD = "Q4-2026";
-const SEASON_SLUG = "2026-q4";
+// Nothing is charged while a season runs: until then the kitty is shown live from
+// race position. Once a season has ended it books WHOOP race placement from that
+// season's board and ladder (re-run safely: it replaces that season's entries).
+// Business-goal penalties are settled separately.
 export async function runBookkeeper(admin: Admin) {
-  if (new Date() <= CONTEST_END) return { period: PERIOD, skipped: "contest still running", entries: 0, kitty: 0 };
+  const { seasons } = await loadAccess(admin);
+  const ended = seasons.filter((s) => seasonPhase(s) === "over");
+  if (ended.length === 0) return { seasons: [], skipped: "no season has ended", entries: 0, kitty: 0 };
 
-  const { data: season, error: seasonErr } = await admin.from("seasons").select("id").eq("slug", SEASON_SLUG).single();
-  if (seasonErr || !season) throw new Error(seasonErr?.message ?? `season ${SEASON_SLUG} missing`);
+  const booked: { season: string; entries: number; kitty: number }[] = [];
+  for (const season of ended) {
+    const { data: full } = await admin.from("seasons").select("ladder").eq("id", season.id).single();
+    const period = season.name.replace(/\s+/g, "-"); // "Q4 2026" -> "Q4-2026"
+    // season_standings lists only that season's riders, so later joiners are never charged
+    const standings = await getStandings(admin, season.id);
+    const rows = standings
+      .map((s, i) => ({
+        user_id: s.user_id,
+        kind: "placement" as const,
+        amount_m: seasonPenalty(full, i),
+        reason: `Placement #${i + 1}`,
+        period,
+        season_id: season.id,
+      }))
+      .filter((r) => r.amount_m > 0);
 
-  // race_standings lists only the season's riders, so later joiners are never charged
-  const standings = await getStandings(admin);
-
-  const rows = standings
-    .map((s, i) => ({
-      user_id: s.user_id,
-      kind: "placement" as const,
-      amount_m: placementPenalty(i),
-      reason: `Placement #${i + 1}`,
-      period: PERIOD,
-      season_id: season.id,
-    }))
-    .filter((r) => r.amount_m > 0);
-
-  await admin.from("penalties").delete().eq("season_id", season.id);
-  if (rows.length > 0) {
-    const { error } = await admin.from("penalties").insert(rows);
-    if (error) throw new Error(error.message);
+    await admin.from("penalties").delete().eq("season_id", season.id);
+    if (rows.length > 0) {
+      const { error } = await admin.from("penalties").insert(rows);
+      if (error) throw new Error(error.message);
+    }
+    booked.push({ season: season.slug, entries: rows.length, kitty: rows.reduce((a, b) => a + b.amount_m, 0) });
   }
-  return { period: PERIOD, entries: rows.length, kitty: rows.reduce((a, b) => a + b.amount_m, 0) };
+  return {
+    seasons: booked,
+    entries: booked.reduce((a, b) => a + b.entries, 0),
+    kitty: booked.reduce((a, b) => a + b.kitty, 0),
+  };
 }

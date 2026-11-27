@@ -20,11 +20,14 @@ const isStale = (lastDataDay: string | null) => {
   return lastDataDay < cutoff.toISOString().slice(0, 10);
 };
 
-type ViewRow = Database["public"]["Views"]["race_standings"]["Row"];
+type ViewRow = Database["public"]["Views"]["season_standings"]["Row"];
 
-// One row per rider from the race_standings view (computed from whoop_days on read).
-async function fetchView(supabase: SupabaseClient<Database>): Promise<ViewRow[]> {
-  const { data, error } = await supabase.from("race_standings").select("*");
+// One row per rider (computed from whoop_days on read). With a season id, that
+// season's board; without, today's season (race_standings).
+async function fetchView(supabase: SupabaseClient<Database>, seasonId?: string): Promise<ViewRow[]> {
+  const { data, error } = seasonId
+    ? await supabase.from("season_standings").select("*").eq("season_id", seasonId)
+    : await supabase.from("race_standings").select("*");
   if (error) throw new Error(error.message);
   return (data ?? []) as ViewRow[];
 }
@@ -43,7 +46,11 @@ const contestOf = (r: ViewRow): Standing => ({
 const byAvg = (x: Standing, y: Standing) =>
   Number(y.days > 0) - Number(x.days > 0) || y.avg - x.avg || x.full_name.localeCompare(y.full_name);
 
-/** The race placing — average daily score since the contest start. Used by the race, rider pages, reports, agents. */
-export async function getStandings(supabase: SupabaseClient<Database>): Promise<Standing[]> {
-  return (await fetchView(supabase)).map(contestOf).sort(byAvg);
+/**
+ * The race placing: average daily score over the season's days. Pass a season id
+ * for a given season; omit it for the season running today. Used by the race,
+ * rider pages, reports and agents.
+ */
+export async function getStandings(supabase: SupabaseClient<Database>, seasonId?: string): Promise<Standing[]> {
+  return (await fetchView(supabase, seasonId)).map(contestOf).sort(byAvg);
 }

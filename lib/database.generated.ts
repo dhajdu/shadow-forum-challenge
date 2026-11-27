@@ -31,6 +31,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "race_standings"
       referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "chat_messages_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
     }
                   ]
                 },"coaching_notes": {
@@ -56,6 +62,12 @@ isOneToOne: false
       columns: ["author_id"]
 isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "coaching_notes_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     },{
       foreignKeyName: "coaching_notes_goal_id_fkey"
@@ -88,6 +100,12 @@ isOneToOne: false
       columns: ["author_id"]
 isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "forum_messages_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     },{
       foreignKeyName: "forum_messages_photo_id_fkey"
@@ -127,6 +145,12 @@ isOneToOne: true
 isOneToOne: true
       referencedRelation: "race_standings"
       referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "forum_read_marks_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
     }
                   ]
                 },"gallery_photos": {
@@ -159,6 +183,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "race_standings"
       referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "gallery_photos_uploaded_by_fkey"
+      columns: ["uploaded_by"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
     }
                   ]
                 },"goal_progress": {
@@ -183,14 +213,14 @@ isOneToOne: false
                   ]
                 },"goals": {
                   Row: {
-                    "coach_id": string | null,"created_at": string,"current_progress": number,"current_status": string,"current_value": number,"id": string,"locked": boolean,"measure": string | null,"season_id": string | null,"target_date": string | null,"target_value": number | null,"title": string,"unit": string | null,"user_id": string
+                    "coach_id": string | null,"created_at": string,"current_progress": number,"current_status": string,"current_value": number,"id": string,"locked": boolean,"measure": string | null,"season_id": string,"target_date": string | null,"target_value": number | null,"title": string,"unit": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "coach_id"?: string | null,"created_at"?: string,"current_progress"?: number,"current_status"?: string,"current_value"?: number,"id"?: string,"locked"?: boolean,"measure"?: string | null,"season_id"?: string | null,"target_date"?: string | null,"target_value"?: number | null,"title": string,"unit"?: string | null,"user_id": string
+                    "coach_id"?: string | null,"created_at"?: string,"current_progress"?: number,"current_status"?: string,"current_value"?: number,"id"?: string,"locked"?: boolean,"measure"?: string | null,"season_id"?: string,"target_date"?: string | null,"target_value"?: number | null,"title": string,"unit"?: string | null,"user_id": string
                   }
                   Update: {
-                    "coach_id"?: string | null,"created_at"?: string,"current_progress"?: number,"current_status"?: string,"current_value"?: number,"id"?: string,"locked"?: boolean,"measure"?: string | null,"season_id"?: string | null,"target_date"?: string | null,"target_value"?: number | null,"title"?: string,"unit"?: string | null,"user_id"?: string
+                    "coach_id"?: string | null,"created_at"?: string,"current_progress"?: number,"current_status"?: string,"current_value"?: number,"id"?: string,"locked"?: boolean,"measure"?: string | null,"season_id"?: string,"target_date"?: string | null,"target_value"?: number | null,"title"?: string,"unit"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -206,6 +236,24 @@ isOneToOne: false
       referencedRelation: "race_standings"
       referencedColumns: ["user_id"]
     },{
+      foreignKeyName: "goals_coach_id_fkey"
+      columns: ["coach_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["season_id"]
+    },{
       foreignKeyName: "goals_season_id_fkey"
       columns: ["season_id"]
 isOneToOne: false
@@ -214,14 +262,20 @@ isOneToOne: false
     },{
       foreignKeyName: "goals_user_id_fkey"
       columns: ["user_id"]
-isOneToOne: true
+isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "goals_user_id_fkey"
       columns: ["user_id"]
-isOneToOne: true
+isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "goals_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
@@ -248,6 +302,12 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "journal_analyses_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
@@ -335,6 +395,18 @@ isOneToOne: false
       foreignKeyName: "penalties_season_id_fkey"
       columns: ["season_id"]
 isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "penalties_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "penalties_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
       referencedRelation: "seasons"
       referencedColumns: ["id"]
     },{
@@ -348,6 +420,12 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "penalties_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
@@ -374,6 +452,12 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "personal_goals_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
@@ -414,6 +498,12 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "push_devices_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
@@ -469,6 +559,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "race_standings"
       referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "uploads_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
     }
                   ]
                 },"whoop_connections": {
@@ -494,6 +590,12 @@ isOneToOne: true
       columns: ["user_id"]
 isOneToOne: true
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "whoop_connections_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
@@ -521,6 +623,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "race_standings"
       referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "whoop_days_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
     }
                   ]
                 },"whoop_journal": {
@@ -546,6 +654,12 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "whoop_journal_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
@@ -573,6 +687,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "race_standings"
       referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "whoop_oauth_states_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
     }
                   ]
                 }
@@ -580,7 +700,15 @@ isOneToOne: false
           Views: {
             "race_standings": {
                   Row: {
-                    "all_avg": number | null,"all_days": number | null,"contest_avg": number | null,"contest_days": number | null,"contest_missed": number | null,"full_name": string | null,"last_data_day": string | null,"last_day": string | null,"user_id": string | null
+                    "all_avg": number | null,"all_days": number | null,"contest_avg": number | null,"contest_days": number | null,"contest_missed": number | null,"full_name": string | null,"last_data_day": string | null,"last_day": string | null,"season_id": string | null,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"season_standings": {
+                  Row: {
+                    "all_avg": number | null,"all_days": number | null,"contest_avg": number | null,"contest_days": number | null,"contest_missed": number | null,"full_name": string | null,"last_data_day": string | null,"last_day": string | null,"season_id": string | null,"user_id": string | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -609,6 +737,12 @@ isOneToOne: true
       columns: ["user_id"]
 isOneToOne: true
       referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "whoop_connections_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
                   ]
