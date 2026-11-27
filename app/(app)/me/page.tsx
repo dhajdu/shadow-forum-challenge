@@ -4,7 +4,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { isExternallySynced } from "@/lib/whoop/config";
 import { ScoreTrend } from "@/components/ScoreTrend";
 import { GoalProgress } from "@/components/GoalProgress";
-import { ExtraCredit, type PersonalGoal } from "@/components/ExtraCredit";
+import type { PersonalGoal } from "@/components/ExtraCredit";
 import { getStandings } from "@/lib/standings";
 import { CONTEST_START_DAY } from "@/lib/contest";
 import { coachNameFor } from "@/lib/roster";
@@ -25,6 +25,7 @@ import {
 } from "./zone/stats";
 import s from "./zone/zone.module.css";
 import { Settings } from "./Settings";
+import { contestSeasonId } from "@/app/_data/season";
 import { PageBanner } from "@/components/PageBanner";
 import { getForumContext } from "@/app/_data/context";
 import { longDay } from "@/app/_data/format";
@@ -58,6 +59,7 @@ export default async function MePage({
   searchParams: Promise<{ view?: string; whoop?: string }>;
 }) {
   const { db: supabase, user, viewer } = await getForumContext();
+  const contestSeason = await contestSeasonId(supabase, viewer);
 
   const params = await searchParams;
   const view = params.view === "all" ? "all" : "contest";
@@ -79,6 +81,7 @@ export default async function MePage({
       .from("goals")
       .select("id, title, unit, target_value, current_value, current_status")
       .eq("user_id", user.id)
+      .eq("season_id", contestSeason ?? "")
       .maybeSingle(),
     supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single(),
     supabase
@@ -280,8 +283,11 @@ export default async function MePage({
           </section>
 
           <section className="zone-card">
-            <h2>Extra Credit</h2>
-            <ExtraCredit goals={personalGoals} />
+            <h2>Your goals</h2>
+            <Link href="/goals" className="row">
+              <span className="row-main"><b>{personalGoals.length ? `${personalGoals.length} goal${personalGoals.length === 1 ? "" : "s"} set` : "Set your goals"}</b><small>Add as many as you like for each quarter</small></span>
+              <span className="chev" aria-hidden>→</span>
+            </Link>
           </section>
         </div>
       </div>

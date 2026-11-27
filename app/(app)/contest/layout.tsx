@@ -1,6 +1,8 @@
 import { getForumContext } from "@/app/_data/context";
 import { listSeasons } from "@/app/_data/forum";
+import Link from "next/link";
 import { SubTabs } from "@/components/TabNav";
+import { hasContest, seasonForDay } from "@/lib/contest";
 import { PageBanner } from "@/components/PageBanner";
 import s from "./contest.module.css";
 
@@ -19,20 +21,26 @@ const tabs = () => [
 export default async function ContestLayout({ children }: { children: React.ReactNode }) {
   const { db, viewer } = await getForumContext();
   const seasons = await listSeasons(db, viewer);
-  const season = seasons[0];
+  const season = seasonForDay(seasons); // today's season: Q4 2026 until Q1 2027 starts
 
-  if (!season) {
+  if (!season || !hasContest(season)) {
     return (
-      <main className="page">
-        <header className="page-head">
-          <div className="eyebrow">Contest</div>
-          <h1>Next season</h1>
-        </header>
-        <section className="zone-card">
-          <h2>The next season starts in January</h2>
-          <p className="note-line">You&apos;ll be in it from day one. Connect WHOOP in Me so your scores sync from the start.</p>
-        </section>
-      </main>
+      <>
+        <PageBanner src="/banners/stances.webp" position="50% 45%">
+          <h1>Contest</h1>
+        </PageBanner>
+        <main className="page">
+          <section className="zone-card">
+            <h2>{season ? `${season.name} · no contest picked yet` : "No contest running"}</h2>
+            <p className="note-line">
+              The forum picks the next contest together. Until then, lock in your goals for the quarter.
+            </p>
+            <div className="actions-row" style={{ marginTop: "var(--sp-12)" }}>
+              <Link href="/goals" className="btn inline">Set your goals</Link>
+            </div>
+          </section>
+        </main>
+      </>
     );
   }
 

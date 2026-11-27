@@ -1,3 +1,5 @@
+import { getForumContext } from "@/app/_data/context";
+import { contestSeasonId } from "@/app/_data/season";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/OnboardingForm";
@@ -7,9 +9,11 @@ export default async function Welcome() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
+  const { viewer } = await getForumContext();
+  const contestSeason = await contestSeasonId(supabase, viewer);
 
   const [{ data: goal }, { data: me }] = await Promise.all([
-    supabase.from("goals").select("id").eq("user_id", user.id).maybeSingle(),
+    supabase.from("goals").select("id").eq("user_id", user.id).eq("season_id", contestSeason ?? "").maybeSingle(),
     supabase.from("profiles").select("full_name").eq("id", user.id).single(),
   ]);
   // already onboarded? skip.

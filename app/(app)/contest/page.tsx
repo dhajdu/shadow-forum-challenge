@@ -1,3 +1,5 @@
+import { getForumContext } from "@/app/_data/context";
+import { contestSeasonId } from "@/app/_data/season";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStandings } from "@/lib/standings";
@@ -17,6 +19,8 @@ export default async function RacePage() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
+  const { viewer } = await getForumContext();
+  const contestSeason = await contestSeasonId(supabase, viewer);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -24,7 +28,7 @@ export default async function RacePage() {
   // snapshot, my last upload and my last WHOOP sync — independent reads, fetched together.
   // The rider's own goal is in the same list — no goal yet → onboarding.
   const [{ data: goals }, standings, { data: snap }, { data: lastUpload }, { data: whoop }] = await Promise.all([
-    supabase.from("goals").select("user_id, title, current_status"),
+    supabase.from("goals").select("user_id, title, current_status").eq("season_id", contestSeason ?? ""),
     getStandings(supabase),
     supabase
       .from("standings_snapshots")
