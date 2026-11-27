@@ -19,7 +19,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-    <PageBanner src="/banners/back.webp" position="50% 55%">
+    <PageBanner src="/banners/ask.webp" position="50% 55%">
       <header>
         <div className="eyebrow">The forum assistant</div>
         <h1>Ask</h1>

@@ -153,7 +153,7 @@ export default async function MePage({
 
   return (
     <>
-    <PageBanner src="/banners/front.webp" position="50% 30%" />
+    <PageBanner src="/banners/me.webp" position="50% 40%" />
     <main className={s.page}>
       <header className={s.head}>
         <div className={s.who}>
