@@ -2,7 +2,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { getStandings } from "@/lib/standings";
-import { seasonPenalty, seasonPhase } from "@/lib/contest";
+import { hasContest, seasonPenalty, seasonPhase } from "@/lib/contest";
 import { sendEmail } from "@/lib/notify";
 import { selectAll } from "@/lib/supabase/selectAll";
 import { loadAccess, seasonAudience } from "@/lib/access";
@@ -58,8 +58,8 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
     })
     .map((p) => ({ id: p.id, name: p.full_name, email: p.email, lastData: latest.get(p.id) ?? null }));
 
-  // nudges go out only while today's season is running
-  const contestActive = !!current && seasonPhase(current, now) === "running";
+  // nudges go out only while today's season is running and has a contest
+  const contestActive = !!current && hasContest(current) && seasonPhase(current, now) === "running";
   let nudged = 0;
   if (!opts.dry && contestActive) {
     for (const s of stale) {
@@ -85,12 +85,12 @@ export async function runWhip(admin: Admin, opts: { dry: boolean }) {
 // Business-goal penalties are settled separately.
 export async function runBookkeeper(admin: Admin) {
   const { seasons } = await loadAccess(admin);
-  const ended = seasons.filter((s) => seasonPhase(s) === "over");
-  if (ended.length === 0) return { seasons: [], skipped: "no season has ended", entries: 0, kitty: 0 };
+  // seasons without a contest (no ladder) are never booked
+  const ended = seasons.filter((s) => seasonPhase(s) === "over" && hasContest(s));
+  if (ended.length === 0) return { seasons: [], skipped: "no contest season has ended", entries: 0, kitty: 0 };
 
   const booked: { season: string; entries: number; kitty: number }[] = [];
   for (const season of ended) {
-    const { data: full } = await admin.from("seasons").select("ladder").eq("id", season.id).single();
     const period = season.name.replace(/\s+/g, "-"); // "Q4 2026" -> "Q4-2026"
     // season_standings lists only that season's riders, so later joiners are never charged
     const standings = await getStandings(admin, season.id);
@@ -98,7 +98,7 @@ export async function runBookkeeper(admin: Admin) {
       .map((s, i) => ({
         user_id: s.user_id,
         kind: "placement" as const,
-        amount_m: seasonPenalty(full, i),
+        amount_m: seasonPenalty(season, i),
         reason: `Placement #${i + 1}`,
         period,
         season_id: season.id,

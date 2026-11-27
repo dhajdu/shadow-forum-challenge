@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAuthorizedCron } from "@/lib/cron";
 import { sendEmail } from "@/lib/notify";
 import { buildReport } from "@/lib/report";
-import { seasonForDay } from "@/lib/contest";
+import { hasContest, seasonForDay } from "@/lib/contest";
 import { groupScope, loadAccess, seasonAudience } from "@/lib/access";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +29,10 @@ export async function GET(req: NextRequest) {
   if (!groupScope(audience).canSeeSeason(season)) {
     return NextResponse.json({ ok: true, dry, skipped: "no recipient can see the season", recipients: 0, sent: 0 });
   }
-  if (!season) return NextResponse.json({ ok: true, dry, skipped: "no season", recipients: 0, sent: 0 });
-  const { data: full } = await admin.from("seasons").select("id, ladder").eq("id", season.id).single();
-  const report = await buildReport(admin, full ?? { id: season.id, ladder: null });
+  if (!season || !hasContest(season)) {
+    return NextResponse.json({ ok: true, dry, skipped: "no contest this season", recipients: 0, sent: 0 });
+  }
+  const report = await buildReport(admin, season);
 
   const monthLabel = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
   const site = process.env.NEXT_PUBLIC_SITE_URL || "";
