@@ -4,7 +4,12 @@
 import { Fragment } from "react";
 
 type Item = { text: string; children: Item[] };
-type Block = { kind: "h"; text: string } | { kind: "p"; text: string } | { kind: "list"; ordered: boolean; items: Item[] };
+type Block =
+  | { kind: "h"; text: string }
+  | { kind: "p"; text: string }
+  | { kind: "quote"; text: string }
+  | { kind: "hr" }
+  | { kind: "list"; ordered: boolean; items: Item[] };
 
 const LIST = /^(\s*)(?:([-*+]|--)|(\d+)[.)])\s+(?:\[[ xX]\]\s*)?(.*)$/;
 
@@ -20,6 +25,21 @@ function parse(md: string): Block[] {
     const line = raw.replace(/\t/g, "  ");
     if (!line.trim()) {
       flush();
+      continue;
+    }
+    if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) {
+      flush();
+      list = null;
+      blocks.push({ kind: "hr" });
+      continue;
+    }
+    const q = line.trim().match(/^>\s?(.*)$/);
+    if (q) {
+      flush();
+      list = null;
+      const last = blocks[blocks.length - 1];
+      if (last && last.kind === "quote") last.text += " " + q[1];
+      else blocks.push({ kind: "quote", text: q[1] });
       continue;
     }
     const h = line.trim().match(/^#{1,6}\s+(.*)$/);
@@ -79,6 +99,10 @@ export function Markdown({ text }: { text: string }) {
       {parse(text).map((b, i) =>
         b.kind === "h" ? (
           <h3 key={i}><Inline text={b.text} /></h3>
+        ) : b.kind === "hr" ? (
+          <hr key={i} />
+        ) : b.kind === "quote" ? (
+          <blockquote key={i}><Inline text={b.text} /></blockquote>
         ) : b.kind === "p" ? (
           <p key={i}><Inline text={b.text} /></p>
         ) : (

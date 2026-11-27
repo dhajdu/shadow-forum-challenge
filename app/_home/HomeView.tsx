@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getForumContext } from "@/app/_data/context";
-import { listLibrary, listMeetings, listSeasons, memberStatus, touchLastSeen } from "@/app/_data/forum";
+import { getLibraryDoc, listLibrary, listMeetings, listSeasons, memberStatus, touchLastSeen } from "@/app/_data/forum";
+import { parseVision } from "@/app/_data/vision";
 import { shortDay, timeOf, weekdayDay } from "@/app/_data/format";
 import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
 import { ForumAsk } from "@/components/ForumAsk";
@@ -27,12 +28,14 @@ type NewItem = { key: string; href: string; text: string; when: string };
 
 export async function HomeView() {
   const { db, user, viewer, today } = await getForumContext();
-  const [meetings, library, seasons, photos] = await Promise.all([
+  const [meetings, library, seasons, photos, home] = await Promise.all([
     listMeetings(db, viewer),
     listLibrary(db, viewer),
     listSeasons(db, viewer),
     listGallery(db, 6),
+    getLibraryDoc(db, viewer, "home"),
   ]);
+  const vision = home ? parseVision(home.body_md) : null;
 
   const next = [...meetings].reverse().find((m) => m.status === "planned" && m.held_on >= today) ?? null;
   const newest = meetings.find((m) => m.status === "held") ?? null;
@@ -112,6 +115,26 @@ export async function HomeView() {
           )}
         </div>
       </section>
+
+      {vision && (vision.is || vision.ambition) && (
+        <section className={s.vision} aria-label="Our vision">
+          <div className={s.visionInner}>
+            {vision.is && (
+              <div className={s.visionItem}>
+                <span className={s.kicker}>The Shadow Forum is</span>
+                <p>{vision.is}</p>
+              </div>
+            )}
+            {vision.ambition && (
+              <div className={s.visionItem}>
+                <span className={s.kicker}>Our ambition</span>
+                <p>{vision.ambition}</p>
+              </div>
+            )}
+            <Link href="/forum/resources/home" className={`btn inline ${s.into}`}>Into the Shadow →</Link>
+          </div>
+        </section>
+      )}
 
       <div className={`page ${s.body}`}>
         <div className={s.mainCol}>
