@@ -129,6 +129,32 @@ isOneToOne: true
       referencedColumns: ["user_id"]
     }
                   ]
+                },"journal_analyses": {
+                  Row: {
+                    "created_at": string,"headline": string,"id": string,"insights": NonNullable<Json>,"model": string,"suggestion": string,"user_id": string,"week_of": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"headline": string,"id"?: string,"insights": NonNullable<Json>,"model": string,"suggestion": string,"user_id": string,"week_of": string
+                  }
+                  Update: {
+                    "created_at"?: string,"headline"?: string,"id"?: string,"insights"?: NonNullable<Json>,"model"?: string,"suggestion"?: string,"user_id"?: string,"week_of"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "journal_analyses_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "journal_analyses_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"library_docs": {
                   Row: {
                     "audience": string | null,"body_md": string | null,"file_path": string | null,"id": string,"slug": string,"sort": number,"title": string,"updated_at": string
