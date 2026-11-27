@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { NavBar } from "@/components/NavBar";
 import { UploadWhoop } from "@/components/UploadWhoop";
 import { WhoopConnect, whoopNotice } from "./WhoopConnect";
 import { isExternallySynced } from "@/lib/whoop/config";
@@ -29,7 +28,7 @@ import {
   type JournalRow,
   type WhoopDay,
 } from "./stats";
-import s from "./me.module.css";
+import s from "./goal.module.css";
 
 type Upload = { id: string; file_name: string; status: string; created_at: string };
 
@@ -165,7 +164,6 @@ export default async function MyZone({
 
   return (
     <main className={s.page}>
-      <NavBar active="me" />
       <header className={s.head}>
         <div className={s.who}>
           <div
@@ -187,8 +185,8 @@ export default async function MyZone({
                   : "Not on the board yet — connect WHOOP, or upload an export."}
             </p>
             <div className={`seg ${s.viewToggle}`}>
-              <Link href="/me" className={`seg-btn ${view === "contest" ? "on" : ""}`}>Contest</Link>
-              <Link href="/me?view=all" className={`seg-btn ${view === "all" ? "on" : ""}`}>All time</Link>
+              <Link href="/contest/goal" className={`seg-btn ${view === "contest" ? "on" : ""}`}>Contest</Link>
+              <Link href="/contest/goal?view=all" className={`seg-btn ${view === "all" ? "on" : ""}`}>All time</Link>
             </div>
           </div>
         </div>

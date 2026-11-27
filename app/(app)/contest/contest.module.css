@@ -1,0 +1,4 @@
+/* Contest sub-navigation above the existing race pages (they keep their own .app container). */
+.bar { max-width: var(--content-w); margin: 0 auto; padding: 0 var(--sp-20); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-8) var(--sp-16); }
+.bar :global(.subtabs) { margin-bottom: var(--sp-8); }
+.season { font-size: var(--fs-xs); letter-spacing: .32em; text-transform: uppercase; color: var(--muted); margin-bottom: var(--sp-8); }

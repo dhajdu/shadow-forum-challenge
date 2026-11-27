@@ -10,9 +10,9 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/race";
+  const next = searchParams.get("next") ?? "/";
   // only allow same-site relative paths
-  const dest = next.startsWith("/") && !next.startsWith("//") ? next : "/race";
+  const dest = next.startsWith("/") && !next.startsWith("//") ? next : "/";
 
   const supabase = await createClient();
   const { error } = code
