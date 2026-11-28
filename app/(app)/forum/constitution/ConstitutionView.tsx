@@ -19,9 +19,10 @@ export async function ConstitutionView() {
   ]);
   if (!current) return null;
 
-  // everyone in the forum today signs; members who left or have no first forum yet don't
+  // every member signs, including those whose first forum is still to come (as member_is_active);
+  // members who left or have no first forum date yet don't
   const members = ((ppl ?? []) as Person[]).filter(
-    (p) => (p.is_founding || (p.forum_joined_on != null && p.forum_joined_on <= today)) && (!p.forum_left_on || p.forum_left_on > today)
+    (p) => (p.is_founding || p.forum_joined_on != null) && (!p.forum_left_on || p.forum_left_on > today)
   );
   const signedNow = new Map(signatures.filter((x) => x.version_id === current.id).map((x) => [x.user_id, x]));
   const mine = signedNow.get(user.id);
