@@ -1,63 +1,66 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
-import { Banner, Body, Button, Eyebrow, Field, Screen, Seg } from "@/components/ui";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { Banner, Button, Display, Eyebrow, Field, PageBanner, Small } from "@/components/ui";
 import { useAuth } from "@/lib/auth";
 import { config, isConfigured } from "@/lib/config";
-import * as WebBrowser from "expo-web-browser";
-import { color, fs } from "@/theme/tokens";
+import { supabase } from "@/lib/supabase";
+import { color, heroH, space } from "@/theme/tokens";
 
-type Mode = "in" | "up";
-
+// Sign in only. Members join, sign the Constitution and set their goal on the website first;
+// the app opens straight onto Home.
 export default function SignIn() {
-  const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<Mode>("in");
+  const { signIn, notice } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
   async function submit() {
     setBusy(true);
-    setError(mode === "in" ? await signIn(email, password) : await signUp({ code, name, email, password }));
+    const error = await signIn(email, password);
+    setMsg(error ? { text: error, ok: false } : null);
     setBusy(false);
   }
 
-  const ready = email.includes("@") && password.length >= (mode === "up" ? 8 : 1) && (mode === "in" || (name.trim() && code.trim()));
+  async function forgot() {
+    if (!email.includes("@")) return setMsg({ text: "Type your email first, then tap Forgot password.", ok: false });
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${config.apiBaseUrl}/auth/confirm?next=/reset-password`,
+    });
+    setBusy(false);
+    setMsg(error ? { text: error.message, ok: false } : { text: "Check your email for a link to set a new password.", ok: true });
+  }
+
+  const ready = email.includes("@") && password.length > 0;
 
   return (
-    <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ gap: 16, paddingTop: 48 }}>
-        <Eyebrow tone={color.ink}>THE SHADOW FORUM</Eyebrow>
-        <Text style={{ fontSize: fs.xl3, fontWeight: "800", color: color.ink }}>{mode === "in" ? "Sign in" : "Create your account"}</Text>
-        <Body muted>Members only. {mode === "in" ? "Use the email and password you use on the website." : "You need the access code from Dave."}</Body>
-        <Seg options={[{ key: "in", label: "Sign in" }, { key: "up", label: "I have a code" }] as const} value={mode} onChange={(m) => { setMode(m); setError(null); }} />
-        {!isConfigured() ? <Banner>Not configured: set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.</Banner> : null}
-        <View style={{ gap: 12 }}>
-          {mode === "up" ? (
-            <>
-              <Field label="Access code" value={code} onChangeText={setCode} autoCapitalize="none" autoCorrect={false} />
-              <Field label="Your name" value={name} onChangeText={setName} autoComplete="name" textContentType="name" />
-            </>
-          ) : null}
-          <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="username" />
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: color.bg }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 60 }}>
+        <PageBanner image="landing" height={heroH} position="50% 35%">
+          <Eyebrow tone={color.inkSoft}>By invitation only</Eyebrow>
+          <Display size={60}>The Shadow Forum</Display>
+          <Small tone={color.inkSoft}>Into the Shadow</Small>
+        </PageBanner>
+        <View style={{ paddingHorizontal: space.page, gap: 12, paddingTop: 8 }}>
+          {notice ? <Banner tone={color.amber}>{notice}</Banner> : null}
+          {!isConfigured() ? <Banner>Not configured: set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.</Banner> : null}
+          <Field placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="username" />
           <Field
-            label={mode === "up" ? "Password (8+ characters)" : "Password"}
+            placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            autoComplete={mode === "in" ? "current-password" : "new-password"}
-            textContentType={mode === "in" ? "password" : "newPassword"}
+            autoComplete="current-password"
+            textContentType="password"
             onSubmitEditing={ready ? submit : undefined}
           />
+          {msg ? <Banner tone={msg.ok ? color.green : color.red}>{msg.text}</Banner> : null}
+          <Button label="Enter" onPress={submit} busy={busy} disabled={!ready} />
+          <Button ghost label="Forgot password" onPress={forgot} disabled={busy} />
+          <Small style={{ textAlign: "center", marginTop: 6 }}>New member? Set up your account on the website first, from your invite.</Small>
         </View>
-        {error ? <Banner tone={color.red}>{error}</Banner> : null}
-        <Button label={mode === "in" ? "Sign in" : "Create account"} onPress={submit} busy={busy} disabled={!ready} />
-        {mode === "in" ? (
-          <Button ghost label="Forgot password" onPress={() => WebBrowser.openBrowserAsync(`${config.apiBaseUrl}/reset-password`)} />
-        ) : null}
-      </KeyboardAvoidingView>
-    </Screen>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

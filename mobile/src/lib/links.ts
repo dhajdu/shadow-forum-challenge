@@ -12,7 +12,14 @@ export function appPath(path: string): string {
   if (p === "/report") return "/contest/report";
   if (p === "/race") return "/contest";
   if (p.startsWith("/rider/")) return `/contest${p}`;
-  if (/^\/(forum|contest|ask|me)(\/|$)/.test(p) || p === "/") return path;
+  if (p === "/forum/chat") return "/chat";
+  if (p === "/gallery" || p === "/forum/gallery") return "/forum/photos";
+  if (p === "/kitty") return "/forum/kitty";
+  if (p === "/goals" || p === "/contest/goal") return "/contest/goals";
+  if (p === "/biometrics") return "/me/biometrics";
+  if (p === "/forum/parking") return "/forum/topics";
+  if (p.startsWith("/forum/library")) return p.replace("/forum/library", "/forum/resources");
+  if (/^\/(forum|contest|chat|ask|me)(\/|$)/.test(p) || p === "/") return path;
   return "/";
 }
 

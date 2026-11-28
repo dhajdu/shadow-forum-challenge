@@ -67,11 +67,13 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Choose a profile photo.",
+          "photosPermission": "Choose photos for your profile and the forum gallery.",
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-image",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false

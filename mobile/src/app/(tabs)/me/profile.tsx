@@ -2,16 +2,19 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Avatar } from "@/components/Avatar";
-import { Head } from "@/components/Head";
-import { Banner, Body, Button, Field, Loading, Screen } from "@/components/ui";
+import { Banner, Body, Button, Card, Field, Loading, Row, Screen } from "@/components/ui";
 import * as data from "@/data";
 import { long } from "@/lib/format";
 import { useLoad } from "@/lib/useLoad";
 import { color } from "@/theme/tokens";
 
-// /me/profile — name and photo are the only things a member can change about themselves.
+// /me/profile — Account: photo, name and password. Name and photo are the only profile fields a
+// member can change; the first-forum date is shown, never editable.
 export default function Profile() {
   const { data: p, error, loading, reload } = useLoad(() => data.myProfile());
+  const { data: email } = useLoad(() => data.myEmail());
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -39,8 +42,7 @@ export default function Profile() {
   }
 
   return (
-    <Screen>
-      <Head back="Me" title="Profile" />
+    <Screen banner="me" back="Me" title="Account">
       {loading && !p ? <Loading /> : null}
       {error ? <Banner tone={color.red}>{error}</Banner> : null}
       {p ? (
@@ -52,6 +54,25 @@ export default function Profile() {
           <Field label="Name" value={name} onChangeText={setName} autoComplete="name" />
           <Button label="Save" busy={busy} disabled={!name.trim() || name.trim() === p.full_name} onPress={() => run(() => data.updateName(name.trim()), "Saved.")} />
           {msg ? <Banner tone={msg.ok ? color.green : color.red}>{msg.text}</Banner> : null}
+          {email ? <Row title="Email" right={email} /> : null}
+          <Card title="Password">
+            <Field placeholder="New password (6+ characters)" value={pw} onChangeText={setPw} secureTextEntry autoComplete="new-password" textContentType="newPassword" />
+            <Field placeholder="Type it again" value={pw2} onChangeText={setPw2} secureTextEntry autoComplete="new-password" textContentType="newPassword" />
+            {pw2 && pw !== pw2 ? <Body muted>The two passwords don't match.</Body> : null}
+            <Button
+              ghost
+              label="Change password"
+              busy={busy}
+              disabled={pw.length < 6 || pw !== pw2}
+              onPress={() =>
+                run(async () => {
+                  await data.changePassword(pw);
+                  setPw("");
+                  setPw2("");
+                }, "Password changed.")
+              }
+            />
+          </Card>
           <Body muted>
             {p.forum_joined_on ? `In the forum since ${long(p.forum_joined_on)}.` : "Your first forum date isn't set yet."} Only an admin can change this.
           </Body>

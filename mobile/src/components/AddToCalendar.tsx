@@ -4,12 +4,13 @@ import type { Meeting } from "@shared/forum";
 import { Button } from "./ui";
 
 /** Opens the iOS "new event" sheet prefilled with the forum. Nothing is written without the member's tap. */
-export function AddToCalendar({ meeting }: { meeting: Meeting }) {
+export function AddToCalendar({ meeting, small }: { meeting: Meeting; small?: boolean }) {
   if (Platform.OS !== "ios" || !meeting.starts_at) return null;
   const start = new Date(meeting.starts_at);
   return (
     <Button
       ghost
+      small={small}
       label="Add to calendar"
       onPress={() =>
         createEventInCalendarAsync({

@@ -6,12 +6,13 @@ import * as data from "@/data";
 import { useLoad } from "@/lib/useLoad";
 import { color, fs } from "@/theme/tokens";
 
-// /contest/kitty — the provisional kitty. On 31 Dec it becomes the settlement.
-export default function KittyPage() {
-  return <ContestShell>{() => <Kitty />}</ContestShell>;
+// /contest/kitty — Penalties: the contest's provisional money, settled on 31 Dec and then paid into
+// the forum Kitty. Called Penalties in the app so it isn't confused with the Kitty ledger.
+export default function PenaltiesPage() {
+  return <ContestShell>{() => <Penalties />}</ContestShell>;
 }
 
-function Kitty() {
+function Penalties() {
   const { data: d, error, loading } = useLoad(async () => {
     const [me, standings, goals] = await Promise.all([data.uid(), data.standings(), data.goalSummaries()]);
     return { me, rows: ranked(standings), goals: new Map(goals.map((g) => [g.user_id, g])) };
@@ -22,7 +23,7 @@ function Kitty() {
   const owes = (n: number) => <Text style={{ color: n === 0 ? color.amber : color.red, fontWeight: "800", fontSize: fs.base, fontVariant: ["tabular-nums"] }}>{n === 0 ? "0" : `${n}M`}</Text>;
   return (
     <>
-      <Card title="Provisional kitty">
+      <Card title="Provisional penalties">
         <Big tone={color.amber}>{pot}M VND</Big>
         <Body muted>Final on 31 Dec · goals decide up to {MISSED_GOAL_PENALTY + COACH_SHARE_PENALTY}M more per missed goal</Body>
       </Card>

@@ -2,14 +2,13 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SampleNote } from "@/components/SampleNote";
-import { FORUM_NAV, SubNav } from "@/components/SubNav";
-import { Banner, Button, Empty, Field, Header, Loading, Screen } from "@/components/ui";
+import { Banner, Button, Empty, Field, Loading, Screen } from "@/components/ui";
 import * as data from "@/data";
 import type { ForumMessage } from "@/data";
 import { short, time } from "@/lib/format";
 import { refreshUnread } from "@/lib/unread";
 import { useLoad } from "@/lib/useLoad";
-import { color, fs, radius, space } from "@/theme/tokens";
+import { color, font, fs, radius, space, trackLabel } from "@/theme/tokens";
 
 const MAX = 4000;
 const preview = (m: ForumMessage | undefined) =>
@@ -80,9 +79,7 @@ export default function Chat() {
   };
 
   return (
-    <Screen scroll={false}>
-      <Header title="Forum" />
-      <SubNav items={FORUM_NAV} />
+    <Screen scroll={false} banner="chat" title="Chat">
       <SampleNote />
       {loading && !d ? <Loading /> : null}
       {error ? <Banner tone={color.red}>{error}</Banner> : null}
@@ -190,18 +187,18 @@ function Act({ label, onPress, tone = color.ink }: { label: string; onPress: () 
 }
 
 const st = StyleSheet.create({
-  day: { alignSelf: "center", color: color.muted, fontSize: fs.xs, fontWeight: "700", marginVertical: 6 },
+  day: { alignSelf: "center", color: color.muted, fontSize: fs.xs, fontFamily: font.semi, letterSpacing: trackLabel, marginVertical: 6 },
   bubble: { maxWidth: "85%", borderRadius: radius.lg, borderWidth: 1, paddingVertical: space.rowY - 2, paddingHorizontal: space.rowX, gap: 4 },
   mine: { alignSelf: "flex-end", backgroundColor: color.navy, borderColor: color.navy },
-  theirs: { alignSelf: "flex-start", backgroundColor: color.surface, borderColor: color.line },
-  author: { color: color.blue, fontSize: fs.sm, fontWeight: "700" },
+  theirs: { alignSelf: "flex-start", backgroundColor: color.well, borderColor: color.lineSoft },
+  author: { color: color.blue, fontSize: fs.sm, fontFamily: font.bold },
   quote: { color: color.muted, fontSize: fs.sm, borderLeftWidth: 2, borderLeftColor: color.blueEdge, paddingLeft: 6 },
   photo: { width: 200, height: 150, borderRadius: radius.md, backgroundColor: color.well },
-  body: { color: color.ink, fontSize: fs.base, lineHeight: 20 },
+  body: { color: color.ink, fontSize: fs.base, lineHeight: 20, fontFamily: font.body },
   meta: { color: color.muted, fontSize: fs.xs2, alignSelf: "flex-end" },
   actions: { flexDirection: "row", gap: 6, marginTop: 4, flexWrap: "wrap" },
-  act: { borderColor: color.line, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color.well },
-  actText: { fontSize: fs.sm, fontWeight: "700" },
+  act: { borderColor: color.line, borderWidth: 1, borderRadius: radius.btn, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: color.well },
+  actText: { fontSize: fs.sm, fontFamily: font.bold },
   context: { flexDirection: "row", alignItems: "center", gap: space.gap, backgroundColor: color.well, borderRadius: radius.md, paddingVertical: 6, paddingHorizontal: space.rowX },
   contextText: { flex: 1, color: color.inkSoft, fontSize: fs.sm },
   cancel: { color: color.muted, fontSize: fs.lg },

@@ -85,32 +85,13 @@ export async function minBuild(): Promise<number | null> {
 
 export type Cited = { id: string; held_on: string; title: string | null };
 
-/**
- * POST /api/ask { question, meetingId? } — streams plain text; citations arrive in the
- * x-cited-meetings header. Runs on the member's session, so it only sees what they may see.
- */
-export async function ask(
-  question: string,
-  meetingId: string | null,
-  onText: (text: string) => void,
-): Promise<{ text: string; cited: Cited[] }> {
-  const res = await streamingFetch(`${config.apiBaseUrl}/api/ask`, {
-    method: "POST",
-    headers: await headers(true),
-    body: JSON.stringify({ question, meetingId }),
-  });
-  if (!res.ok) throw await errorOf(res);
-  let cited: Cited[] = [];
-  try {
-    const raw = res.headers.get("x-cited-meetings");
-    if (raw) cited = JSON.parse(decodeURIComponent(raw)) as Cited[];
-  } catch {}
+async function readStream(res: Response | Awaited<ReturnType<typeof streamingFetch>>, onText: (text: string) => void): Promise<string> {
   let text = "";
   const reader = res.body?.getReader();
   if (!reader) {
     text = await res.text();
     onText(text);
-    return { text, cited };
+    return text;
   }
   const decoder = new TextDecoder();
   for (;;) {
@@ -119,14 +100,43 @@ export async function ask(
     text += decoder.decode(value, { stream: true });
     onText(text);
   }
-  return { text, cited };
+  return text;
 }
 
-export type AskHistoryRow = { role: "user" | "assistant"; content: string; cited_meeting_ids?: string[]; created_at?: string };
+/**
+ * POST /api/ask { question, meetingId?, conversationId? } — streams plain text. Citations arrive in
+ * x-cited-meetings, the conversation in x-conversation-id. Runs on the member's session, so it
+ * only sees what they may see. conversationId "new" starts a fresh conversation.
+ */
+export async function ask(
+  question: string,
+  opts: { meetingId?: string | null; conversationId?: string | null },
+  onText: (text: string) => void,
+): Promise<{ text: string; cited: Cited[]; conversationId: string | null }> {
+  const res = await streamingFetch(`${config.apiBaseUrl}/api/ask`, {
+    method: "POST",
+    headers: await headers(true),
+    body: JSON.stringify({ question, meetingId: opts.meetingId ?? undefined, conversationId: opts.conversationId ?? "new" }),
+  });
+  if (!res.ok) throw await errorOf(res);
+  let cited: Cited[] = [];
+  try {
+    const raw = res.headers.get("x-cited-meetings");
+    if (raw) cited = JSON.parse(decodeURIComponent(raw)) as Cited[];
+  } catch {}
+  const conversationId = res.headers.get("x-conversation-id");
+  return { text: await readStream(res, onText), cited, conversationId };
+}
 
-export async function askHistory(): Promise<AskHistoryRow[]> {
-  const j = await api<{ messages?: AskHistoryRow[] }>("GET", "/api/ask");
-  return j.messages ?? [];
+/** POST /api/assistant { messages } — the biometrics assistant; reads only the caller's own WHOOP data. */
+export async function askAboutData(messages: { role: "user" | "assistant"; content: string }[], onText: (text: string) => void): Promise<string> {
+  const res = await streamingFetch(`${config.apiBaseUrl}/api/assistant`, {
+    method: "POST",
+    headers: await headers(true),
+    body: JSON.stringify({ messages: messages.slice(-16) }),
+  });
+  if (!res.ok) throw await errorOf(res);
+  return readStream(res, onText);
 }
 
 // ── Push ──
@@ -136,9 +146,6 @@ export const registerDevice = (expo_token: string, app_version: string) =>
 export const unregisterDevice = (expo_token: string) => api("DELETE", "/api/push/devices", { expo_token });
 
 // ── Sign-up (access code is checked on the server) ──
-
-export const signUp = (b: { code: string; name: string; email: string; password: string }) =>
-  api("POST", "/api/signup", b, false);
 
 // ── WHOOP connect ──
 

@@ -6,19 +6,15 @@ import type { GoalStatus } from "@shared/database.types";
 import { one, ordinal, ranked, scoreColor } from "@shared/contest";
 import { contestStrip, currentStreak, latestDay, monthly, trends, type Cell, type TrendMode } from "@shared/stats";
 import { MonthBars, Spark, Strip } from "@/components/charts";
-import { ContestShell } from "@/components/ContestShell";
 import { Banner, Bar, Big, Body, Button, Card, Chip, Empty, Eyebrow, Field, Loading, Row, Seg } from "@/components/ui";
 import * as data from "@/data";
 import { short } from "@/lib/format";
 import { useLoad } from "@/lib/useLoad";
 import { color, fs, goalColor, goalLabel, radius } from "@/theme/tokens";
 
-// /contest/goal — My goal (the iOS app's My Zone): business goal, WHOOP progress, extra credit, upload.
-export default function GoalPage() {
-  return <ContestShell>{() => <MyZone />}</ContestShell>;
-}
-
-function MyZone() {
+// Pieces of the old "My goal" page (the iOS app's My Zone), now split between Contest → Goals
+// (business goal, extra credit) and Me → Biometrics (WHOOP numbers, journal, upload).
+export function MyZone() {
   const { upload } = useLocalSearchParams<{ upload?: string }>();
   const { data: d, error, loading, reload } = useLoad(async () => {
     const me = await data.uid();
@@ -68,7 +64,7 @@ function MyZone() {
 const STATUSES = (["on_track", "at_risk", "behind", "hit"] as GoalStatus[]).map((k) => ({ key: k, label: goalLabel[k] }));
 const num = (s: string) => (s.trim() === "" ? null : Number(s.replace(",", ".")));
 
-function GoalCard() {
+export function GoalCard() {
   const { data: goal, error, loading, reload } = useLoad(() => data.myGoal());
   const [editing, setEditing] = useState(false);
   if (loading && goal === undefined) return <Loading />;
@@ -186,7 +182,7 @@ function NewGoalCard({ onDone }: { onDone: () => void }) {
 
 // ── WHOOP progress ──
 
-function LatestDay({ days }: { days: data.WhoopDay[] }) {
+export function LatestDay({ days }: { days: data.WhoopDay[] }) {
   const l = latestDay(days);
   return (
     <Card title={l ? `Latest day · ${short(l.day)}` : "Latest day"}>
@@ -221,7 +217,7 @@ function LatestDay({ days }: { days: data.WhoopDay[] }) {
   );
 }
 
-function Progress({ days }: { days: data.WhoopDay[] }) {
+export function Progress({ days }: { days: data.WhoopDay[] }) {
   const cells = contestStrip(days);
   const [picked, setPicked] = useState<Cell | null>(null);
   const scoredN = cells.filter((c) => c.state === "scored").length;
@@ -241,7 +237,7 @@ function Progress({ days }: { days: data.WhoopDay[] }) {
   );
 }
 
-function Trends({ days }: { days: data.WhoopDay[] }) {
+export function Trends({ days }: { days: data.WhoopDay[] }) {
   const [mode, setMode] = useState<TrendMode>("recent");
   const list = trends(days, mode);
   return (
@@ -276,7 +272,7 @@ function Trends({ days }: { days: data.WhoopDay[] }) {
   );
 }
 
-function Journal({ analysis }: { analysis: data.JournalAnalysis | null }) {
+export function Journal({ analysis }: { analysis: data.JournalAnalysis | null }) {
   return (
     <Card title={analysis ? `Journal insights · week of ${short(analysis.week_of)}` : "Journal insights"}>
       {!analysis ? (
@@ -307,7 +303,7 @@ function Journal({ analysis }: { analysis: data.JournalAnalysis | null }) {
 
 // ── Extra credit (personal goals, just for you) ──
 
-function ExtraCredit() {
+export function ExtraCredit() {
   const { data: goals, error, reload } = useLoad(() => data.personalGoals());
   const [title, setTitle] = useState("");
   const [unit, setUnit] = useState("");
@@ -402,7 +398,7 @@ function Step({ label, onPress }: { label: string; onPress: () => void }) {
 
 // ── Upload (fallback for riders who don't connect WHOOP) ──
 
-function UploadCard({ onDone }: { onDone: () => void }) {
+export function UploadCard({ onDone }: { onDone: () => void }) {
   const shared = useLocalSearchParams<{ file?: string; name?: string }>();
   const { data: list, reload } = useLoad(() => data.uploads());
   const [stage, setStage] = useState<"uploading" | "processing" | null>(null);
