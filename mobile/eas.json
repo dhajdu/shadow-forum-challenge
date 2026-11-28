@@ -35,7 +35,10 @@
     "production": {
       "ios": {
         "ascAppId": "6840256415",
-        "appleTeamId": "MYBR59DBU2"
+        "appleTeamId": "MYBR59DBU2",
+        "ascApiKeyPath": "./asc-api-key.p8",
+        "ascApiKeyIssuerId": "c687b774-0d99-45b8-9739-3cb07ace976c",
+        "ascApiKeyId": "4H7J57K76X"
       }
     }
   }
