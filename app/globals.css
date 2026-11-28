@@ -84,6 +84,7 @@
   --ask-panel-w: 400px; /* floating Ask AI panel */
   --ask-panel-h: 600px;
   --ask-fab-h: 44px;    /* floating Ask AI button */
+  --thread-w: 380px;    /* chat thread beside the messages */
   --date-tile: 132px;   /* Forum: coming-date tile min width */
   --sheet-desc-w: 220px; /* Kitty sheet: description column min width */
   --term-w: 200px;      /* Constitution: term column */
