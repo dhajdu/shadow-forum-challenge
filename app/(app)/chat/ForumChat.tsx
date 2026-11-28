@@ -20,7 +20,7 @@ const initials = (n: string) => n.split(/\s+/).map((w) => w[0]).join("").slice(0
  * The forum's group chat. Reads and live updates run on the member's own session, so Postgres
  * decides which messages arrive (from their first forum on).
  */
-export function ForumChat({ initial, people, me, isAdmin }: { initial: ChatMessage[]; people: People; me: string; isAdmin: boolean }) {
+export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; people: People; me: string }) {
   const db = useMemo(() => createClient() as unknown as SupabaseClient, []);
   const [messages, setMessages] = useState(initial);
   const [text, setText] = useState("");
@@ -124,7 +124,7 @@ export function ForumChat({ initial, people, me, isAdmin }: { initial: ChatMessa
                     <p className={s.body}>{m.body}</p>
                   )}
                 </div>
-                {!m.deleted_at && (mine || isAdmin) && (
+                {!m.deleted_at && mine && (
                   <button type="button" className={s.del} onClick={() => remove(m.id)} aria-label="Delete message">
                     Delete
                   </button>

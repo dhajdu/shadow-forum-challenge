@@ -10,7 +10,7 @@ import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
 import { ForumAsk } from "@/components/ForumAsk";
 import { listGallery } from "@/app/_data/gallery";
 import { getStandings } from "@/lib/standings";
-import { CONTEST_DAYS, dayOfContest } from "@/lib/contest";
+import { dayOfSeason, hasContest, seasonLength } from "@/lib/contest";
 import type { GoalStatus } from "@/lib/database.types";
 import { LAST_VISIT_COOKIE, MarkVisit } from "./MarkVisit";
 import s from "./home.module.css";
@@ -62,9 +62,19 @@ export async function HomeView() {
   const [lastSeen, jar] = await Promise.all([touchLastSeen(db), cookies()]);
   const lastVisit = lastSeen ?? (jar.get(LAST_VISIT_COOKIE)?.value ? decodeURIComponent(jar.get(LAST_VISIT_COOKIE)!.value) : null);
   const since = lastVisit ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
+  const changed = meetings.filter((m) => new Date(m.updated_at) > new Date(since));
+  const newDates = changed.filter((m) => m.status === "planned").sort((a, b) => a.held_on.localeCompare(b.held_on));
   const fresh: NewItem[] = [
-    ...meetings
-      .filter((m) => new Date(m.updated_at) > new Date(since))
+    ...(newDates.length > 2
+      ? [{
+          key: "dates",
+          href: "/forum",
+          text: `${newDates.length} forum dates set · ${shortDay(newDates[0].held_on)} to ${shortDay(newDates[newDates.length - 1].held_on)}`,
+          when: newDates.map((m) => m.updated_at).sort().pop()!,
+        }]
+      : []),
+    ...changed
+      .filter((m) => newDates.length <= 2 || m.status !== "planned")
       .map((m) => ({
         key: m.id,
         href: m.path,
@@ -76,8 +86,8 @@ export async function HomeView() {
       .map((d) => ({ key: d.slug, href: `/forum/resources/${d.slug}`, text: `Updated: ${d.title}`, when: d.updated_at })),
   ].sort((a, b) => b.when.localeCompare(a.when));
 
-  // contest card only while this member has a season that is running (or just finished)
-  const season = seasons.find((x) => today <= addDays(x.ends_on, 9)) ?? null;
+  // contest card only while a season with a contest is running (or just finished)
+  const season = seasons.find((x) => x.starts_on <= today && today <= addDays(x.ends_on, 9) && hasContest(x)) ?? null;
   let place: { rank: number; of: number; avg: number; stale: boolean } | null = null;
   let goal: { status: GoalStatus; pct: number | null } | null = null;
   if (season) {
@@ -191,7 +201,7 @@ export async function HomeView() {
                 <span className={s.label}>Race into the Shadow · {season.name}</span>
                 <b>{place ? `of ${place.of} riders · avg ${place.avg}` : "Not on the board yet"}</b>
                 <span className="note-line">
-                  {today <= season.ends_on ? `Day ${dayOfContest()} of ${CONTEST_DAYS}` : "Season over · the kitty settles on 31 Dec"}
+                  {today <= season.ends_on ? `Day ${dayOfSeason(season)} of ${seasonLength(season)}` : "Season over · the kitty settles on 31 Dec"}
                 </span>
               </span>
             </Link>
@@ -199,12 +209,12 @@ export async function HomeView() {
 
           {season && (
             <div className={s.progress} aria-hidden>
-              <i style={{ width: `${Math.min(100, (dayOfContest() / CONTEST_DAYS) * 100)}%` }} />
+              <i style={{ width: `${Math.min(100, (dayOfSeason(season) / seasonLength(season)) * 100)}%` }} />
             </div>
           )}
 
           {goal && (
-            <Link href="/me" className={s.line}>
+            <Link href={`/goals?season=${season!.slug}`} className={s.line}>
               <span>
                 <span className={s.label}>Your goal</span>
                 <b>{goal.pct != null ? `${goal.pct}%` : "In progress"}</b>
@@ -230,7 +240,7 @@ export async function HomeView() {
                   </li>
                 ))}
                 <li>
-                  <Link href="/me" className="row">
+                  <Link href="/biometrics" className="row">
                     <span className="row-main"><b>Connect WHOOP for the next season</b></span>
                     <span className="chev" aria-hidden>→</span>
                   </Link>
@@ -284,8 +294,8 @@ export async function HomeView() {
           )}
         </div>
 
-        <aside className={s.rail} aria-label="Ask">
-          <h2 className={s.label}>Ask the forum</h2>
+        <aside className={s.rail} aria-label="Ask AI">
+          <h2 className={s.label}>Ask AI about the forum</h2>
           <ForumAsk suggestions={["What did I commit to at the last forum?"]} />
         </aside>
       </div>

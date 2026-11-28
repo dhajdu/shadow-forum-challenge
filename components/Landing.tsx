@@ -88,16 +88,7 @@ export function Landing() {
   return (
     <main className="wrap">
       <div className="hero" />
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: "url(/landing.webp)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
+      <div aria-hidden className="landing-bg" />
       <div className="scrim" />
 
       <section className="panel">

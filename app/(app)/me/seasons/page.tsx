@@ -12,7 +12,7 @@ export default async function SeasonsPage() {
   const seasons = await listAllSeasons(db, viewer);
   return (
     <main className="page">
-      <Link href="/me" className="back">← Me</Link>
+      <Link href="/me/members" className="back">← Members and access</Link>
       <header className="page-head">
         <div className="eyebrow">Admin</div>
         <h1>Seasons</h1>

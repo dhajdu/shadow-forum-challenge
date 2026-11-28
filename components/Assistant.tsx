@@ -118,7 +118,7 @@ export function Assistant() {
           placeholder="Ask about your data…"
         />
         <button className="btn chat-send" type="submit" disabled={busy || !input.trim()}>
-          {busy ? "…" : "Ask"}
+          {busy ? "…" : "Ask AI"}
         </button>
       </form>
     </div>

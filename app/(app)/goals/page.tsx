@@ -3,6 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getForumContext } from "@/app/_data/context";
 import { listSeasons } from "@/app/_data/forum";
 import { PageBanner } from "@/components/PageBanner";
+import { GoalProgress } from "@/components/GoalProgress";
+import { coachNameFor } from "@/lib/roster";
+import type { GoalStatus } from "@/lib/database.types";
 import { addGoal, deleteGoal, updateGoal } from "./actions";
 import s from "./goals.module.css";
 
@@ -21,14 +24,26 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
   const season = seasons.find((x) => x.slug === slug) ?? upcoming ?? running ?? seasons[0] ?? null;
 
   let goals: Goal[] = [];
+  // the contest business goal (one per member per season), shown above the personal goals
+  type ContestGoal = Goal & { current_status: GoalStatus };
+  let contest: ContestGoal | null = null;
   if (season) {
-    const { data } = await (db as unknown as SupabaseClient)
-      .from("personal_goals")
-      .select("id, title, unit, target_value, current_value")
-      .eq("user_id", user.id)
-      .eq("season_id", season.id)
-      .order("created_at", { ascending: true });
+    const [{ data }, { data: c }] = await Promise.all([
+      (db as unknown as SupabaseClient)
+        .from("personal_goals")
+        .select("id, title, unit, target_value, current_value")
+        .eq("user_id", user.id)
+        .eq("season_id", season.id)
+        .order("created_at", { ascending: true }),
+      db
+        .from("goals")
+        .select("id, title, unit, target_value, current_value, current_status")
+        .eq("user_id", user.id)
+        .eq("season_id", season.id)
+        .maybeSingle(),
+    ]);
     goals = (data ?? []) as Goal[];
+    contest = (c as ContestGoal | null) ?? null;
   }
   const editable = season != null && season.ends_on >= today;
 
@@ -37,7 +52,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
       <PageBanner src="/banners/goals.webp" position="50% 45%">
         <h1>Goals</h1>
       </PageBanner>
-      <main className={`page ${s.page}`}>
+      <main className="page">
         {seasons.length > 1 && (
           <nav className="seg subtabs" aria-label="Quarter">
             {seasons.map((x) => (
@@ -62,6 +77,22 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
                   : `${goals.length} goal${goals.length === 1 ? "" : "s"}`}
               </p>
             </header>
+
+            {contest && (
+              <section className={`zone-card ${s.contest}`}>
+                <h2>Contest business goal</h2>
+                <p className="coach-line">
+                  Your coach: <b>{coachNameFor(viewer.full_name) ?? "to be assigned"}</b>
+                </p>
+                <GoalProgress
+                  title={contest.title}
+                  unit={contest.unit}
+                  targetValue={contest.target_value}
+                  currentValue={contest.current_value}
+                  currentStatus={contest.current_status}
+                />
+              </section>
+            )}
 
             <ul className={s.list}>
               {goals.map((g) => {

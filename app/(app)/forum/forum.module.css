@@ -17,6 +17,17 @@
 .search { margin-bottom: var(--sp-12); }
 .search :global(.field) { background: transparent; border: 0; border-bottom: var(--hair) solid var(--line); border-radius: 0; padding-left: 0; }
 .search :global(.field):focus { box-shadow: none; border-bottom-color: var(--blue); }
-@media (min-width: 1100px) {
-  }
-.agenda { max-width: 760px; }
+.agenda { max-width: var(--read-w); }
+.label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); margin: var(--sp-24) 0 var(--sp-10); }
+.upcoming .label { margin-top: var(--sp-8); }
+.dates { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--date-tile), 1fr)); gap: var(--hair); background: var(--line-soft);
+  border: var(--hair) solid var(--line-soft); }
+.date { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-14) var(--sp-16); background: var(--bg); text-decoration: none; height: 100%;
+  transition: background .15s; }
+.date:hover { background: var(--bg-2); }
+.date span { font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
+.date b { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-date); line-height: 1;
+  text-transform: uppercase; color: var(--ink); }
+.date small { font-size: var(--fs-sm); color: var(--muted); }
+.nextDate span { color: var(--red); }
+.nextDate b { color: var(--amber); }

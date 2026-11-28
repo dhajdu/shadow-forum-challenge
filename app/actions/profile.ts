@@ -16,16 +16,13 @@ export async function updateProfile(
   if (!user) return { error: "Not signed in.", ok: false };
 
   const fullName = String(formData.get("full_name") ?? "").trim();
-  const avatarUrl = String(formData.get("avatar_url") ?? "").trim() || null;
   if (!fullName) return { error: "Name can't be empty.", ok: false };
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ full_name: fullName, avatar_url: avatarUrl })
-    .eq("id", user.id);
+  // the photo saves on its own as soon as it is uploaded (AvatarUpload)
+  const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", user.id);
   if (error) return { error: error.message, ok: false };
 
-  revalidatePath("/me/profile");
+  revalidatePath("/", "layout");
   return { error: null, ok: true };
 }
 

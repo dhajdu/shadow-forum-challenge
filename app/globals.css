@@ -78,9 +78,13 @@
   --sp-60: 60px;
   --icon: 22px;         /* nav icons */
   --avatar-lg: 56px;    /* profile avatar */
+  --avatar-xl: 132px;   /* Profile page photo */
+  --chat-bell: 36px;    /* Chat icon button */
+  --date-tile: 132px;   /* Forum: coming-date tile min width */
   --side-w: 216px;      /* desktop sidebar */
   --tabbar-h: 60px;     /* phone bottom tabs, before the safe area */
   --content-w: 1120px;  /* page container max width */
+  --read-w: 880px;      /* narrower reading column inside a page, left-aligned */
   --rail-w: 340px;      /* desktop Ask rail */
   --nav-on: rgba(255, 255, 255, .07);  /* selected nav item */
 }
@@ -118,6 +122,15 @@ html, body {
   /* set as inline style: background-image: url(/hero.webp) */
   background-blend-mode: normal;
 }
+/* Sign-in backdrop: the whole crew. Landscape fills the screen; portrait keeps all seven across
+   the top and lets the form sit below them. */
+.landing-bg { position: absolute; inset: 0; background: url(/landing.webp) center 35% / cover no-repeat; }
+@media (max-aspect-ratio: 1/1) {
+  .landing-bg { background-size: 100% auto; background-position: center top; }
+  .landing-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0, transparent 34vw, var(--bg) 58vw); }
+  .wrap:has(.landing-bg) { place-items: end center; }
+  .wrap:has(.landing-bg) .panel { padding-top: 46vw; padding-bottom: var(--sp-32); }
+}
 .scrim {
   position: absolute;
   inset: 0;
@@ -142,10 +155,12 @@ html, body {
 }
 
 .title {
-  font-size: clamp(34px, 7vw, 58px);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1.02;
+  font-family: var(--font-display-stack);
+  font-stretch: var(--display-width);
+  font-size: var(--fs-hero);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: .88;
   color: var(--ink);
   text-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
 }
@@ -267,6 +282,15 @@ form { display: grid; gap: 12px; }
 .btn-ghost { font-size: var(--fs-md); padding: 9px 16px; border-radius: var(--r-btn); cursor: pointer;
   border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--ink); }
 .signout-row { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.avatar-up { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-8); }
+.avatar-xl { position: relative; width: var(--avatar-xl); height: var(--avatar-xl); border-radius: 50%; flex: none; overflow: hidden; cursor: pointer;
+  display: grid; place-items: center; font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-date);
+  color: var(--ink-soft); border: var(--hair) solid var(--line); box-shadow: 0 0 40px rgba(255, 67, 38, .25), 0 0 80px rgba(47, 125, 255, .18);
+  background: linear-gradient(135deg, var(--avatar-from), var(--avatar-to)) center/cover no-repeat; }
+.avatar-cta { position: absolute; inset: auto 0 0; padding: var(--sp-6) 0 var(--sp-10); font-family: var(--font-body-stack, inherit); font-stretch: normal;
+  font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink);
+  background: linear-gradient(180deg, transparent, rgba(6, 8, 15, .85)); opacity: 0; transition: opacity .15s; }
+.avatar-xl:hover .avatar-cta, .avatar-xl:focus-visible .avatar-cta, .avatar-xl:not([style]) .avatar-cta { opacity: 1; }
 .back { color: var(--blue); text-decoration: none; font-size: var(--fs-sm); }
 
 .zone-nav { display: flex; gap: 8px; align-items: center; }
@@ -443,6 +467,16 @@ a.lane:hover .rname { color: #fff; }
 .side-tabs a:hover, .tabbar a:hover { color: var(--ink); }
 .side-tabs a.on, .tabbar a.on { color: var(--ink); }
 .side-tabs a.on::before, .tabbar a.on::before { background: var(--red); box-shadow: 0 0 10px var(--red); }
+.side-top { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-8); }
+/* Chat icon: top right of the sidebar on desktop, floating top right on phones. */
+.chat-bell { position: relative; display: inline-grid; place-items: center; width: var(--chat-bell); height: var(--chat-bell); color: var(--muted);
+  text-decoration: none; border-radius: 50%; transition: color .15s; }
+.chat-bell:hover, .chat-bell.on { color: var(--ink); }
+.chat-bell.floating { position: fixed; top: var(--sp-12); right: var(--sp-12); z-index: 60; color: var(--ink); background: rgba(6, 8, 15, .6);
+  border: var(--hair) solid var(--line); backdrop-filter: blur(8px); }
+.chat-badge { position: absolute; top: calc(-1 * var(--sp-2)); right: calc(-1 * var(--sp-2)); min-width: var(--sp-16); height: var(--sp-16); padding: 0 var(--sp-4);
+  border-radius: var(--sp-8); background: var(--red); color: var(--ink); font-size: var(--fs-3xs); font-weight: 800; line-height: var(--sp-16); text-align: center;
+  box-shadow: 0 0 10px var(--red); }
 .side-foot { margin-top: auto; display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-12); }
 .side-signout { background: none; border: 0; padding: 0; font: inherit; font-size: var(--fs-sm); color: var(--muted); cursor: pointer; }
 .side-signout:hover { color: var(--red); }
@@ -466,6 +500,7 @@ a.lane:hover .rname { color: #fff; }
   .sidebar { display: flex; flex-direction: column; gap: var(--sp-32); position: sticky; top: 0; height: 100dvh; box-sizing: border-box;
     padding: var(--sp-32) var(--sp-24); border-right: var(--hair) solid var(--line-soft); }
   .tabbar { display: none; }
+  .chat-bell.floating { display: none; }
 }
 
 /* ── New pages (Home, Forum, Ask, Me) ── */
@@ -524,6 +559,7 @@ a.row:hover .chev { color: var(--ink); transform: translateX(2px); }
 /* ── Page banner: the shadow crew above inside pages ── */
 .banner { position: relative; height: var(--banner-h); overflow: hidden; isolation: isolate; display: flex; align-items: flex-end; }
 .banner-img { object-fit: cover; opacity: .7; z-index: -2; }
+@media (max-width: 767px) { .banner-img { opacity: .95; } }
 .banner::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(5, 8, 15, .1) 0%, rgba(5, 8, 15, .45) 55%, var(--bg) 100%); }
 .banner-inner { width: 100%; max-width: var(--content-w); margin: 0 auto; box-sizing: border-box; padding: 0 var(--sp-24) var(--sp-16); }
 .banner-inner h1 { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-size: var(--fs-display); font-weight: 900; line-height: .9; text-transform: uppercase; color: var(--ink); }

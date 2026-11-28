@@ -12,5 +12,5 @@ export async function disconnectWhoop(): Promise<void> {
   const user = await getSessionUser(supabase);
   if (!user) return;
   await disconnectUser(createAdminClient(), user.id);
-  revalidatePath("/me");
+  revalidatePath("/biometrics");
 }

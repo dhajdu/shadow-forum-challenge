@@ -1,6 +1,13 @@
-/* Me settings: account and admin cards. */
-.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-16); align-items: start; }
-.grid :global(.zone-card) { margin-bottom: 0; min-width: 0; }
+/* Profile: photo and name up top, then details, password and account settings. */
+.head { display: flex; align-items: center; gap: var(--sp-32); flex-wrap: wrap; margin: var(--sp-16) 0 var(--sp-32); }
+.who { display: flex; flex-direction: column; gap: var(--sp-4); min-width: 0; }
+.who h1 { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-size: var(--fs-display); font-weight: 900; line-height: .9;
+  text-transform: uppercase; color: var(--ink); }
+.since { color: var(--muted); font-size: var(--fs-md); }
+.quick { display: flex; gap: var(--sp-8); flex-wrap: wrap; margin-top: var(--sp-12); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-32); align-items: start; }
+.grid :global(.zone-card), .settings :global(.zone-card) { margin-bottom: 0; min-width: 0; }
+.settings { margin-top: var(--sp-32); max-width: var(--read-w); }
 @media (max-width: 899px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .passkey { display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); flex: none; max-width: 50%; text-align: right; }
 .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-soft); word-break: break-all; }

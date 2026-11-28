@@ -12,11 +12,13 @@ export default async function MembersPage() {
 
   return (
     <main className="page">
-      <Link href="/me" className="back">← Me</Link>
       <header className="page-head">
         <div className="eyebrow">Admin</div>
         <h1>Members and access</h1>
         <p className="sub">One date per member is the whole access setup: they see forums, agendas and contest seasons from their first forum on.</p>
+        <nav className="actions-row">
+          <Link href="/me/seasons" className="btn-ghost inline">Seasons</Link>
+        </nav>
       </header>
 
       <div className={s.grid}>
