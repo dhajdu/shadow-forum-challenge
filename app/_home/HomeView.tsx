@@ -9,6 +9,7 @@ import { shortDay, timeOf, weekdayDay } from "@/app/_data/format";
 import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
 import { ForumAsk } from "@/components/ForumAsk";
 import { listGallery } from "@/app/_data/gallery";
+import { getKitty, vndShort } from "@/app/_data/kitty";
 import { getStandings } from "@/lib/standings";
 import { dayOfSeason, hasContest, seasonLength } from "@/lib/contest";
 import type { GoalStatus } from "@/lib/database.types";
@@ -29,13 +30,17 @@ type NewItem = { key: string; href: string; text: string; when: string };
 
 export async function HomeView() {
   const { db, user, viewer, today } = await getForumContext();
-  const [meetings, library, seasons, photos, home] = await Promise.all([
+  const [meetings, library, seasons, photos, home, kitty] = await Promise.all([
     listMeetings(db, viewer),
     listLibrary(db, viewer),
     listSeasons(db, viewer),
     listGallery(db, 6),
     getLibraryDoc(db, viewer, "home"),
+    getKitty(db).catch(() => null),
   ]);
+  const treasurer = kitty?.treasurerId
+    ? (await db.from("profiles").select("full_name").eq("id", kitty.treasurerId).maybeSingle()).data?.full_name?.split(/\s+/)[0] ?? null
+    : null;
   const vision = home ? parseVision(home.body_md) : null;
 
   // goals for the quarter that is running, else the next one
@@ -182,6 +187,16 @@ export async function HomeView() {
                 <b>{goalCount ? `${goalCount} goal${goalCount === 1 ? "" : "s"} locked in` : "Lock in your goals"}</b>
               </span>
               <span className={`${s.status} ${goalCount ? s.on_track : s.at_risk}`}>{goalCount ? "Update" : "Set now"} →</span>
+            </Link>
+          )}
+
+          {kitty && kitty.balance != null && (
+            <Link href="/kitty" className={s.line}>
+              <span>
+                <span className={s.label}>The kitty</span>
+                <b className={s.kitty}>{vndShort(kitty.balance)} ₫</b>
+              </span>
+              <span className={s.status}>{treasurer ? `Held by ${treasurer}` : "Ledger"} →</span>
             </Link>
           )}
 

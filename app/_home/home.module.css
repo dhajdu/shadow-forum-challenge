@@ -69,3 +69,4 @@
 .into { white-space: nowrap; }
 @media (max-width: 960px) { .visionInner { grid-template-columns: minmax(0, 1fr); } .into { justify-self: start; } }
 @media (min-width: 768px) { .visionInner { padding: var(--sp-32) var(--sp-48); } }
+.kitty { color: var(--amber); }

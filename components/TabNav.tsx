@@ -11,6 +11,7 @@ export const TABS: Tab[] = [
   { href: "/gallery", label: "Gallery" },
   { href: "/goals", label: "Goals" },
   { href: "/contest", label: "Contest" },
+  { href: "/kitty", label: "Kitty" },
   { href: "/biometrics", label: "Biometrics", short: "Bio" },
   { href: "/ask", label: "Ask AI" },
   { href: "/me", label: "Profile" },
