@@ -717,14 +717,14 @@ isOneToOne: false
                   ]
                 },"meeting_chunks": {
                   Row: {
-                    "content": string,"created_at": string,"held_on": string,"id": string,"meeting_id": string,"search": unknown
+                    "content": string,"created_at": string,"held_on": string,"id": string,"meeting_id": string,"search": unknown,"visible_from": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "content": string,"created_at"?: string,"held_on": string,"id"?: string,"meeting_id": string,"search"?: never
+                    "content": string,"created_at"?: string,"held_on": string,"id"?: string,"meeting_id": string,"search"?: never,"visible_from"?: string | null
                   }
                   Update: {
-                    "content"?: string,"created_at"?: string,"held_on"?: string,"id"?: string,"meeting_id"?: string,"search"?: never
+                    "content"?: string,"created_at"?: string,"held_on"?: string,"id"?: string,"meeting_id"?: string,"search"?: never,"visible_from"?: string | null
                   }
                   Relationships: [
                     {
@@ -735,7 +735,7 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"meeting_docs": {
+                },"meeting_doc_sources": {
                   Row: {
                     "body_md": string,"created_at": string,"id": string,"meeting_id": string,"source_updated_at": string | null,"title": string
                   }
@@ -1041,6 +1041,20 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"signup_attempts": {
+                  Row: {
+                    "at": string,"id": number,"ip": string,"ok": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "at"?: string,"id"?: never,"ip": string,"ok": boolean
+                  }
+                  Update: {
+                    "at"?: string,"id"?: never,"ip"?: string,"ok"?: boolean
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"standings_snapshots": {
                   Row: {
                     "created_at": string,"data": NonNullable<Json>,"day": string,"id": string
@@ -1218,7 +1232,27 @@ isOneToOne: false
                 }
           }
           Views: {
-            "race_standings": {
+            "meeting_docs": {
+                  Row: {
+                    "body_md": string | null,"created_at": string | null,"id": string | null,"meeting_id": string | null,"source_updated_at": string | null,"title": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "body_md"?: never,"created_at"?: string | null,"id"?: string | null,"meeting_id"?: string | null,"source_updated_at"?: string | null,"title"?: string | null
+                         }
+                        Update: {
+                           "body_md"?: never,"created_at"?: string | null,"id"?: string | null,"meeting_id"?: string | null,"source_updated_at"?: string | null,"title"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "meeting_docs_meeting_id_fkey"
+      columns: ["meeting_id"]
+isOneToOne: false
+      referencedRelation: "meetings"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"race_standings": {
                   Row: {
                     "all_avg": number | null,"all_days": number | null,"contest_avg": number | null,"contest_days": number | null,"contest_missed": number | null,"full_name": string | null,"last_data_day": string | null,"last_day": string | null,"season_id": string | null,"user_id": string | null
                   }
@@ -1316,6 +1350,11 @@ isOneToOne: true
             "admin_preview":
 { Args: { "member": string }; Returns: Json
                            },
+"agenda_parts":
+{ Args: { "held_on": string,"md": string }; Returns: {
+              "body": string,"part": number,"visible_from": string
+            }[]
+                           },
 "book_checkin_fine":
 { Args: { "p_note": string,"p_period_end": string,"p_period_start": string,"p_season": string,"p_user": string }; Returns: string
                            },
@@ -1360,6 +1399,9 @@ isOneToOne: true
               "content": string,"held_on": string,"id": string,"meeting_id": string,"rank": number
             }[]
                            },
+"meeting_doc_body":
+{ Args: { "doc": string }; Returns: string
+                           },
 "member_can_see_date":
 { Args: { "d": string,"uid": string }; Returns: boolean
                            },
@@ -1383,6 +1425,9 @@ isOneToOne: true
                            },
 "touch_last_seen":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"visible_agenda_md":
+{ Args: { "founding": boolean,"held_on": string,"joined_on": string,"md": string }; Returns: string
                            }
           }
           Enums: {

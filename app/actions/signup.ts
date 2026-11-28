@@ -1,7 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { createRider } from "@/lib/signup";
+import { headers } from "next/headers";
+import { clientIp, createRider } from "@/lib/signup";
 
 export type SignUpResult = {
   error: string | null;
@@ -19,6 +20,7 @@ export async function signUpWithCode(formData: FormData): Promise<SignUpResult> 
     name: String(formData.get("name") ?? ""),
     email,
     password,
+    ip: clientIp(await headers()),
   });
   if (error) return { error, session: false };
 

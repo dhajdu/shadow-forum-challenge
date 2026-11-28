@@ -23,7 +23,6 @@ export default async function RacePage() {
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
   const { viewer, forum } = await getForumContext();
-  const coaches = forum.coaches;
   // today's season (the layout shows a card instead when it has no contest)
   const season = seasonForDay(await listSeasons(supabase, viewer));
   if (!season) redirect("/goals");
@@ -71,7 +70,7 @@ export default async function RacePage() {
   const rows: RaceRow[] = standings.map((s) => ({
     ...s,
     goal: goalByUser.get(s.user_id) ?? null,
-    coach: coachNameFor(s.full_name, coaches),
+    coach: coachNameFor(s.user_id, forum),
   }));
 
   const pot = ladder.reduce((a, b) => a + b, 0);

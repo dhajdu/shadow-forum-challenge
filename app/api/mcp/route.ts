@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       if (!TOOLS.some((t) => t.name === name)) return rpcError(msg.id, -32602, `Unknown tool: ${name}`);
       try {
         const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-        return reply(msg.id, await callTool(name, args, { supabase: auth.supabase, userId: auth.user.id, token, site: site(req) }));
+        return reply(msg.id, await callTool(name, args, { supabase: auth.supabase, userId: auth.user.id, email: auth.user.email, token, site: site(req) }));
       } catch {
         return reply(msg.id, { content: [{ type: "text", text: "The tool failed. Try again." }], isError: true });
       }

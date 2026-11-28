@@ -27,6 +27,7 @@ if (!["127.0.0.1", "localhost", "::1"].includes(host)) {
 }
 process.env.CRON_SECRET = "leak-suite-cron";
 process.env.ANTHROPIC_API_KEY = "leak-suite-fake";
+process.env.SIGNUP_ACCESS_CODE = "leak suite words";
 delete process.env.RESEND_API_KEY;
 
 type DB = SupabaseClient<Database>;
@@ -58,6 +59,7 @@ const MEETINGS = [
 ];
 const meetingId: Record<string, string> = {};
 const meetingHeld: Record<string, string> = {};
+let parkingDocId = "";
 const LEAK_Q4_RULES = { contest_name: "Leak Race", scoring: "whoop", ladder: [0, 2000000, 3000000, 4000000, 5000000], missed_checkin_fine: null };
 const LEAK_SEASONS = [
   { slug: "leak-q4", name: "Leak Q4", starts_on: "2026-09-24", ends_on: "2026-12-22", ...LEAK_Q4_RULES },
@@ -153,7 +155,7 @@ before(async () => {
     ) as { id: string };
     meetingId[m.key] = row.id;
     meetingHeld[row.id] = m.held_on;
-    ok(await admin.from("meeting_docs").insert({ meeting_id: row.id, title: `Agenda ${m.key}`, body_md: `secret agenda ${m.key}\n\nchunk ${m.key} Lisbon trip secretword${m.key}` }), "doc");
+    ok(await admin.from("meeting_doc_sources").insert({ meeting_id: row.id, title: `Agenda ${m.key}`, body_md: `secret agenda ${m.key}\n\nchunk ${m.key} Lisbon trip secretword${m.key}` }), "doc");
     ok(await admin.from("meeting_chunks").insert({ meeting_id: row.id, content: `chunk ${m.key} Lisbon trip secretword${m.key}` }), "chunk");
     ok(
       await admin.storage.from("meeting-files").upload(`${row.id}/agenda.txt`, new Blob([`file ${m.key}`]), { upsert: true }),
@@ -161,10 +163,16 @@ before(async () => {
     );
   }
 
-  // Every agenda repeats the running Parking Lot: the August agenda still lists a February topic.
-  const parking = "## Parking Lot\n\n**Feb 5**\n\nLeak Founding - parkfebword topic\n\n**Aug 24**\n\nLeak Noah - parkaugword topic";
-  ok(await admin.from("meeting_docs").insert({ meeting_id: meetingId.aug, title: "Parking", body_md: parking }), "parking doc");
-  ok(await admin.from("meeting_chunks").insert({ meeting_id: meetingId.aug, content: `Parking\n\n${parking}` }), "parking chunk");
+  // Every agenda repeats the running Parking Lot: the August agenda still lists a February topic,
+  // and an undated one (founding members only).
+  const parking = `## Parking Lot\n\nLeak Stray - parkundatedword topic\n\n**Feb 5**\n\nLeak Founding - parkfebword topic\n\n**Aug 24**\n\nLeak Noah - parkaugword topic\n\n# Learnings\n\n- parklearnword lesson`;
+  parkingDocId = (ok(
+    await admin.from("meeting_doc_sources").insert({ meeting_id: meetingId.aug, title: "Parking", body_md: parking }).select("id").single(),
+    "parking doc"
+  ) as { id: string }).id;
+  // the real indexer: one chunk per Parking Lot topic group, dated (lib/chunks.ts)
+  const { reindexMeeting } = await import("@/lib/chunks");
+  assert.ok((await reindexMeeting(admin, meetingId.aug)) >= 4, "aug reindexed");
 
   // kitty: one line from before Noah Turner joined, one after
   for (const [entry_on, note] of [["2026-02-10", "kittyfeb venue"], ["2026-08-24", "kittyaug dues"]] as const) {
@@ -679,6 +687,64 @@ describe("MCP: join-date rule on every tool", () => {
     assert.equal(f.length, 1);
   });
 
+  it("direct API reads: meeting_docs, the iPhone app's embed, search and meeting_chunks leave out pre-join Parking Lot topics", async () => {
+    const bodies = async (k: PersonaKey) =>
+      ((ok(await client[k].from("meeting_docs").select("body_md").eq("meeting_id", meetingId.aug), "docs") as { body_md: string }[]).map((d) => d.body_md)).join("\n");
+    const noah = await bodies("noah");
+    assert.doesNotMatch(noah, /parkfebword|parkundatedword/, "meeting_docs.body_md");
+    assert.match(noah, /parkaugword/);
+    assert.match(noah, /parklearnword/, "learnings stay");
+    assert.match(noah, /secret agenda aug/, "the rest of the agenda stays");
+    const founding = await bodies("founding");
+    for (const w of ["parkfebword", "parkundatedword", "parkaugword", "parklearnword"]) assert.match(founding, new RegExp(w), `founding ${w}`);
+
+    // the iPhone app reads agendas embedded in meetings (mobile/src/data/v2.ts)
+    const embed = async (k: PersonaKey) =>
+      JSON.stringify(ok(await client[k].from("meetings").select("id, meeting_docs(body_md, source_updated_at)").eq("id", meetingId.aug), "embed"));
+    assert.doesNotMatch(await embed("noah"), /parkfebword|parkundatedword/, "embedded meeting_docs");
+    assert.match(await embed("noah"), /parkaugword/);
+    assert.match(await embed("founding"), /parkfebword/);
+
+    // searching the text cannot confirm a hidden topic exists
+    assert.equal((ok(await client.noah.from("meeting_docs").select("id").ilike("body_md", "%parkfebword%"), "ilike") as unknown[]).length, 0);
+    assert.equal((ok(await client.founding.from("meeting_docs").select("id").ilike("body_md", "%parkfebword%"), "ilike") as unknown[]).length, 1);
+
+    // the whole text is not readable in any other way
+    assert.ok((await client.noah.from("meeting_doc_sources").select("body_md")).error, "meeting_doc_sources.body_md");
+    assert.ok((await client.noah.from("meeting_doc_sources").select("*")).error, "meeting_doc_sources *");
+    const ids = ok(await client.noah.from("meeting_doc_sources").select("meeting_id"), "sources ids") as { meeting_id: string }[];
+    assert.deepEqual(sorted([...new Set(ids.map((d) => keyOfMeeting(d.meeting_id)))]), visibleMeetings("noah"));
+    const fn = ok(await client.noah.rpc("meeting_doc_body", { doc: parkingDocId }), "meeting_doc_body") as string;
+    assert.doesNotMatch(fn, /parkfebword/);
+    assert.equal(ok(await client.december.rpc("meeting_doc_body", { doc: parkingDocId }), "december") as string | null, null, "a meeting before their time");
+    assert.ok((await client.noah.rpc("visible_agenda_md", { md: "x", held_on: "2026-08-24", joined_on: "2026-01-01", founding: true })).error, "helpers are server-only");
+
+    // meeting_chunks: each Parking Lot topic group is its own dated chunk
+    const chunks = async (k: PersonaKey) =>
+      ((ok(await client[k].from("meeting_chunks").select("content").eq("meeting_id", meetingId.aug), "chunks") as { content: string }[]).map((c) => c.content)).join("\n");
+    assert.doesNotMatch(await chunks("noah"), /parkfebword|parkundatedword/, "meeting_chunks.content");
+    assert.match(await chunks("noah"), /parkaugword/);
+    assert.match(await chunks("noah"), /parklearnword/);
+    const all = await chunks("founding");
+    for (const w of ["parkfebword", "parkundatedword", "parkaugword"]) assert.match(all, new RegExp(w), `founding chunk ${w}`);
+    for (const w of ["parkfebword", "parkundatedword"]) {
+      assert.equal((ok(await client.noah.rpc("match_meeting_chunks", { query: w }), "match") as unknown[]).length, 0, `match ${w}`);
+    }
+  });
+
+  it("the database refuses a Parking Lot chunk without a topic date, and members write no agenda text", async () => {
+    const whole = await admin.from("meeting_chunks").insert({ meeting_id: meetingId.aug, content: "Parking\n\n## Parking Lot\n\n**Feb 5**\n\nx - y" });
+    assert.ok(whole.error, "unlabelled Parking Lot chunk");
+    for (const k of ["noah", "founding"] as const) {
+      const r = await client[k].from("meeting_chunks").insert({ meeting_id: meetingId.aug, content: "x", visible_from: "2026-01-01" });
+      assert.ok(r.error, `${k} chunk insert`);
+    }
+    const v = await client.noah.from("meeting_docs").update({ title: "x" }).eq("meeting_id", meetingId.aug).select("id");
+    assert.ok(v.error || (v.data ?? []).length === 0, "the view is read-only for members");
+    const src = await client.noah.from("meeting_doc_sources").insert({ meeting_id: meetingId.aug, title: "x", body_md: "## Parking Lot" });
+    assert.ok(src.error, "meeting_doc_sources insert");
+  });
+
   // Constitution v2: the kitty is open in full to every active member
   it("kitty: every member sees the same balance and every line", async () => {
     const f = (await call("founding", "get_kitty")).json;
@@ -978,6 +1044,126 @@ describe("forum settings", () => {
     const tz = (ok(await fs(admin).select("time_zone").single(), "tz") as { time_zone: string }).time_zone;
     const { data } = await client.noah.rpc("forum_today" as never);
     assert.equal(data, new Date().toLocaleDateString("en-CA", { timeZone: tz }));
+  });
+});
+
+// ── Coach roster (security review H2) ───────────────────
+describe("coach roster by member id", () => {
+  const fs = (c: DB) => (c as unknown as SupabaseClient).from("forum_settings");
+  const coachOf = async (goal: string) =>
+    (ok(await admin.from("goals").select("coach_id").eq("id", goal).single(), "coach") as { coach_id: string | null }).coach_id;
+  const notes = async (k: PersonaKey) => (ok(await client[k].from("coaching_notes").select("body"), "notes") as { body: string }[]).map((n) => n.body);
+
+  it("the roster holds member ids only: names, unknown ids and self-coaching are refused", async () => {
+    for (const coaches of [
+      { "leak noah turner": "Leak Founding" },
+      { [member.noah.id]: "Leak Founding" },
+      { [member.noah.id]: member.noah.id },
+      { [member.noah.id]: "00000000-0000-0000-0000-000000000000" },
+      { [member.noah.id]: 42 },
+    ]) {
+      assert.ok((await fs(admin).update({ coaches }).eq("id", true)).error, `refused: ${JSON.stringify(coaches)}`);
+    }
+    const denied = await fs(client.noah).update({ coaches: { [member.noah.id]: member.december.id } }).eq("id", true).select("id");
+    assert.equal((denied.data ?? []).length, 0, "a member cannot change the roster");
+  });
+
+  it("renaming yourself after a colleague's coach does not make you their coach", async () => {
+    const { reconcileCoaches } = await import("@/lib/coach");
+    ok(await fs(admin).update({ coaches: { [member.noah.id]: member.founding.id, [member.founding.id]: member.noah.id } }).eq("id", true), "roster");
+    try {
+      // Mallory (december) takes the name of Noah Turner's coach and creates goals, which reconciles coaches
+      ok(await client.december.from("profiles").update({ full_name: PERSONAS.founding.full_name }).eq("id", member.december.id), "rename");
+      await reconcileCoaches(admin);
+      assert.equal(await coachOf(goalId.noah), member.founding.id, "Noah Turner keeps his coach");
+      assert.equal(await coachOf(goalId.founding), member.noah.id);
+      assert.deepEqual(await notes("december"), [], "no coaching notes for the impostor");
+
+      // the roster, changed by an admin, is what moves a coach
+      ok(await fs(admin).update({ coaches: { [member.noah.id]: member.leaver.id } }).eq("id", true), "roster by id");
+      await reconcileCoaches(admin);
+      assert.equal(await coachOf(goalId.noah), member.leaver.id, "reassigned by id");
+    } finally {
+      ok(await admin.from("profiles").update({ full_name: PERSONAS.december.full_name }).eq("id", member.december.id), "restore name");
+      ok(await admin.from("goals").update({ coach_id: member.founding.id }).eq("id", goalId.noah), "restore coach");
+      ok(await fs(admin).update({ coaches: {} }).eq("id", true), "restore roster");
+    }
+  });
+});
+
+// ── Privacy hardening (security review H3, M1, M4, M5) ──
+describe("privacy hardening", () => {
+  const anon = () => createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  it("profiles: no one else's email or last seen; your own email comes from your session", async () => {
+    for (const k of ["noah", "founding"] as const) {
+      for (const cols of ["email", "last_seen_at", "*"]) assert.ok((await client[k].from("profiles").select(cols)).error, `${k} profiles.${cols}`);
+      const rows = ok(await client[k].from("profiles").select("id, full_name, avatar_url, forum_joined_on, is_founding"), "profiles") as { id: string }[];
+      assert.ok(rows.some((r) => r.id === member.leaver.id), `${k} still sees the member list`);
+    }
+    assert.ok((await anon().from("profiles").select("id")).error, "anon profiles");
+    const me = await call("noah", "whoami");
+    assert.equal(me.json.email, member.noah.email, "whoami has your own email");
+  });
+
+  it("constitution signatures: no signer's IP address or browser", async () => {
+    for (const cols of ["ip", "user_agent", "*"]) assert.ok((await client.noah.from("constitution_signatures").select(cols)).error, `signatures.${cols}`);
+    ok(await client.noah.from("constitution_signatures").select("version_id, user_id, typed_name, signed_at"), "names and times");
+  });
+
+  it("avatars: public to display, but nobody can list them; images only", async () => {
+    const path = `${member.noah.id}/leak.webp`;
+    ok(await client.noah.storage.from("avatars").upload(path, new Blob(["RIFF0000WEBP"], { type: "image/webp" }), { contentType: "image/webp", upsert: true }), "own upload");
+    ok(await client.noah.storage.from("avatars").upload(path, new Blob(["RIFF0001WEBP"], { type: "image/webp" }), { contentType: "image/webp", upsert: true }), "replace (upsert)");
+    try {
+      for (const [who, c] of [["anon", anon()], ["founding", client.founding]] as const) {
+        for (const folder of ["", member.noah.id]) {
+          const ls = await c.storage.from("avatars").list(folder);
+          assert.equal((ls.data ?? []).length, 0, `${who} lists avatars/${folder}`);
+        }
+      }
+      assert.equal((ok(await client.noah.storage.from("avatars").list(member.noah.id), "own list") as unknown[]).length, 1, "own folder");
+      const pub = await fetch(admin.storage.from("avatars").getPublicUrl(path).data.publicUrl);
+      assert.equal(pub.status, 200, "public URL still serves the photo");
+      await pub.arrayBuffer();
+      const txt = await client.noah.storage.from("avatars").upload(`${member.noah.id}/x.txt`, new Blob(["x"], { type: "text/plain" }), { contentType: "text/plain" });
+      assert.ok(txt.error, "not an image");
+    } finally {
+      await admin.storage.from("avatars").remove([path]);
+    }
+  });
+
+  it("sign-up: the access code is rate limited per IP address, and nobody reads the attempts", async () => {
+    const { createRider, TOO_MANY } = await import("@/lib/signup");
+    const rider = (code: string, ip: string) => createRider({ code, name: "", email: "", password: "", ip });
+    try {
+      for (let i = 0; i < 5; i++) assert.equal(await rider("wrong words", "203.0.113.7"), "Invalid access code.");
+      assert.equal(await rider("leak suite words", "203.0.113.7"), TOO_MANY, "blocked after five tries, even with the right code");
+      assert.match((await rider("leak suite words", "203.0.113.8")) ?? "", /Enter your name/, "another address gets past the code");
+      for (const c of [client.noah, client.founding, anon()]) {
+        const r = await (c as unknown as SupabaseClient).from("signup_attempts").select("id");
+        assert.ok(r.error || (r.data ?? []).length === 0, "signup_attempts is service-only");
+      }
+      const { POST } = await import("@/app/api/signup/route");
+      const r = await POST(new NextRequest("http://localhost/api/signup", { method: "POST", headers: { "x-real-ip": "203.0.113.7" }, body: JSON.stringify({ code: "x" }) }));
+      assert.equal(r.status, 429);
+    } finally {
+      await (admin as unknown as SupabaseClient).from("signup_attempts").delete().gte("id", 0);
+    }
+  });
+
+  it("no page can be framed (OAuth consent included), and the consent names the return address and the write tools", async () => {
+    const config = (await import("@/next.config")).default;
+    const rules = (await config.headers!()) as { source: string; headers: { key: string; value: string }[] }[];
+    const all = rules.find((r) => r.source === "/:path*")?.headers ?? [];
+    const get = (k: string) => all.find((h) => h.key.toLowerCase() === k.toLowerCase())?.value;
+    assert.equal(get("X-Frame-Options"), "DENY");
+    assert.match(get("Content-Security-Policy") ?? "", /frame-ancestors 'none'/);
+    const { readFileSync } = await import("node:fs");
+    const consent = readFileSync("app/oauth/consent/Consent.tsx", "utf8");
+    assert.doesNotMatch(consent, /cannot change anything/);
+    assert.match(consent, /redirect_uri/);
+    assert.match(consent, /Post chat messages/);
   });
 });
 

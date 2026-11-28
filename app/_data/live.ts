@@ -26,6 +26,7 @@ import {
 import { agendaTheme } from "./recap";
 import { todayIn } from "./format";
 import { getForumSettings } from "@/lib/forum-settings";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { SEASON_RULE_COLUMNS } from "@/lib/goal-points";
 
 const VIEWER_COLS = "id, full_name, forum_joined_on, forum_left_on, is_admin, is_founding";
@@ -169,7 +170,11 @@ export async function getModerator(db: Db): Promise<string> {
 
 export async function listMembers(db: Db, v: Viewer): Promise<Member[]> {
   if (!v.is_admin) return [];
-  const { data, error } = await db.from("profiles").select(`${VIEWER_COLS}, email`).order("forum_joined_on", { ascending: true, nullsFirst: false });
+  // Members cannot read profiles.email (migration 0037). Once the database confirms an active
+  // admin on their own session, the service role reads the list.
+  const { data: admin } = await db.rpc("is_forum_admin");
+  if (admin !== true) return [];
+  const { data, error } = await createAdminClient().from("profiles").select(`${VIEWER_COLS}, email`).order("forum_joined_on", { ascending: true, nullsFirst: false });
   fail("members", error);
   const day = todayIn((await getForumSettings()).timeZone);
   return ((data ?? []) as (Viewer & { email: string | null })[]).map((r) => ({

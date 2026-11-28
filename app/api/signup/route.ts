@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createRider } from "@/lib/signup";
+import { TOO_MANY, clientIp, createRider } from "@/lib/signup";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     name: str(b.name),
     email: str(b.email),
     password: str(b.password),
+    ip: clientIp(req.headers),
   });
-  return NextResponse.json({ error }, { status: error ? 400 : 200 });
+  return NextResponse.json({ error }, { status: error === TOO_MANY ? 429 : error ? 400 : 200 });
 }

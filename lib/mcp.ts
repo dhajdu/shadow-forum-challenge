@@ -17,7 +17,7 @@ import type { Db } from "@/app/_data/types";
 
 type MemberClient = SupabaseClient<Database>;
 /** token and site let post_chat_message ask the site to push "new message" to phones, as the website does. */
-export type Ctx = { supabase: MemberClient; userId: string; token: string; site: string };
+export type Ctx = { supabase: MemberClient; userId: string; email: string | null; token: string; site: string };
 type ToolResult = { content: { type: "text"; text: string }[]; structuredContent?: Record<string, unknown>; isError?: boolean };
 type Args = Record<string, unknown>;
 
@@ -422,10 +422,11 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
   switch (name) {
     case "whoami": {
       const [{ data: me }, kitty] = await Promise.all([
-        c.from("profiles").select("full_name, email, forum_joined_on, is_founding, is_admin").eq("id", userId).maybeSingle(),
+        c.from("profiles").select("full_name, forum_joined_on, is_founding, is_admin").eq("id", userId).maybeSingle(),
         any(c).from("kitty_settings").select("treasurer_id").maybeSingle(),
       ]);
-      return json({ ...(me ?? {}), is_treasurer: (kitty.data as { treasurer_id: string | null } | null)?.treasurer_id === userId, today: todayIn(f.timeZone) });
+      // email from the caller's own token: members cannot read profiles.email (migration 0037)
+      return json({ ...(me ?? {}), email: ctx.email, is_treasurer: (kitty.data as { treasurer_id: string | null } | null)?.treasurer_id === userId, today: todayIn(f.timeZone) });
     }
     case "list_members": {
       const today = todayIn(f.timeZone);

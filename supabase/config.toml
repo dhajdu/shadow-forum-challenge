@@ -174,6 +174,10 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
+# Production: turn this OFF (Dashboard > Authentication > Sign In / Providers > "Allow new users to sign up").
+# The app never uses Supabase's public sign-up: lib/signup.ts (access code) and admin invites create
+# users with the service role, which still works with sign-ups off. Left on, anyone with the public
+# anon key can make an account without the access code. This local file does not change production.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
@@ -370,6 +374,10 @@ enabled = true
 # Path for OAuth consent flow UI
 authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration (MCP clients such as Claude register themselves)
+# Open registration lets anyone register a client under any name ("Claude") with their own redirect
+# URI; the consent page therefore shows the redirect host. Recommended for production once the
+# connectors you use are registered: turn it OFF (Dashboard > Authentication > OAuth Server) and add
+# those clients by hand, which then need their client id in the connector's advanced settings.
 allow_dynamic_registration = true
 
 [edge_runtime]

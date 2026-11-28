@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { FORUM_SETTINGS_TAG } from "@/lib/forum-settings";
 
 export type ProfileState = { error: string | null; ok: boolean };
 
@@ -22,6 +23,7 @@ export async function updateProfile(
   const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", user.id);
   if (error) return { error: error.message, ok: false };
 
+  revalidateTag(FORUM_SETTINGS_TAG); // the coach roster shows names
   revalidatePath("/", "layout");
   return { error: null, ok: true };
 }

@@ -14,12 +14,14 @@ export type ForumSettings = {
   timeZone: string; // IANA, e.g. "Asia/Singapore"
   siteUrl: string; // no trailing slash
   whoopEnabled: boolean;
-  /** Rider (normalised full name) → coach's full name. */
+  /** Rider's profile id → coach's profile id (never names: members edit their own). */
   coaches: Record<string, string>;
+  /** Display names of everyone on the roster, by profile id. Filled only by getForumSettings (server). */
+  rosterNames: Record<string, string>;
 };
 
 /** What the browser may see (everything but the coach roster). */
-export type PublicForumSettings = Omit<ForumSettings, "coaches">;
+export type PublicForumSettings = Omit<ForumSettings, "coaches" | "rosterNames">;
 
 /** Used only when the row cannot be read (no keys at build time, database down). Neutral on purpose: each forum's own values live in its forum_settings row. */
 export const DEFAULT_FORUM_SETTINGS: ForumSettings = {
@@ -32,11 +34,13 @@ export const DEFAULT_FORUM_SETTINGS: ForumSettings = {
   siteUrl: "http://localhost:3000", // must be a valid URL: metadata and calendar links parse it
   whoopEnabled: true,
   coaches: {},
+  rosterNames: {},
 };
 
 export function publicSettings(s: ForumSettings): PublicForumSettings {
-  const { coaches, ...rest } = s;
+  const { coaches, rosterNames, ...rest } = s;
   void coaches;
+  void rosterNames;
   return rest;
 }
 
@@ -69,6 +73,7 @@ export function fromRow(r: ForumSettingsRow): ForumSettings {
     siteUrl: r.site_url.replace(/\/+$/, ""),
     whoopEnabled: r.whoop_enabled,
     coaches: r.coaches ?? {},
+    rosterNames: {},
   };
 }
 

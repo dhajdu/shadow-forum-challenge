@@ -15,8 +15,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   if (params.whoop || params.view) redirect(`/biometrics?${new URLSearchParams(params as Record<string, string>)}`);
 
   const { db, user, viewer, forum } = await getForumContext();
-  const { data } = await db.from("profiles").select("full_name, email, avatar_url").eq("id", user.id).single();
-  const profile = data as { full_name: string; email: string | null; avatar_url: string | null } | null;
+  const { data } = await db.from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
+  // email from the session: members cannot read profiles.email (migration 0037)
+  const profile = data ? { ...(data as { full_name: string; avatar_url: string | null }), email: user.email } : null;
   const name = profile?.full_name || viewer.full_name;
   const initials = name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 

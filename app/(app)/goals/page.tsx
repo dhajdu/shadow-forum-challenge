@@ -82,7 +82,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
               <section className={`zone-card ${s.contest}`}>
                 <h2>Contest business goal</h2>
                 <p className="coach-line">
-                  Your coach: <b>{coachNameFor(viewer.full_name, forum.coaches) ?? "to be assigned"}</b>
+                  Your coach: <b>{coachNameFor(viewer.id, forum) ?? "to be assigned"}</b>
                 </p>
                 <GoalProgress
                   title={contest.title}
