@@ -1,4 +1,5 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { Text, View } from "react-native";
 import { Avatar } from "@/components/Avatar";
 import { Banner, Button, Display, Eyebrow, Loading, Row, Screen, Small } from "@/components/ui";
@@ -39,7 +40,7 @@ export default function Me() {
       </View>
       <View>
         <Row title="Biometrics" detail={w.status === "connected" ? `WHOOP synced ${w.last_sync_at ? ago(w.last_sync_at) : "never"}` : "Connect WHOOP"} onPress={() => router.push("/me/biometrics")} />
-        <Row title="Account and password" detail="Photo, name, email, password" onPress={() => router.push("/me/profile")} />
+        <Row title="Account and password" detail="Photo, name, password, delete account" onPress={() => router.push("/me/profile")} />
         <Row title="Notifications" detail={pushOn ? "On" : "Off"} onPress={() => router.push("/me/notifications")} />
         <Row title="Connect Claude" detail="Use the forum from your own Claude" onPress={() => router.push("/me/claude")} />
       </View>
@@ -50,6 +51,11 @@ export default function Me() {
           <Small style={{ marginTop: 6 }}>Preview as member, Seasons and amending the Constitution are on the website.</Small>
         </View>
       ) : null}
+      <View>
+        <Row title="Support" detail="Help, reporting, deleting your account" onPress={() => WebBrowser.openBrowserAsync(`${config.apiBaseUrl}/support`)} />
+        <Row title="Privacy policy" onPress={() => WebBrowser.openBrowserAsync(`${config.apiBaseUrl}/privacy`)} />
+        <Row title="Terms of use" onPress={() => WebBrowser.openBrowserAsync(`${config.apiBaseUrl}/terms`)} />
+      </View>
       <Button ghost label={demo ? "Sign out (demo)" : "Sign out"} onPress={() => signOut()} />
       <Text style={{ color: color.muted, fontFamily: font.body, fontSize: fs.xs, textAlign: "center" }}>
         Version {config.appVersion} ({config.buildNumber})
