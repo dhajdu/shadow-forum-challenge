@@ -162,6 +162,16 @@ before(async () => {
     ok(await (admin as unknown as SupabaseClient).from("kitty_entries").insert({ entry_on, direction: "in", amount_vnd: 2_500_000, category: "dues", note, created_by: member.founding.id }), "kitty");
   }
 
+  // forum planning: a presentation, a planner and a host on every meeting; one yearly role
+  for (const m of MEETINGS) {
+    const id = meetingId[m.key];
+    ok(await admin.from("meetings").update({ host_id: member.nam.id, theme: `theme ${m.key}` }).eq("id", id), "host");
+    ok(await admin.from("meeting_presentations").insert({ meeting_id: id, presenter_id: member.leaver.id, coach_id: member.nam.id }), "presentation");
+    ok(await admin.from("meeting_planners").insert({ meeting_id: id, member_id: member.founding.id }), "planner");
+    ok(await admin.from("meeting_agenda_items").insert({ meeting_id: id, position: 1, kind: "lifeline", title: `agendaword${m.key} lifeline`, owner_id: member.nam.id }), "agenda item");
+  }
+  ok(await admin.from("forum_roles").insert({ year: 2027, role: "moderator", member_id: member.founding.id }), "role");
+
   // library
   ok(
     await admin.from("library_docs").insert([
@@ -321,6 +331,34 @@ describe("tables, per persona", () => {
         const rows = ok(await c().from("library_docs").select("slug").like("slug", "leak-%"), "library") as { slug: string }[];
         const expect = !active(k) ? [] : k === "founding" ? ["leak-constitution", "leak-expense"] : ["leak-constitution"];
         assert.deepEqual(sorted(rows.map((r) => r.slug)), expect);
+      });
+
+      it("meeting_presentations, meeting_planners, forum_roles", async () => {
+        const pres = ok(await c().from("meeting_presentations").select("meeting_id"), "presentations") as { meeting_id: string }[];
+        assert.deepEqual(sorted(pres.map((r) => keyOfMeeting(r.meeting_id))), visibleMeetings(k));
+        const plan = ok(await c().from("meeting_planners").select("meeting_id"), "planners") as { meeting_id: string }[];
+        assert.deepEqual(sorted(plan.map((r) => keyOfMeeting(r.meeting_id))), visibleMeetings(k));
+        const roles = ok(await c().from("forum_roles").select("role").eq("year", 2027), "roles") as unknown[];
+        assert.equal(roles.length, active(k) ? 1 : 0, "roles: active members only");
+        const ins = await c().from("meeting_presentations").insert({ meeting_id: meetingId.jan, presenter_id: member[k].id });
+        assert.equal(!ins.error, k === "founding", `${k} presentation insert (admins only)`);
+        if (!ins.error) ok(await admin.from("meeting_presentations").delete().eq("meeting_id", meetingId.jan).eq("presenter_id", member[k].id), "cleanup");
+        const role = await c().from("forum_roles").insert({ year: 2099, role: "treasurer", member_id: member[k].id });
+        assert.equal(!role.error, k === "founding", `${k} role insert (admins only)`);
+      });
+
+      it("meeting_agenda_items and set_meeting_agenda", async () => {
+        const items = ok(await c().from("meeting_agenda_items").select("meeting_id"), "agenda items") as { meeting_id: string }[];
+        assert.deepEqual(sorted(items.map((r) => keyOfMeeting(r.meeting_id))), visibleMeetings(k));
+        const ins = await c().from("meeting_agenda_items").insert({ meeting_id: meetingId.jan, position: 99, kind: "other", title: `x ${k}` });
+        assert.equal(!ins.error, k === "founding", `${k} agenda insert (admins only)`);
+        if (!ins.error) ok(await admin.from("meeting_agenda_items").delete().eq("meeting_id", meetingId.jan).eq("position", 99), "cleanup");
+        if (k !== "founding") {
+          const rpc = await c().rpc("set_meeting_agenda", { p_meeting: meetingId.jan, p_items: [] });
+          assert.ok(rpc.error, `${k} set_meeting_agenda (admins only)`);
+          const still = ok(await admin.from("meeting_agenda_items").select("id").eq("meeting_id", meetingId.jan), "still there") as unknown[];
+          assert.equal(still.length, 1, "a refused call deletes nothing");
+        }
       });
 
       it("seasons", async () => {
@@ -676,6 +714,87 @@ describe("MCP: join-date rule on every tool", () => {
     assert.ok(bio.every((d) => d.day >= "2026-07-28"));
     assert.equal((await call("nam", "whoami")).json.full_name, "Leak Nam Trung");
     assert.doesNotMatch((await call("nam", "list_members")).text, /Leak Leaver/, "leavers are not listed");
+  });
+});
+
+describe("MCP: forum planning", () => {
+  it("get_forum_plan and get_rotation follow the join-date rule", async () => {
+    for (const k of ["founding", "nam", "december", "january"] as const) {
+      for (const m of MEETINGS) {
+        const plan = await call(k, "get_forum_plan", { date: m.held_on });
+        assert.equal(!plan.error, seesDate(k, m.held_on), `${k} get_forum_plan ${m.key}`);
+        if (!plan.error) assert.match(plan.text, new RegExp(`agendaword${m.key}`));
+      }
+      const rot = (await call(k, "get_rotation", { from: "2026-01-01", to: "2027-12-31" })).json.forums as { date: string }[];
+      assert.deepEqual(sorted(rot.map((f) => MEETINGS.find((m) => m.held_on === f.date)?.key ?? f.date)), visibleMeetings(k));    }
+    const feb = await call("nam", "get_forum_plan", { date: "2026-02-05" });
+    const none = await call("nam", "get_forum_plan", { date: "2026-02-06" });
+    assert.equal(feb.text, none.text, "an unseen forum looks the same as no forum");
+  });
+
+  it("get_forum_plan counts members present and times the standard run sheet", async () => {
+    const dec = (await call("founding", "get_forum_plan", { date: "2026-12-23" })).json;
+    // founding, nam, december (joins that day); not january, not the leaver (left in November), not nodate
+    assert.equal(dec.members_present, 3);
+    const std = dec.standard_run_sheet as { starts_at: string; minutes: number; kind: string }[];
+    assert.deepEqual(std.slice(0, 5).map((l) => [l.starts_at, l.kind, l.minutes]), [
+      ["13:45", "arrival", 15], ["14:00", "welcome", 10], ["14:10", "starters", 10], ["14:20", "merps", 5], ["14:25", "updates", 15],
+    ]);
+  });
+
+  it("only admins write; every write shows before and after", async () => {
+    for (const k of ["nam", "december"] as const) {
+      assert.ok((await call(k, "update_forum", { date: "2026-12-23", theme: "hacked" })).error, `${k} update_forum`);
+      assert.ok((await call(k, "set_agenda", { date: "2026-12-23", items: [] })).error, `${k} set_agenda`);
+      assert.ok((await call(k, "set_presentation", { date: "2026-12-23", presenter: "Nam" })).error, `${k} set_presentation`);
+      assert.ok((await call(k, "set_planners", { date: "2026-12-23", members: [] })).error, `${k} set_planners`);
+      assert.ok((await call(k, "set_role", { year: 2027, role: "treasurer", member: "Nam" })).error, `${k} set_role`);
+    }
+    const theme = await call("founding", "update_forum", { date: "2026-12-23", theme: "Welcome Minh Anh", host: "Minh Anh", starts_at: "14:00", conversation_starters: ["One?", "Two?"] });
+    assert.equal(theme.error, false, theme.text);
+    assert.equal((theme.json.before as { theme: string }).theme, "theme dec");
+    assert.equal((theme.json.after as { theme: string; host: string }).theme, "Welcome Minh Anh");
+    assert.equal((theme.json.after as { host: string }).host, "Leak Minh Anh");
+    assert.equal((theme.json.after as { starts_at: string }).starts_at, "2:00 pm", "start time is GMT+7");
+
+    const agenda = await call("founding", "set_agenda", {
+      date: "2026-12-23",
+      items: [
+        { kind: "arrival", title: "Arrival", starts_at: "13:45", minutes: 15 },
+        { kind: "lifeline", title: "Minh Anh's lifeline", minutes: 20, owner: "Minh Anh" },
+      ],
+    });
+    assert.equal(agenda.error, false, agenda.text);
+    assert.equal((agenda.json.before as unknown[]).length, 1);
+    assert.deepEqual((agenda.json.after as { title: string; owner: string | null }[]).map((i) => [i.title, i.owner]), [["Arrival", null], ["Minh Anh's lifeline", "Leak Minh Anh"]]);
+    assert.ok((await call("founding", "set_agenda", { date: "2026-12-23", items: [{ kind: "nope", title: "x" }] })).error, "bad kind");
+    const kept = (await call("founding", "get_forum_plan", { date: "2026-12-23" })).json.run_sheet as unknown[];
+    assert.equal(kept.length, 2, "a refused set_agenda keeps the old run sheet");
+
+    assert.ok((await call("founding", "set_presentation", { date: "2026-12-23", presenter: "Nam", coach: "Nam" })).error, "no self-coaching");
+    const pres = await call("founding", "set_presentation", { date: "2026-12-23", presenter: "Nam", coach: "Minh Anh" });
+    assert.equal(pres.error, false, pres.text);
+    assert.match(JSON.stringify(pres.json.after), /Leak Nam Trung.*Leak Minh Anh/);
+    assert.equal((await call("founding", "remove_presentation", { date: "2026-12-23", presenter: "Nam" })).error, false);
+
+    const planners = await call("founding", "set_planners", { date: "2026-12-23", members: ["Nam", "Minh Anh"] });
+    assert.deepEqual(sorted((planners.json.after as string[]) ?? []), ["Leak Minh Anh", "Leak Nam Trung"]);
+    assert.deepEqual(((await call("founding", "set_planners", { date: "2026-12-23", members: ["Founding"] })).json.after as string[]), ["Leak Founding"]);
+
+    const role = await call("founding", "set_role", { year: 2027, role: "treasurer", member: "Nam" });
+    assert.deepEqual((role.json.roles as Record<string, string[]>).treasurer, ["Leak Nam Trung"]);
+    assert.deepEqual(((await call("nam", "get_roles", { year: 2027 })).json.roles as Record<string, string[]>).moderator, ["Leak Founding"]);
+    const gone = await call("founding", "set_role", { year: 2027, role: "treasurer", member: "Nam", remove: true });
+    assert.deepEqual((gone.json.roles as Record<string, string[]>).treasurer, []);
+  });
+
+  it("the planning guide and the plan_forum prompt", async () => {
+    assert.match((await call("nam", "planning_guide")).text, /MERPS/);
+    const list = (await rpc("nam", "prompts/list")).body?.result?.prompts as { name: string }[];
+    assert.deepEqual(list.map((p) => p.name), ["plan_forum"]);
+    const got = (await rpc("nam", "prompts/get", { name: "plan_forum", arguments: { date: "2026-12-23" } })).body?.result as { messages: { content: { text: string } }[] };
+    assert.match(got.messages[0].content.text, /Plan the forum on 2026-12-23/);
+    assert.ok((await rpc("nam", "prompts/get", { name: "nope" })).body?.error);
   });
 });
 
