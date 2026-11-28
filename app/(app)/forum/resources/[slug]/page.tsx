@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getForumContext } from "@/app/_data/context";
 import { getLibraryDoc } from "@/app/_data/forum";
 import { longDay } from "@/app/_data/format";
@@ -8,6 +8,8 @@ import s from "../../forum.module.css";
 
 export default async function LibraryDocPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  if (slug === "resources") redirect("/forum/resources"); // the toolkit is the Resources tab itself
+  if (slug === "expense-sheet") redirect("/kitty"); // the Expense Sheet became the Kitty
   const { db, viewer } = await getForumContext();
   const doc = await getLibraryDoc(db, viewer, slug);
   if (!doc) notFound();
