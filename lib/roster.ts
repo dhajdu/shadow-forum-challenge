@@ -1,19 +1,19 @@
 // Each rider's assigned coach (who they do the monthly 1-on-1 with, and who
 // shares their missed-goal penalty). Coaches are assigned by the forum, not
-// picked by riders. The roster lives in forum_settings.coaches (migration 0033):
-// rider's normalised full name → coach's full name. Matching is by name.
+// picked by riders. The roster lives in forum_settings.coaches (migrations 0033,
+// 0036): rider's profile id → coach's profile id. Only admins write it.
 //
-// Example roster (fictional): a single cycle, so everyone coaches exactly one
-// and is coached by exactly one, with no self-coaching and no reciprocal pairs:
-//   { "ana souza": "Ben Okafor", "ben okafor": "Chloe Martin", "chloe martin": "Ana Souza" }
+// Never match coaches by name: members edit their own names (security review H2).
 
 export type Coaches = Record<string, string>;
 
-export function normalizeName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
+/** The assigned coach's profile id for a rider, or null if not on the roster. */
+export function coachIdFor(riderId: string, coaches: Coaches): string | null {
+  return coaches[riderId] ?? null;
 }
 
-/** The assigned coach's display name for a given rider, or null if not on the roster. */
-export function coachNameFor(fullName: string, coaches: Coaches): string | null {
-  return coaches[normalizeName(fullName)] ?? null;
+/** The assigned coach's display name for a rider (names from getForumSettings().rosterNames), or null. */
+export function coachNameFor(riderId: string, s: { coaches: Coaches; rosterNames: Record<string, string> }): string | null {
+  const id = coachIdFor(riderId, s.coaches);
+  return id ? s.rosterNames[id] ?? null : null;
 }

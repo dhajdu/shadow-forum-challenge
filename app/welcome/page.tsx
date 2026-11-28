@@ -37,7 +37,7 @@ export default async function Welcome() {
         <div className="eyebrow">First time in</div>
         <h1 className="title">Welcome, Rider</h1>
         <p className="tagline">Lock in your {season?.name ?? ""} goal</p>
-        <OnboardingForm name={name} coach={coachNameFor(name, forum.coaches)} seasonName={season?.name ?? ""} endsOn={season?.ends_on ?? null} stake={stake || null} />
+        <OnboardingForm name={name} coach={coachNameFor(user.id, forum)} seasonName={season?.name ?? ""} endsOn={season?.ends_on ?? null} stake={stake || null} />
       </section>
     </main>
   );

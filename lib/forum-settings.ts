@@ -16,7 +16,15 @@ export * from "@/lib/forum-config";
 
 export const FORUM_SETTINGS_TAG = "forum-settings";
 
-const readRow = () => readForumSettingsOrThrow(createAdminClient());
+// The row, plus the names of everyone on the coach roster (pages show names; the roster holds ids).
+async function readRow(): Promise<ForumSettings> {
+  const admin = createAdminClient();
+  const s = await readForumSettingsOrThrow(admin);
+  const ids = [...new Set([...Object.keys(s.coaches), ...Object.values(s.coaches)])];
+  if (ids.length === 0) return s;
+  const { data } = await admin.from("profiles").select("id, full_name").in("id", ids);
+  return { ...s, rosterNames: Object.fromEntries((data ?? []).map((p) => [p.id, p.full_name])) };
+}
 
 const readCached = unstable_cache(readRow, ["forum-settings"], { tags: [FORUM_SETTINGS_TAG], revalidate: 3600 });
 

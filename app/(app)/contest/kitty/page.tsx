@@ -113,7 +113,7 @@ export default async function KittyPage() {
               {report.standings.map((r) => (
                 <tr key={r.user_id}>
                   <td>{r.name}</td>
-                  <td className="dim">{coachNameFor(r.name, forum.coaches) ?? "—"}</td>
+                  <td className="dim">{coachNameFor(r.user_id, forum) ?? "—"}</td>
                   <td><span className={`chip ${r.goalStatus}`}>{r.goalStatus.replace("_", " ")}</span></td>
                   <td className={`r amt ${atRisk(r.goalStatus) ? "owe" : "dim"}`}>
                     {r.goalStatus === "hit" ? "0" : m(goalStake)}

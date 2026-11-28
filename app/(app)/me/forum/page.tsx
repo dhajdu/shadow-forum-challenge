@@ -34,8 +34,8 @@ export default async function ForumSettingsPage() {
               {coaches.map(([rider, coach]) => (
                 <li key={rider} className="row">
                   <span className="row-main">
-                    <b>{rider.replace(/\b\w/g, (c) => c.toUpperCase())}</b>
-                    <small>coached by {coach}</small>
+                    <b>{forum.rosterNames[rider] ?? "Former member"}</b>
+                    <small>coached by {forum.rosterNames[coach] ?? "a former member"}</small>
                   </span>
                 </li>
               ))}

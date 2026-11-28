@@ -11,6 +11,14 @@ const SCOPE_LABEL: Record<string, string> = {
   profile: "See your name",
 };
 
+function hostOf(uri: string | undefined): string | null {
+  try {
+    return uri ? new URL(uri).host || null : null;
+  } catch {
+    return null;
+  }
+}
+
 export function Consent({ authorizationId }: { authorizationId: string }) {
   const forum = useForumSettings();
   const [details, setDetails] = useState<OAuthAuthorizationDetails | null>(null);
@@ -46,13 +54,25 @@ export function Consent({ authorizationId }: { authorizationId: string }) {
   if (!details) return <p className="toggle">Checking the request…</p>;
 
   const scopes = details.scope.split(/\s+/).filter(Boolean);
+  // The name is whatever the client registered with; the address it sends you back to is what identifies it.
+  const host = hostOf(details.redirect_uri);
   return (
     <div className="consent">
-      <h1 className="consent-title">{details.client.name || "An assistant"} wants to read your forum</h1>
+      <h1 className="consent-title">{details.client.name || "An assistant"} wants to use your forum account</h1>
       <p className="consent-p">
-        Signed in as <b>{details.user.email}</b>. It will see only what you can see in the {forum.shortName}, from your first
-        forum on, and it cannot change anything.
+        Signed in as <b>{details.user.email}</b>. If you allow it, you go back to <b>{host ?? "an unknown address"}</b>. Allow it only
+        if you started this from your own assistant and you recognise that address.
       </p>
+      <p className="consent-p">
+        It acts as you and sees only what you can see in the {forum.shortName}, from your first forum on. It can:
+      </p>
+      <ul className="consent-list">
+        <li>Read agendas, the Parking Lot, chat, the kitty, goals, standings, photos and your own biometrics</li>
+        <li>Post chat messages as you</li>
+        <li>Add and void kitty entries</li>
+        <li>Set and update your contest goal and personal goals</li>
+        <li>If you are an admin: change forum plans, run sheets, presenters, planners and roles</li>
+      </ul>
       {scopes.length > 0 && (
         <ul className="consent-list">
           {scopes.map((s) => (

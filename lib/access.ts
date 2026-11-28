@@ -95,10 +95,11 @@ export async function loadAccess(admin: Admin) {
  * profile row with their own session.
  */
 export async function isActiveCaller(supabase: Admin, userId: string): Promise<boolean> {
+  // no email: members cannot read profiles.email (migration 0037)
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, email, forum_joined_on, forum_left_on, is_founding, is_admin")
+    .select("id, full_name, forum_joined_on, forum_left_on, is_founding, is_admin")
     .eq("id", userId)
     .maybeSingle();
-  return !!data && isActive(data as Member);
+  return !!data && isActive({ ...data, email: null } as Member);
 }

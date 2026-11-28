@@ -102,6 +102,19 @@ type Views = Patch<
         };
       }
     >;
+    meeting_docs: Patch<
+      V["meeting_docs"],
+      {
+        Row: {
+          id: string;
+          meeting_id: string;
+          title: string;
+          body_md: string; // null only for a meeting the reader cannot see, whose row RLS already hides
+          source_updated_at: string | null;
+          created_at: string;
+        };
+      }
+    >;
     whoop_connection_status: Patch<
       V["whoop_connection_status"],
       { Row: Patch<V["whoop_connection_status"]["Row"], { user_id: string; status: WhoopConnectionStatus; updated_at: string }> }
@@ -114,6 +127,7 @@ type Functions = Patch<
   {
     set_member_access: ArgsPatch<"set_member_access", { joined_on: string | null; left_on: string | null }>;
     match_meeting_chunks: ArgsPatch<"match_meeting_chunks", { only_meeting?: string | null }>;
+    agenda_parts: Patch<F["agenda_parts"], { Returns: { part: number; visible_from: string | null; body: string }[] }>;
   }
 >;
 
