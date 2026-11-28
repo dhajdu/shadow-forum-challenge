@@ -151,3 +151,30 @@ export function visibleParking(groups: ParkingGroup[], joinedOn: string | null, 
   if (!joinedOn) return [];
   return groups.filter((g) => g.date != null && g.date >= joinedOn);
 }
+
+/**
+ * An agenda's Markdown as a member may read it: the Parking Lot section keeps only the topic groups
+ * dated from their first forum on (same rule as visibleParking). For Ask, MCP and anything else that
+ * hands agenda text to a model.
+ */
+export function visibleAgendaMd(md: string, heldOn: string, joinedOn: string | null, founding: boolean): string {
+  if (founding) return md;
+  const at = md.search(/^##\s+parking lot/im);
+  if (at < 0) return md;
+  const rest = md.slice(at);
+  const next = rest.slice(2).search(/^#{1,2}\s(?!\s*learnings)/im); // the section after the Parking Lot
+  const section = next < 0 ? rest : rest.slice(0, next + 2);
+  const after = next < 0 ? "" : rest.slice(next + 2);
+  const { groups, learnings } = parseParking(section.slice(section.indexOf("\n") + 1), heldOn);
+  const lines: string[] = ["## Parking Lot", ""];
+  for (const g of visibleParking(groups, joinedOn, founding)) {
+    if (g.label) lines.push(`**${g.label}**`);
+    for (const t of g.topics) {
+      lines.push(`- ${t.who ? `${t.who} - ` : ""}${t.topic}${t.nextForum ? " (next forum)" : ""}`);
+      for (const d of t.details) lines.push(`  - ${d}`);
+    }
+    lines.push("");
+  }
+  if (learnings.length) lines.push("# Learnings", "", ...learnings.map((l) => `- ${l}`), "");
+  return `${md.slice(0, at)}${lines.join("\n")}${after ? `\n${after}` : ""}`;
+}
