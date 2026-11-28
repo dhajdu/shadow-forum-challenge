@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { addEntry, type KittyState } from "./actions";
-import { vndShort } from "@/app/_data/kitty";
+import { CATEGORY_LABEL, IN_CATEGORIES, OUT_CATEGORIES, vndShort } from "@/app/_data/kitty";
 import s from "./kitty.module.css";
 
 const initial: KittyState = { error: null, ok: false };
@@ -38,7 +38,7 @@ export function KittyForm({
 
   function pick(d: "in" | "out") {
     setDir(d);
-    setCategory(d === "in" ? "dues" : "spend");
+    setCategory(d === "in" ? "dues" : "after_forum");
     setAmount(d === "in" ? vndShort(dues) : "");
   }
 
@@ -60,18 +60,9 @@ export function KittyForm({
           setCategory(e.target.value);
           if (e.target.value === "dues") setAmount(vndShort(dues));
         }}>
-          {dir === "in" ? (
-            <>
-              <option value="dues">Forum dues</option>
-              <option value="penalty">Contest penalty</option>
-              <option value="other">Other</option>
-            </>
-          ) : (
-            <>
-              <option value="spend">Spend</option>
-              <option value="other">Other</option>
-            </>
-          )}
+          {(dir === "in" ? IN_CATEGORIES : OUT_CATEGORIES).map((c) => (
+            <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>
+          ))}
         </select>
       </label>
       <label>
