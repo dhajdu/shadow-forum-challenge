@@ -1,45 +1,18 @@
-// Contest constants and helpers shared across the app.
+// Contest season helpers shared across the app.
 //
-// Seasons live in the seasons table (starts_on, ends_on, metric, ladder). Use the
-// season helpers below. The CONTEST_* constants are Q4 2026 only, kept until the
-// pages that import them take a season.
-
-export const CONTEST_START = new Date("2026-09-23T00:00:00Z");
-export const CONTEST_END = new Date("2026-12-22T23:59:59Z");
-export const CONTEST_DAYS = 91;
-export const CONTEST_START_DAY = "2026-09-23"; // YYYY-MM-DD, for filtering whoop_days
-
-// Placement penalties (millions of the forum's currency): 1st pays 0, then 2M..5M.
-export const PLACEMENT_PENALTIES = [0, 2, 3, 4, 5];
-export const MISSED_GOAL_PENALTY = 5; // rider
-export const COACH_SHARE_PENALTY = 5; // coach
-
-export function dayOfContest(now = new Date()): number {
-  const ms = now.getTime() - CONTEST_START.getTime();
-  const day = Math.floor(ms / 86_400_000) + 1;
-  return Math.max(0, Math.min(CONTEST_DAYS, day));
-}
-
-export function currentLeg(now = new Date()): string {
-  if (now < CONTEST_START) return "pre-season";
-  if (now > CONTEST_END) return "final";
-  return now.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
-}
-
-/** Penalty owed for a 0-based placement (rank-1). */
-export function placementPenalty(rankIndex: number): number {
-  return PLACEMENT_PENALTIES[Math.min(rankIndex, PLACEMENT_PENALTIES.length - 1)];
-}
+// Seasons live in the seasons table: dates, and since 0034 the contest rules
+// (name, scoring, check-in rhythm, points, stakes). Scoring and rules are in
+// lib/goal-points.ts; this file is about which season and which day.
+import { rulesOf, type SeasonRuleColumns } from "@/lib/goal-points";
 
 // ── Seasons ─────────────────────────────────────────────
-export type ContestSeason = {
+export type ContestSeason = SeasonRuleColumns & {
   id: string;
   slug: string;
   name: string;
   starts_on: string; // YYYY-MM-DD
   ends_on: string;
   metric?: string | null;
-  ladder?: unknown;
 };
 
 const DAY_MS = 86_400_000;
@@ -73,18 +46,21 @@ export function seasonPhase(s: Pick<ContestSeason, "starts_on" | "ends_on">, now
   return t < s.starts_on ? "upcoming" : t > s.ends_on ? "over" : "running";
 }
 
-/** Placement penalties (millions of the forum's currency) for the season, from its ladder. Empty: no contest. */
+/** Placement stakes (whole units of the forum's currency) for the season, from its ladder. */
 export function seasonLadder(s: Pick<ContestSeason, "ladder"> | null): number[] {
-  const l = s?.ladder;
-  return Array.isArray(l) && l.length && l.every((x) => typeof x === "number") ? (l as number[]) : [];
+  return rulesOf(s).ladder;
 }
 
-/** Whether the season has a contest (a ladder). A season has none until the forum picks one. */
-export function hasContest(s: Pick<ContestSeason, "ladder"> | null): boolean {
-  return seasonLadder(s).length > 0;
+/** Whether the season has a contest: the forum picked its scoring. A season has none until then. */
+export function hasContest(s: Pick<ContestSeason, "scoring"> | null): boolean {
+  return rulesOf(s).scoring != null;
 }
 
+/** Placement stake for a 0-based rank, in whole units. 0 without a ladder. */
 export function seasonPenalty(s: Pick<ContestSeason, "ladder"> | null, rankIndex: number): number {
   const ladder = seasonLadder(s);
   return ladder.length ? ladder[Math.min(rankIndex, ladder.length - 1)] : 0;
 }
+
+/** The contest's name: the season's own, else "<season> contest". */
+export const contestName = (s: Pick<ContestSeason, "name" | "contest_name">) => s.contest_name?.trim() || `${s.name} contest`;

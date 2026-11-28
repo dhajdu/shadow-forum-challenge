@@ -77,8 +77,19 @@ const LIBRARY: LibraryDocDetail[] = [
   { slug: "expense-sheet", title: "Expense Sheet", audience: "founding", updated_at: "2026-11-25T12:00:00+07:00", body_md: "Placeholder. The Expense Sheet is imported." },
 ];
 
-// Matches lib/contest.ts (CONTEST_START / CONTEST_END).
-const SEASONS: Season[] = [{ id: "fx-2026-q4", slug: "2026-q4", name: "Q4 2026", starts_on: "2026-09-23", ends_on: "2026-12-22", ladder: [0, 2, 3, 4, 5] }];
+// Matches the Q4 2026 row (migrations 0012 and 0034).
+const SEASONS: Season[] = [
+  {
+    id: "fx-2026-q4",
+    slug: "2026-q4",
+    name: "Q4 2026",
+    starts_on: "2026-09-23",
+    ends_on: "2026-12-22",
+    ladder: [0, 2_000_000, 3_000_000, 4_000_000, 5_000_000],
+    contest_name: "Race Into the Shadow",
+    scoring: "whoop",
+  },
+];
 
 const FOUNDED = "2026-01-19";
 const member = (id: string, full_name: string, joined: string | null, extra: Partial<Member> = {}): Member => ({

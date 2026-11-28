@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { buildReport } from "@/lib/report";
 import type { GoalStatus } from "@/lib/database.types";
 import { getSessionUser } from "@/lib/supabase/session";
+import { getForumSettings } from "@/lib/forum-settings";
+import { moneyShort } from "@/app/_data/kitty";
 
 const STATUS_LABEL: Record<GoalStatus, string> = {
   on_track: "on track",
@@ -31,12 +33,13 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
 
-  const report = await buildReport(supabase);
+  const [report, { currency }] = await Promise.all([buildReport(supabase), getForumSettings()]);
+  const goals = report.tracks.goals;
 
   return (
     <main className="app">
 
-      <Link href="/contest" className="back">← back to race</Link>
+      <Link href="/contest" className="back">← back to {goals ? "the board" : "race"}</Link>
 
       <div className="race-head">
         <div>
@@ -46,7 +49,7 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
         </div>
       </div>
 
-      <div className="report-movers">
+      {!goals && <div className="report-movers">
         <div className="card">
           <h3>Biggest mover</h3>
           <p className="mover">{report.topMover ? `${report.topMover.name} ${deltaLabel(report.topMover.delta)}` : "—"}</p>
@@ -55,16 +58,48 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
           <h3>Biggest faller</h3>
           <p className="mover">{report.topFaller ? `${report.topFaller.name} ${deltaLabel(report.topFaller.delta)}` : "—"}</p>
         </div>
-      </div>
+      </div>}
+
+      {goals && (
+        <section className="card" style={{ marginTop: 16 }}>
+          <h3>Goal results</h3>
+          <table className="ladder">
+            <thead>
+              <tr>
+                <th className="r">#</th>
+                <th>Member</th>
+                <th className="r">Points</th>
+                <th className="r">Check-ins</th>
+                <th className="r">Missed</th>
+                <th className="r">Best streak</th>
+                <th className="r">Goal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.standings.map((r) => (
+                <tr key={r.user_id}>
+                  <td className="r">{r.rank}</td>
+                  <td>{r.name}{r.goal && <small className="dim"> · {r.goal.title}</small>}</td>
+                  <td className="r amt">{r.points ?? 0}</td>
+                  <td className="r">{r.goal?.checkins ?? "—"}</td>
+                  <td className={`r ${r.goal?.missed ? "amt owe" : ""}`}>{r.goal?.missed ?? "—"}</td>
+                  <td className="r">{r.goal?.streak ?? "—"}</td>
+                  <td className="r">{r.goal?.hit ? <span className="chip hit">hit</span> : r.goal?.pct != null ? `${r.goal.pct}%` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       <section className="card" style={{ marginTop: 16 }}>
-        <h3>Per-rider recap</h3>
+        <h3>{goals ? "Per-member recap" : "Per-rider recap"}</h3>
         <table className="ladder">
           <thead>
             <tr>
-              <th>Rider</th>
-              <th className="r">Avg</th>
-              <th className="r">Δ rank</th>
+              <th>{goals ? "Member" : "Rider"}</th>
+              {goals ? <th className="r">Points</th> : <th className="r">Avg</th>}
+              {!goals && <th className="r">Δ rank</th>}
               <th>Goal</th>
               <th className="r">Owes</th>
             </tr>
@@ -73,10 +108,10 @@ export default async function ReportPage({ params }: { params: Promise<{ month: 
             {report.standings.map((r) => (
               <tr key={r.user_id}>
                 <td>{r.name}</td>
-                <td className="r">{r.avg || "—"}</td>
-                <td className="r">{deltaLabel(r.delta)}</td>
+                {goals ? <td className="r">{r.points ?? 0}</td> : <td className="r">{r.avg || "—"}</td>}
+                {!goals && <td className="r">{deltaLabel(r.delta)}</td>}
                 <td><span className={`chip ${r.goalStatus}`}>{STATUS_LABEL[r.goalStatus]}</span></td>
-                <td className={`r amt ${r.owes === 0 ? "free" : "owe"}`}>{r.owes === 0 ? "0" : `${r.owes}M`}</td>
+                <td className={`r amt ${r.owes === 0 ? "free" : "owe"}`}>{r.owes === 0 ? "0" : moneyShort(r.owes, currency)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,5 +1,5 @@
 import { getForumContext } from "@/app/_data/context";
-import { contestSeasonId } from "@/app/_data/season";
+import { contestSeason as seasonForToday } from "@/app/_data/season";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -7,7 +7,6 @@ import { ScoreTrend } from "@/components/ScoreTrend";
 import { getStandings } from "@/lib/standings";
 import type { GoalStatus } from "@/lib/database.types";
 import { getSessionUser } from "@/lib/supabase/session";
-import { CONTEST_START_DAY } from "@/lib/contest";
 import { STRAIN_MAX } from "@/lib/whoop/parse";
 import styles from "./rider.module.css";
 
@@ -26,7 +25,9 @@ export default async function RiderPage({ params }: { params: Promise<{ id: stri
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
   const { viewer } = await getForumContext();
-  const contestSeason = await contestSeasonId(supabase, viewer);
+  const season = await seasonForToday(supabase, viewer);
+  const contestSeason = season?.id ?? null;
+  const CONTEST_START_DAY = season?.starts_on ?? new Date().toISOString().slice(0, 10);
 
   // independent reads — run them together
   const [{ data: prof }, { data: dayRows }, { data: goalRow }, standings] = await Promise.all([

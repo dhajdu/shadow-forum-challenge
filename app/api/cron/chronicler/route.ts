@@ -3,7 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAuthorizedCron } from "@/lib/cron";
 import { sendEmail } from "@/lib/notify";
 import { buildReport } from "@/lib/report";
-import { hasContest, seasonForDay } from "@/lib/contest";
+import { contestName, hasContest, seasonForDay } from "@/lib/contest";
+import { moneyShort } from "@/app/_data/kitty";
 import { groupScope, loadAccess, seasonAudience } from "@/lib/access";
 import { getForumSettings } from "@/lib/forum-settings";
 
@@ -34,6 +35,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, dry, skipped: "no contest this season", recipients: 0, sent: 0 });
   }
   const report = await buildReport(admin, season);
+  const forum = await getForumSettings();
+  const goals = report.tracks.goals;
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
   const monthLabel = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
   const site = process.env.NEXT_PUBLIC_SITE_URL || "";
@@ -42,17 +46,17 @@ export async function GET(req: NextRequest) {
   const rowsHtml = report.standings
     .map(
       (r) =>
-        `<tr><td>${r.rank}. ${r.name}</td><td>${r.avg || "—"}</td><td>${
-          r.owes === 0 ? "0" : r.owes + "M"
-        }</td></tr>`
+        `<tr><td>${r.rank}. ${esc(r.name)}</td><td>${goals ? (r.points ?? 0) : r.avg || "—"}</td>${
+          goals ? `<td>${r.goal ? `${r.goal.checkins} / ${r.goal.pct ?? 0}%` : "—"}</td>` : ""
+        }<td>${r.owes === 0 ? "0" : moneyShort(r.owes, forum.currency)}</td></tr>`
     )
     .join("");
   const html = `
-    <h2>Race Into the Shadow — ${monthLabel}</h2>
-    <p>Leader: <b>${report.standings[0]?.name ?? "—"}</b>.
-       Biggest mover: ${report.topMover?.name ?? "—"}.</p>
+    <h2>${esc(contestName(season))} — ${monthLabel}</h2>
+    <p>Leader: <b>${esc(report.standings[0]?.name ?? "—")}</b>.${goals ? "" : `
+       Biggest mover: ${esc(report.topMover?.name ?? "—")}.`}</p>
     <table border="1" cellpadding="6" cellspacing="0">
-      <tr><th>Rider</th><th>Avg</th><th>Owes</th></tr>${rowsHtml}
+      <tr><th>${goals ? "Member" : "Rider"}</th><th>${goals ? "Points" : "Avg"}</th>${goals ? "<th>Check-ins / goal</th>" : ""}<th>Owes</th></tr>${rowsHtml}
     </table>
     <p><a href="${link}">View the full report →</a></p>`;
 
@@ -61,7 +65,7 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   if (!dry) {
     for (const to of recipients) {
-      const res = await sendEmail({ to, subject: `${(await getForumSettings()).name} — ${monthLabel} report`, html });
+      const res = await sendEmail({ to, subject: `${forum.name} — ${monthLabel} report`, html });
       if (res.ok) sent++;
     }
   }

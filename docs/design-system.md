@@ -101,7 +101,7 @@ Flat by default; borders (`--line`) do the separating. Shadows are reserved for:
 ## Spacing
 
 Tokens `--sp-2` … `--sp-60` (2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 32, 60px) and `--hair` (1px borders) cover the values in use; new CSS uses them.
-Layout tokens: `--side-w` (desktop sidebar), `--tabbar-h` (phone tab bar), `--content-w` (page max width), `--icon` (nav icons), `--avatar-lg`, `--nav-on` (selected nav item).
+Layout tokens: `--side-w` (desktop sidebar), `--tabbar-h` (phone tab bar), `--content-w` (page max width), `--field-min` (narrowest column of an auto-fit form grid), `--icon` (nav icons), `--avatar-lg`, `--nav-on` (selected nav item).
 Breakpoint: under 768px the shell shows bottom tabs, from 768px a left sidebar (media queries cannot use tokens).
 - Card padding `20px 22px`; list rows `10px 12px`; tiles `12px 14px`.
 - Gaps: 8px inside controls, 10 to 12px between rows, 16px between cards.
@@ -131,6 +131,7 @@ Global classes in `app/globals.css` unless noted. Copy these.
 | Markdown | `components/Markdown.tsx` (`.prose`) | Agenda and library text, text nodes only |
 | Race board | `components/RaceBoard.tsx` | Lanes, medals, runners |
 | Goal progress | `components/GoalProgress.tsx` (`.goalprog`) | Business goal card body |
+| Goal contest | `app/(app)/contest/GoalBoard.tsx`, `goalboard.module.css` | Leaderboard (`.ladder` table), check-in form and history, season rules form |
 | Extra credit | `components/ExtraCredit.tsx` (`.xc-*`) | Personal goals list + add form |
 | Upload | `components/UploadWhoop.tsx` (`.upload .drop`) | Drop zone + file list |
 | Trend sparkline | `components/ScoreTrend.tsx` (`.trend`) | Inside `.trend-wrap` or `.trend-card` |

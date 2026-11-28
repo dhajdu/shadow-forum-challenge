@@ -7,6 +7,7 @@
 // file and the database give the same answer for every persona.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { SEASON_RULE_COLUMNS, type SeasonRuleColumns } from "@/lib/goal-points";
 
 export type Member = {
   id: string;
@@ -18,7 +19,7 @@ export type Member = {
   is_admin: boolean;
 };
 
-export type Season = { id: string; slug: string; name: string; starts_on: string; ends_on: string; ladder?: unknown };
+export type Season = SeasonRuleColumns & { id: string; slug: string; name: string; starts_on: string; ends_on: string };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -78,7 +79,7 @@ export async function loadMembers(admin: Admin): Promise<Member[]> {
 }
 
 export async function loadSeasons(admin: Admin): Promise<Season[]> {
-  const { data, error } = await admin.from("seasons").select("id, slug, name, starts_on, ends_on, ladder");
+  const { data, error } = await admin.from("seasons").select(`id, slug, name, starts_on, ends_on, ${SEASON_RULE_COLUMNS}`);
   if (error) throw new Error(error.message);
   return (data ?? []) as Season[];
 }

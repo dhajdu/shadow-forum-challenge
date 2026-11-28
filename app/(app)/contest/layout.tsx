@@ -3,11 +3,17 @@ import { listSeasons } from "@/app/_data/forum";
 import Link from "next/link";
 import { SubTabs } from "@/components/TabNav";
 import { hasContest, seasonForDay } from "@/lib/contest";
+import { contestTracks, rulesOf } from "@/lib/goal-points";
 import { PageBanner } from "@/components/PageBanner";
 import s from "./contest.module.css";
 
-const tabs = (timeZone: string) => [
-  { href: "/contest", label: "Race" },
+const tabs = (timeZone: string, goals: boolean) => [
+  ...(goals
+    ? [
+        { href: "/contest", label: "Board" },
+        { href: "/contest/checkin", label: "Check in" },
+      ]
+    : [{ href: "/contest", label: "Race" }]),
   { href: "/contest/kitty", label: "Kitty" },
   { href: "/contest/rules", label: "Rules" },
   {
@@ -18,13 +24,17 @@ const tabs = (timeZone: string) => [
 
 // The race, rider, goal, rules and report pages keep their logic; this adds the sub-tabs.
 // A member with no season they can see gets the next-season card instead of the pages.
+// A season scores goal check-ins, the WHOOP race or both (seasons.scoring, 0034);
+// the WHOOP race runs only while the forum has WHOOP switched on.
 export default async function ContestLayout({ children }: { children: React.ReactNode }) {
   const { db, viewer, forum } = await getForumContext();
   const seasons = await listSeasons(db, viewer);
   const season = seasonForDay(seasons); // today's season: Q4 2026 until Q1 2027 starts
 
-  // The race scores WHOOP data; with WHOOP switched off there is no race to show.
-  if (!forum.whoopEnabled) {
+  const tracks = contestTracks(rulesOf(season), forum.whoopEnabled);
+
+  // A WHOOP-only race with WHOOP switched off: there is no race to show.
+  if (season && hasContest(season) && !tracks.goals && !tracks.whoop) {
     return (
       <>
         <PageBanner src="/banners/stances.webp" position="50% 45%">
@@ -72,7 +82,7 @@ export default async function ContestLayout({ children }: { children: React.Reac
         <h1>Contest</h1>
       </PageBanner>
       <div className={s.bar}>
-        <SubTabs items={tabs(forum.timeZone)} label="Contest" />
+        <SubTabs items={tabs(forum.timeZone, tracks.goals)} label="Contest" />
       </div>
       {children}
     </>

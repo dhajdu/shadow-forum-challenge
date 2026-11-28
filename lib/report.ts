@@ -2,6 +2,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, GoalStatus } from "@/lib/database.types";
 import { getStandings } from "@/lib/standings";
 import { seasonForDay, seasonPenalty, type ContestSeason } from "@/lib/contest";
+import { contestTracks, rulesOf, SEASON_RULE_COLUMNS, type ContestRules } from "@/lib/goal-points";
+import { getContestBoard } from "@/lib/goal-standings";
+import { getForumSettings } from "@/lib/forum-settings";
+import { todayIn } from "@/app/_data/format";
+
+export type GoalResult = {
+  title: string;
+  points: number;
+  streak: number;
+  pct: number | null;
+  checkins: number;
+  missed: number;
+  hit: boolean;
+};
 
 export type ReportRow = {
   user_id: string;
@@ -10,39 +24,79 @@ export type ReportRow = {
   rank: number;
   delta: number | null; // rank change vs ~a month ago (+ = moved up)
   goalStatus: GoalStatus;
-  owes: number; // placement penalty (M)
+  owes: number; // placement stake, whole units of the forum's currency
+  points: number | null; // goal-scored seasons: total points
+  goal: GoalResult | null; // goal-scored seasons: the goal's results
 };
 
 export type Report = {
   standings: ReportRow[];
   topMover: ReportRow | null;
   topFaller: ReportRow | null;
+  rules: ContestRules;
+  tracks: { goals: boolean; whoop: boolean };
 };
 
+type ReportSeason = Pick<ContestSeason, "id" | "starts_on" | "ends_on"> & Parameters<typeof rulesOf>[0];
+
+const empty = (rules = rulesOf(null)): Report => ({ standings: [], topMover: null, topFaller: null, rules, tracks: { goals: false, whoop: false } });
+
 /**
- * The report for one season's board, with penalties from that season's ladder.
- * Without a season: the season running today.
+ * The report for one season's board, with stakes from that season's rules.
+ * Without a season: the season running today. A season scored on goals ranks
+ * on points (goal check-ins, plus WHOOP when it scores both) and carries each
+ * member's goal results; a WHOOP race ranks on the average score as before.
  */
-export async function buildReport(
-  supabase: SupabaseClient<Database>,
-  seasonArg?: Pick<ContestSeason, "id" | "ladder">
-): Promise<Report> {
+export async function buildReport(supabase: SupabaseClient<Database>, seasonArg?: ReportSeason): Promise<Report> {
+  const forum = await getForumSettings();
+  const today = todayIn(forum.timeZone);
   let season = seasonArg;
   if (!season) {
-    const { data } = await supabase.from("seasons").select("id, starts_on, ladder");
-    const today = seasonForDay(data ?? []);
-    if (!today) return { standings: [], topMover: null, topFaller: null };
-    season = today;
+    const { data } = await supabase.from("seasons").select(`id, starts_on, ends_on, ${SEASON_RULE_COLUMNS}`);
+    const now = seasonForDay((data ?? []) as ReportSeason[], today);
+    if (!now) return empty();
+    season = now;
   }
+  const rules = rulesOf(season);
+  const tracks = contestTracks(rules, forum.whoopEnabled);
+
+  // public goal statuses, this season's goals
+  const { data: goals } = await supabase.from("goals").select("user_id, current_status").eq("season_id", season.id);
+  const statusByUser = new Map<string, GoalStatus>();
+  for (const g of (goals ?? []) as { user_id: string; current_status: GoalStatus }[]) statusByUser.set(g.user_id, g.current_status);
+
+  if (tracks.goals) {
+    const board = await getContestBoard(supabase, season, { whoopEnabled: forum.whoopEnabled, today });
+    const standings: ReportRow[] = board.rows.map((r) => ({
+      user_id: r.user_id,
+      name: r.full_name,
+      avg: r.whoopAvg ?? 0,
+      rank: r.rank,
+      delta: null,
+      goalStatus: r.goal?.status ?? statusByUser.get(r.user_id) ?? "on_track",
+      owes: r.stake,
+      points: r.points,
+      goal:
+        r.goal && r.score
+          ? {
+              title: r.goal.title,
+              points: r.goalPoints,
+              streak: r.score.bestStreak,
+              pct: r.score.pct,
+              checkins: r.score.checkins,
+              missed: r.score.missed.length,
+              hit: r.score.hitGoal,
+            }
+          : null,
+    }));
+    return { standings, topMover: null, topFaller: null, rules, tracks };
+  }
+
   // movement: compare against the oldest snapshot in the last ~35 days
   const since = new Date();
   since.setDate(since.getDate() - 35);
-
-  // independent reads — run them together
-  const [standings, { data: goals }, { data: snaps }] = await Promise.all([
+  const [standings, { data: snaps }] = await Promise.all([
     getStandings(supabase, season.id),
-    // public goal statuses, this season's goals
-    supabase.from("goals").select("user_id, current_status").eq("season_id", season.id),
     supabase
       .from("standings_snapshots")
       .select("day, data")
@@ -50,11 +104,6 @@ export async function buildReport(
       .order("day", { ascending: true })
       .limit(1),
   ]);
-
-  const statusByUser = new Map<string, GoalStatus>();
-  for (const g of (goals ?? []) as { user_id: string; current_status: GoalStatus }[]) {
-    statusByUser.set(g.user_id, g.current_status);
-  }
 
   const prevRank = new Map<string, number>();
   const first = (snaps ?? [])[0] as { data: unknown } | undefined;
@@ -72,6 +121,8 @@ export async function buildReport(
       delta: prev != null ? prev - rank : null,
       goalStatus: statusByUser.get(s.user_id) ?? "on_track",
       owes: seasonPenalty(season, i),
+      points: null,
+      goal: null,
     };
   });
 
@@ -83,5 +134,5 @@ export async function buildReport(
     ? withDelta.reduce((a, b) => (b.delta < a.delta ? b : a))
     : null;
 
-  return { standings: rows, topMover, topFaller };
+  return { standings: rows, topMover, topFaller, rules, tracks };
 }

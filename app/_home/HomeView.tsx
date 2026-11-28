@@ -13,7 +13,9 @@ import { listGallery } from "@/app/_data/gallery";
 import { getKitty, moneyLabel } from "@/app/_data/kitty";
 import { getConstitution } from "@/app/_data/constitution";
 import { getStandings } from "@/lib/standings";
-import { dayOfSeason, hasContest, seasonLength } from "@/lib/contest";
+import { contestName, dayOfSeason, hasContest, seasonLength } from "@/lib/contest";
+import { contestTracks, rulesOf } from "@/lib/goal-points";
+import { getContestBoard } from "@/lib/goal-standings";
 import type { GoalStatus } from "@/lib/database.types";
 import { MarkVisit } from "./MarkVisit";
 import s from "./home.module.css";
@@ -101,12 +103,36 @@ export async function HomeView() {
       .map((d) => ({ key: d.slug, href: `/forum/resources/${d.slug}`, text: `Updated: ${d.title}`, when: d.updated_at })),
   ].sort((a, b) => b.when.localeCompare(a.when));
 
-  // contest card only while a season with a contest is running (or just finished)
-  // (the race scores WHOOP data, so none while the forum has WHOOP switched off)
-  const season = forum.whoopEnabled ? seasons.find((x) => x.starts_on <= today && today <= addDays(x.ends_on, 9) && hasContest(x)) ?? null : null;
+  // contest card only while a season with a contest is running (or just finished):
+  // a goal-scored contest (check-ins), or the WHOOP race while the forum has WHOOP on
+  const season =
+    seasons.find((x) => {
+      const t = contestTracks(rulesOf(x), forum.whoopEnabled);
+      return x.starts_on <= today && today <= addDays(x.ends_on, 9) && hasContest(x) && (t.goals || t.whoop);
+    }) ?? null;
+  const goalContest = season != null && contestTracks(rulesOf(season), forum.whoopEnabled).goals;
   let place: { rank: number; of: number; avg: number; stale: boolean } | null = null;
   let goal: { status: GoalStatus; pct: number | null } | null = null;
-  if (season) {
+  // goal-scored: place, points and the next check-in
+  let board: { rank: number; of: number; points: number; streak: number; due: string | null; done: boolean; hasGoal: boolean } | null = null;
+  if (season && goalContest) {
+    try {
+      const b = await getContestBoard(db, season, { whoopEnabled: forum.whoopEnabled, today });
+      const me = b.rows.find((r) => r.user_id === user.id);
+      board = {
+        rank: me?.rank ?? 0,
+        of: b.rows.length,
+        points: me?.points ?? 0,
+        streak: me?.score?.streak ?? 0,
+        due: me?.score?.nextDue ?? null,
+        done: me?.score?.checkedInNow ?? false,
+        hasGoal: !!me?.goal,
+      };
+      if (me?.goal) goal = { status: me.goal.status, pct: me.score?.pct ?? null };
+    } catch {
+      board = null;
+    }
+  } else if (season) {
     try {
       const [standings, { data: g }] = await Promise.all([
         getStandings(db),
@@ -211,7 +237,27 @@ export async function HomeView() {
             </Link>
           )}
 
-          {season ? (
+          {season && goalContest ? (
+            <Link href="/contest" className={s.race}>
+              <span className={s.place}>
+                {board?.rank ? (
+                  <>
+                    {board.rank}
+                    <sup>{ordinal(board.rank).slice(String(board.rank).length)}</sup>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </span>
+              <span className={s.raceText}>
+                <span className={s.label}>{contestName(season)} · {season.name}</span>
+                <b>{board?.rank ? `of ${board.of} · ${board.points} pts${board.streak > 1 ? ` · ${board.streak} in a row` : ""}` : "Not on the board yet"}</b>
+                <span className="note-line">
+                  {today <= season.ends_on ? `Day ${dayOfSeason(season)} of ${seasonLength(season)}` : "Season over · the kitty settles"}
+                </span>
+              </span>
+            </Link>
+          ) : season ? (
             <Link href="/contest" className={s.race}>
               <span className={s.place}>
                 {place ? (
@@ -224,7 +270,7 @@ export async function HomeView() {
                 )}
               </span>
               <span className={s.raceText}>
-                <span className={s.label}>Race into the Shadow · {season.name}</span>
+                <span className={s.label}>{contestName(season)} · {season.name}</span>
                 <b>{place ? `of ${place.of} riders · avg ${place.avg}` : "Not on the board yet"}</b>
                 <span className="note-line">
                   {today <= season.ends_on ? `Day ${dayOfSeason(season)} of ${seasonLength(season)}` : "Season over · the kitty settles on 31 Dec"}
@@ -246,6 +292,22 @@ export async function HomeView() {
                 <b>{goal.pct != null ? `${goal.pct}%` : "In progress"}</b>
               </span>
               <span className={`${s.status} ${s[goal.status]}`}>{STATUS_LABEL[goal.status]}</span>
+            </Link>
+          )}
+
+          {season && goalContest && today >= season.starts_on && today <= season.ends_on && (
+            <Link href={board?.hasGoal ? "/contest/checkin" : "/welcome"} className={s.line}>
+              <span>
+                <span className={s.label}>{board?.hasGoal ? "Check in" : "Your contest goal"}</span>
+                <b>
+                  {!board?.hasGoal
+                    ? "Set your goal to get on the board"
+                    : board.done
+                      ? `Done${board.due ? ` · next by ${weekdayDay(board.due)}` : ""}`
+                      : `Due ${board.due ? weekdayDay(board.due) : "now"}`}
+                </b>
+              </span>
+              <span className={`${s.status} ${board?.done ? s.on_track : s.at_risk}`}>{board?.done ? "Update" : board?.hasGoal ? "Check in" : "Set now"} →</span>
             </Link>
           )}
 

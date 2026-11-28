@@ -18,6 +18,7 @@ export type MeetingKind = "forum" | "away" | "retreat" | "kickoff" | "social";
 export type MeetingStatus = "planned" | "held";
 export type LibraryAudience = "all" | "founding";
 export type PushPlatform = "ios" | "android";
+export type ContestScoring = "goals" | "whoop" | "both";
 
 type G = Generated["public"];
 type T = G["Tables"];
@@ -31,6 +32,7 @@ type Tables = Patch<
   T,
   {
     goals: RowPatch<"goals", { current_status: GoalStatus }>;
+    seasons: RowPatch<"seasons", { scoring: ContestScoring | null }>;
     goal_progress: RowPatch<"goal_progress", { status: GoalStatus }>;
     uploads: RowPatch<"uploads", { status: UploadStatus }>;
     penalties: RowPatch<"penalties", { kind: PenaltyKind }>;
@@ -77,6 +79,26 @@ type Views = Patch<
           last_day: string | null;
           last_data_day: string | null;
           season_id: string;
+        };
+      }
+    >;
+    season_goal_board: Patch<
+      V["season_goal_board"],
+      {
+        Row: {
+          season_id: string;
+          goal_id: string;
+          user_id: string;
+          full_name: string;
+          title: string;
+          unit: string | null;
+          target_value: number | null;
+          current_value: number;
+          current_status: GoalStatus;
+          goal_set_at: string;
+          forum_joined_on: string | null;
+          forum_left_on: string | null;
+          checkins: { on: string; value: number }[];
         };
       }
     >;

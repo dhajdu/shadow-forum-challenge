@@ -1,5 +1,7 @@
 import { getForumContext } from "@/app/_data/context";
-import { contestSeasonId } from "@/app/_data/season";
+import { contestSeason as seasonForToday } from "@/app/_data/season";
+import { moneyShort } from "@/app/_data/kitty";
+import { rulesOf } from "@/lib/goal-points";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/OnboardingForm";
@@ -11,7 +13,12 @@ export default async function Welcome() {
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
   const { viewer, forum } = await getForumContext();
-  const contestSeason = await contestSeasonId(supabase, viewer);
+  const season = await seasonForToday(supabase, viewer);
+  const contestSeason = season?.id ?? null;
+  const rules = rulesOf(season);
+  const stake = [rules.missedGoalFine && `${moneyShort(rules.missedGoalFine, forum.currency)} you`, rules.coachShareFine && `${moneyShort(rules.coachShareFine, forum.currency)} coach`]
+    .filter(Boolean)
+    .join(" + ");
 
   const [{ data: goal }, { data: me }] = await Promise.all([
     supabase.from("goals").select("id").eq("user_id", user.id).eq("season_id", contestSeason ?? "").maybeSingle(),
@@ -29,8 +36,8 @@ export default async function Welcome() {
       <section className="panel onboard">
         <div className="eyebrow">First time in</div>
         <h1 className="title">Welcome, Rider</h1>
-        <p className="tagline">Lock in your Q4 goal</p>
-        <OnboardingForm name={name} coach={coachNameFor(name, forum.coaches)} />
+        <p className="tagline">Lock in your {season?.name ?? ""} goal</p>
+        <OnboardingForm name={name} coach={coachNameFor(name, forum.coaches)} seasonName={season?.name ?? ""} endsOn={season?.ends_on ?? null} stake={stake || null} />
       </section>
     </main>
   );
