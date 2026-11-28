@@ -3,11 +3,10 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getForumContext } from "@/app/_data/context";
-import { parseVnd, type KittyCategory } from "@/app/_data/kitty";
+import { IN_CATEGORIES, OUT_CATEGORIES, parseVnd, type KittyCategory } from "@/app/_data/kitty";
 
 export type KittyState = { error: string | null; ok: boolean };
 
-const CATS: KittyCategory[] = ["dues", "penalty", "spend", "other"];
 const uuid = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "");
   return /^[0-9a-f-]{36}$/i.test(s) ? s : null;
@@ -19,7 +18,8 @@ export async function addEntry(_prev: KittyState, form: FormData): Promise<Kitty
   const direction = form.get("direction") === "out" ? "out" : "in";
   const amount = parseVnd(String(form.get("amount") ?? ""));
   if (!amount) return { error: "Enter an amount, like 2.5M or 2,500,000.", ok: false };
-  const category = CATS.includes(form.get("category") as KittyCategory) ? (form.get("category") as KittyCategory) : "other";
+  const allowed = direction === "in" ? IN_CATEGORIES : OUT_CATEGORIES;
+  const category = allowed.includes(form.get("category") as KittyCategory) ? (form.get("category") as KittyCategory) : "other";
   const entry_on = String(form.get("entry_on") ?? "");
   const note = String(form.get("note") ?? "").trim().slice(0, 500) || null;
   if (direction === "out" && !note) return { error: "Say what the money went on.", ok: false };

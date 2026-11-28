@@ -15,23 +15,37 @@
 .paid span { color: var(--amber); }
 .owed { color: var(--muted); }
 
-.cols { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--sp-48); align-items: start; }
-.ledgerHead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-12); margin-bottom: var(--sp-8); }
-.lines { list-style: none; }
-.line { display: grid; grid-template-columns: var(--sp-48) minmax(0, 1fr) auto auto; gap: var(--sp-12); align-items: center; padding: var(--sp-12) 0;
-  border-bottom: var(--hair) solid var(--line-soft); }
-.when { font-size: var(--fs-xs); font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-.what { min-width: 0; }
-.what b { display: block; font-weight: 600; }
-.what small { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: var(--sp-2); }
-.amt { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-xl); white-space: nowrap; }
+.ledgerHead { display: flex; align-items: baseline; gap: var(--sp-16); flex-wrap: wrap; margin-bottom: var(--sp-12); }
+.ledgerHead :global(.btn) { margin-left: auto; }
+
+/* The ledger as a sheet: gridlines, numbers right-aligned, a running balance, totals at the foot. */
+.sheetWrap { margin-bottom: var(--sp-48); }
+.scroller { overflow-x: auto; border: var(--hair) solid var(--line); }
+.sheet { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.sheet th, .sheet td { padding: var(--sp-8) var(--sp-12); border-bottom: var(--hair) solid var(--line-soft); border-right: var(--hair) solid var(--line-soft);
+  text-align: left; vertical-align: top; white-space: nowrap; }
+.sheet th:last-child, .sheet td:last-child { border-right: 0; }
+.sheet thead th { position: sticky; top: 0; background: var(--bg-2); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-label);
+  text-transform: uppercase; color: var(--muted); }
+.sheet tbody tr:hover { background: rgba(255, 255, 255, .03); }
+.sheet tfoot td { background: var(--bg-2); font-weight: 800; border-bottom: 0; }
+.sheet .num { text-align: right; }
+.date { color: var(--ink-soft); }
+.sheet .desc { white-space: normal; min-width: var(--sheet-desc-w); }
+.sheet .desc small { display: block; color: var(--muted); font-size: var(--fs-2xs); margin-top: var(--sp-2); }
+.cat { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.catIn { color: var(--amber); }
+.catOut { color: var(--blue); }
+.bal { font-weight: 700; color: var(--ink); }
+.bf td { color: var(--muted); font-style: italic; }
 .in { color: var(--amber); }
 .out { color: var(--blue); }
 .void { background: none; border: 0; color: var(--muted); font-size: var(--fs-xs); cursor: pointer; }
 .void:hover { color: var(--red); }
-.voided .what b, .voided .amt { text-decoration: line-through; opacity: .45; }
+.voided td { color: var(--muted); }
+.voided .num, .voided .desc { text-decoration: line-through; }
 
-.add { position: sticky; top: var(--sp-24); margin-bottom: 0; }
+.add { max-width: var(--read-w); margin-bottom: 0; scroll-margin-top: var(--sp-24); }
 .form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-12); margin: var(--sp-12) 0; }
 .form label { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
 .form label > span { font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
@@ -39,6 +53,5 @@
 .amount :global(.field) { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-date); }
 
 @media (max-width: 899px) {
-  .top, .cols { grid-template-columns: minmax(0, 1fr); gap: var(--sp-32); }
-  .add { position: static; }
+  .top { grid-template-columns: minmax(0, 1fr); gap: var(--sp-32); }
 }

@@ -81,6 +81,7 @@
   --avatar-xl: 132px;   /* Profile page photo */
   --chat-bell: 36px;    /* Chat icon button */
   --date-tile: 132px;   /* Forum: coming-date tile min width */
+  --sheet-desc-w: 220px; /* Kitty sheet: description column min width */
   --side-w: 216px;      /* desktop sidebar */
   --tabbar-h: 60px;     /* phone bottom tabs, before the safe area */
   --content-w: 1120px;  /* page container max width */

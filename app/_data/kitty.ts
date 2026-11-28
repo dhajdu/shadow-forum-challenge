@@ -2,7 +2,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Db } from "./types";
 
-export type KittyCategory = "dues" | "penalty" | "spend" | "other";
+export type KittyCategory = "dues" | "penalty" | "retreat" | "forum_away" | "after_forum" | "space_rental" | "other";
 export type KittyEntry = {
   id: string;
   entry_on: string;
@@ -19,7 +19,17 @@ export type KittyEntry = {
 };
 export type Kitty = { balance: number | null; treasurerId: string | null; dues: number; entries: KittyEntry[] };
 
-export const CATEGORY_LABEL: Record<KittyCategory, string> = { dues: "Forum dues", penalty: "Contest penalty", spend: "Spend", other: "Other" };
+export const CATEGORY_LABEL: Record<KittyCategory, string> = {
+  dues: "Forum dues",
+  penalty: "Contest penalty",
+  retreat: "Retreat",
+  forum_away: "Forum Away",
+  after_forum: "After Forum",
+  space_rental: "Space Rental",
+  other: "Other",
+};
+export const IN_CATEGORIES: KittyCategory[] = ["dues", "penalty", "other"];
+export const OUT_CATEGORIES: KittyCategory[] = ["after_forum", "space_rental", "forum_away", "retreat", "other"];
 
 /** "12.5M" / "750k" / "2,500,000" for VND amounts. */
 export function vndShort(n: number): string {
