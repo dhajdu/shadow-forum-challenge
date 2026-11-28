@@ -29,7 +29,7 @@ export const DEFAULT_FORUM_SETTINGS: ForumSettings = {
   currency: "USD",
   duesPerForum: 0,
   timeZone: "UTC",
-  siteUrl: "",
+  siteUrl: "http://localhost:3000", // must be a valid URL: metadata and calendar links parse it
   whoopEnabled: true,
   coaches: {},
 };
