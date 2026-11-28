@@ -3,7 +3,7 @@ import { PageBanner } from "@/components/PageBanner";
 
 const TABS = [
   { href: "/forum", label: "Agenda" },
-  { href: "/forum/parking", label: "Parking Lot" },
+  { href: "/forum/topics", label: "Topics" },
   { href: "/forum/resources", label: "Resources" },
 ];
 
