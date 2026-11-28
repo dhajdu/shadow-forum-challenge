@@ -230,6 +230,10 @@ form { display: grid; gap: 12px; }
 }
 
 .msg { font-size: var(--fs-md); margin-top: 4px; min-height: 16px; }
+
+/* Public demo site only (NEXT_PUBLIC_DEMO_LOGIN) */
+.demo-entry { margin-bottom: 22px; }
+.demo-note { margin-top: 8px; font-size: var(--fs-xs); color: var(--muted); line-height: 1.5; }
 .msg.err { color: #ff6b6b; }
 .msg.ok { color: var(--green); }
 

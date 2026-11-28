@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { PATH_HEADER, USER_ID_HEADER, USER_EMAIL_HEADER } from "@/lib/supabase/session";
+import { DEMO_READ_ONLY, demoLogin, demoMayRequest, isDemoEmail } from "@/lib/demo";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -36,6 +37,17 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  // A public demo (NEXT_PUBLIC_DEMO_LOGIN set) is read-only for its shared
+  // account: no form, server action or API call may change anything. The phone
+  // and AI connector send a bearer token instead of the cookie, so check that too.
+  if (demoLogin() && !demoMayRequest(request.method, path)) {
+    let email = user?.email ?? null;
+    const bearer = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!email && bearer) email = (await supabase.auth.getUser(bearer)).data.user?.email ?? null;
+    if (isDemoEmail(email)) return NextResponse.json({ error: DEMO_READ_ONLY }, { status: 403 });
+  }
+
   const isProtected = PROTECTED.some((p) => path === p || path.startsWith(p + "/"));
 
   if (!user && isProtected) {
