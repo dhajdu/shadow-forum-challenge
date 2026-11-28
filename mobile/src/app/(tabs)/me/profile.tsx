@@ -4,12 +4,14 @@ import { View } from "react-native";
 import { Avatar } from "@/components/Avatar";
 import { Banner, Body, Button, Card, Field, Loading, Row, Screen } from "@/components/ui";
 import * as data from "@/data";
+import { useAuth } from "@/lib/auth";
 import { long } from "@/lib/format";
 import { useLoad } from "@/lib/useLoad";
 import { color } from "@/theme/tokens";
 
 // /me/profile — Account: photo, name and password. Name and photo are the only profile fields a
-// member can change; the first-forum date is shown, never editable.
+// member can change; the first-forum date is shown, never editable. Blocked members can be
+// unblocked here, and the account deleted (App Store guideline 5.1.1(v)).
 export default function Profile() {
   const { data: p, error, loading, reload } = useLoad(() => data.myProfile());
   const { data: email } = useLoad(() => data.myEmail());
@@ -18,6 +20,23 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const { data: blocked, reload: reloadBlocked } = useLoad(() => data.blockedMembers());
+  const { signOut } = useAuth();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
+
+  async function deleteAccount() {
+    setDeleting(true);
+    setDeleteErr(null);
+    try {
+      await data.deleteAccount();
+      await signOut("Your account and data were deleted.");
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : String(e));
+      setDeleting(false);
+    }
+  }
   useEffect(() => {
     if (p) setName(p.full_name);
   }, [p]);
@@ -76,6 +95,27 @@ export default function Profile() {
           <Body muted>
             {p.forum_joined_on ? `In the forum since ${long(p.forum_joined_on)}.` : "Your first forum date isn't set yet."} Only an admin can change this.
           </Body>
+          {blocked?.length ? (
+            <Card title="Blocked members">
+              {blocked.map((b) => (
+                <Row key={b.id} title={b.full_name} right="Unblock" onPress={() => run(() => data.unblockMember(b.id).then(() => reloadBlocked()), "Unblocked.")} />
+              ))}
+            </Card>
+          ) : null}
+          <Card title="Delete account">
+            {confirmDelete ? (
+              <>
+                <Body muted>
+                  This deletes your account, your WHOOP data, chat messages, photos, goals and Ask AI conversations now. It can't be undone. The kitty ledger keeps its amounts without your name.
+                </Body>
+                {deleteErr ? <Banner tone={color.red}>{deleteErr}</Banner> : null}
+                <Button danger label="Delete my account and data" onPress={deleteAccount} busy={deleting} />
+                <Button ghost label="Keep my account" onPress={() => setConfirmDelete(false)} disabled={deleting} />
+              </>
+            ) : (
+              <Button danger label="Delete my account" onPress={() => setConfirmDelete(true)} />
+            )}
+          </Card>
         </>
       ) : null}
     </Screen>

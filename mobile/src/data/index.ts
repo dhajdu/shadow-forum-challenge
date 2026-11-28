@@ -413,7 +413,7 @@ type ChatRow = Omit<ForumMessage, "author" | "photo"> & {
  * photo thumbnails. Same window as the website (app/_data/chat.ts).
  */
 export async function chatMessages(): Promise<ForumMessage[]> {
-  if (isDemo) return wait([...fx().forumChat]);
+  if (isDemo) return wait(fx().forumChat.filter((m) => !demoBlocked.has(m.author_id)));
   const r = await supabase
     .from("forum_messages")
     .select(CHAT_COLS)
@@ -436,7 +436,8 @@ export async function chatMessages(): Promise<ForumMessage[]> {
           .limit(1000),
       ) as unknown as ChatRow[])
     : [];
-  const rows = [...top, ...replies].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const blocked = await blockedIds();
+  const rows = [...top, ...replies].filter((m) => !blocked.has(m.author_id)).sort((a, b) => a.created_at.localeCompare(b.created_at));
   const paths = rows.flatMap((m) => (m.photo?.thumb_path ? [m.photo.thumb_path] : []));
   const signed = paths.length ? (await supabase.storage.from("gallery").createSignedUrls(paths, 3600)).data : null;
   const url = new Map((signed ?? []).map((x) => [x.path, x.signedUrl]));
@@ -488,6 +489,50 @@ export async function deleteMessage(id: string): Promise<void> {
   must(await supabase.from("forum_messages").update({ deleted_at: new Date().toISOString() }).eq("id", id).select("id").single());
 }
 
+// ── Report, block, delete account ────────────────────────
+// Reports go through the website (it keeps a copy and tells the admins). Blocks are the member's
+// own rows (member_blocks, RLS: owner only); the app hides blocked members' messages.
+
+export async function reportMessage(id: string, block: boolean): Promise<void> {
+  if (isDemo) return wait(undefined);
+  await api("POST", "/api/forum/report", { message_id: id, block });
+}
+
+/** Ids of the members this member has blocked. Empty before migration 0038. */
+export async function blockedIds(): Promise<Set<string>> {
+  if (isDemo) return new Set(demoBlocked);
+  const r = await supabase.from("member_blocks").select("blocked_id");
+  if (r.error) return new Set(); // never hide the chat behind an error
+  return new Set(r.data.map((b) => b.blocked_id));
+}
+
+const demoBlocked = new Set<string>();
+
+export async function blockMember(id: string): Promise<void> {
+  if (isDemo) return void demoBlocked.add(id);
+  const { error } = await supabase.from("member_blocks").insert({ blocked_id: id });
+  if (error && error.code !== "23505") throw new Error(error.message); // already blocked is fine
+}
+
+export async function unblockMember(id: string): Promise<void> {
+  if (isDemo) return void demoBlocked.delete(id);
+  must(await supabase.from("member_blocks").delete().eq("blocked_id", id).select("blocked_id"));
+}
+
+/** Members this member has blocked, with names, for Account. */
+export async function blockedMembers(): Promise<{ id: string; full_name: string }[]> {
+  const ids = [...(await blockedIds())];
+  if (isDemo) return fx().forumChat.filter((m) => ids.includes(m.author_id)).map((m) => ({ id: m.author_id, full_name: m.author ?? "Member" })).filter((m, i, a) => a.findIndex((x) => x.id === m.id) === i);
+  if (!ids.length) return [];
+  return must(await supabase.from("profiles").select("id, full_name").in("id", ids));
+}
+
+/** Deletes the member's account and data on the server. The caller signs out afterwards. */
+export async function deleteAccount(): Promise<void> {
+  if (isDemo) return wait(undefined);
+  await api("DELETE", "/api/account", { confirm: "DELETE" });
+}
+
 let chatChannels = 0;
 
 /** New, edited and deleted messages, streamed under RLS on the member's session. Returns unsubscribe. */
@@ -523,6 +568,8 @@ export async function unreadChat(): Promise<number> {
   if (mark.error) return 0; // a badge is never worth an error banner
   let q = supabase.from("forum_messages").select("id", { count: "exact", head: true }).neq("author_id", me).is("deleted_at", null);
   if (mark.data?.last_read_at) q = q.gt("created_at", mark.data.last_read_at);
+  const blocked = [...(await blockedIds())];
+  if (blocked.length) q = q.not("author_id", "in", `(${blocked.join(",")})`);
   const { count, error } = await q;
   return error ? 0 : (count ?? 0);
 }

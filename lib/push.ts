@@ -17,7 +17,8 @@ export type PushMessage =
   | { kind: "new_agenda"; heldOn: string }
   | { kind: "whip_nudge" }
   | { kind: "report_ready"; month: string } // month YYYY-MM
-  | { kind: "forum_message"; sentOn: string }; // sentOn YYYY-MM-DD, the message's day
+  | { kind: "forum_message"; sentOn: string } // sentOn YYYY-MM-DD, the message's day
+  | { kind: "chat_report" }; // to admins: a member reported a chat message
 
 type Forum = Pick<ForumSettings, "name" | "timeZone">;
 
@@ -38,6 +39,8 @@ export function render(m: PushMessage, forum: Forum): { title: string; body: str
       return { title: forum.name, body: "A new agenda is in Forum", data: { path: `/forum/${m.heldOn}` } };
     case "forum_message":
       return { title: forum.name, body: "New message in the forum chat", data: { path: "/forum/chat" } };
+    case "chat_report":
+      return { title: forum.name, body: "A chat message was reported", data: { path: "/forum/chat" } };
     case "whip_nudge":
       return { title: "The Whip", body: "Time to sync your WHOOP", data: { path: "/biometrics" } };
     case "report_ready":

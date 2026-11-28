@@ -39,6 +39,44 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"chat_reports": {
+                  Row: {
+                    "author_id": string | null,"body": string,"created_at": string,"id": string,"message_id": string | null,"reason": string | null,"reporter_id": string | null,"resolved_at": string | null,"resolved_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id"?: string | null,"body"?: string,"created_at"?: string,"id"?: string,"message_id"?: string | null,"reason"?: string | null,"reporter_id"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null
+                  }
+                  Update: {
+                    "author_id"?: string | null,"body"?: string,"created_at"?: string,"id"?: string,"message_id"?: string | null,"reason"?: string | null,"reporter_id"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chat_reports_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chat_reports_message_id_fkey"
+      columns: ["message_id"]
+isOneToOne: false
+      referencedRelation: "forum_messages"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chat_reports_reporter_id_fkey"
+      columns: ["reporter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chat_reports_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"coaching_notes": {
                   Row: {
                     "author_id": string,"body": string,"created_at": string,"goal_id": string,"id": string,"session_month": string | null
@@ -415,14 +453,14 @@ isOneToOne: false
                   ]
                 },"kitty_entries": {
                   Row: {
-                    "amount_vnd": number,"category": string,"created_at": string,"created_by": string,"direction": string,"entry_on": string,"id": string,"meeting_id": string | null,"member_id": string | null,"note": string | null,"voided_at": string | null,"voided_by": string | null
+                    "amount_vnd": number,"category": string,"created_at": string,"created_by": string | null,"direction": string,"entry_on": string,"id": string,"meeting_id": string | null,"member_id": string | null,"note": string | null,"voided_at": string | null,"voided_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_vnd": number,"category"?: string,"created_at"?: string,"created_by"?: string,"direction": string,"entry_on"?: string,"id"?: string,"meeting_id"?: string | null,"member_id"?: string | null,"note"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                    "amount_vnd": number,"category"?: string,"created_at"?: string,"created_by"?: string | null,"direction": string,"entry_on"?: string,"id"?: string,"meeting_id"?: string | null,"member_id"?: string | null,"note"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
                   }
                   Update: {
-                    "amount_vnd"?: number,"category"?: string,"created_at"?: string,"created_by"?: string,"direction"?: string,"entry_on"?: string,"id"?: string,"meeting_id"?: string | null,"member_id"?: string | null,"note"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                    "amount_vnd"?: number,"category"?: string,"created_at"?: string,"created_by"?: string | null,"direction"?: string,"entry_on"?: string,"id"?: string,"meeting_id"?: string | null,"member_id"?: string | null,"note"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -735,6 +773,32 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
+    }
+                  ]
+                },"member_blocks": {
+                  Row: {
+                    "blocked_id": string,"blocker_id": string,"created_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "blocked_id": string,"blocker_id"?: string,"created_at"?: string
+                  }
+                  Update: {
+                    "blocked_id"?: string,"blocker_id"?: string,"created_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "member_blocks_blocked_id_fkey"
+      columns: ["blocked_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "member_blocks_blocker_id_fkey"
+      columns: ["blocker_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
     }
                   ]
                 },"penalties": {

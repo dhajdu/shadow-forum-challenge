@@ -1,7 +1,8 @@
 // The forum chat's message list and composer, shared by the main chat (top-level messages) and a
-// thread (its first message, then the replies). Tap a message for Reply, Edit or Delete.
+// thread (its first message, then the replies). Tap a message for Reply, Edit or Delete; press and
+// hold someone else's message to Report it or Block its author (App Store guideline 1.2).
 import { useRef, useState } from "react";
-import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Banner, Button, Empty, Field } from "@/components/ui";
 import * as data from "@/data";
 import type { ForumMessage } from "@/data";
@@ -70,6 +71,50 @@ export function ChatRoom({
     run(() => (editing ? data.editMessage(editing.id, body) : data.postMessage(body, thread ?? null)));
   };
 
+  const canReport = (m: ForumMessage) => !m.deleted_at && m.author_id !== me.id;
+
+  async function report(m: ForumMessage, block: boolean) {
+    try {
+      await data.reportMessage(m.id, block);
+      Alert.alert("Reported", `The forum's admins will review it within 24 hours.${block ? " You won't see this member's messages any more." : ""}`);
+      if (block) await reload();
+    } catch (e) {
+      Alert.alert("Couldn't report it", e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function block(m: ForumMessage) {
+    try {
+      await data.blockMember(m.author_id);
+      setSelected(null);
+      await reload();
+    } catch (e) {
+      Alert.alert("Couldn't block", e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  const confirmReport = (m: ForumMessage) =>
+    Alert.alert("Report this message?", "The forum's admins get the message and your name, and review it within 24 hours.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Report and block", style: "destructive", onPress: () => report(m, true) },
+      { text: "Report", onPress: () => report(m, false) },
+    ]);
+
+  const confirmBlock = (m: ForumMessage) =>
+    Alert.alert(`Block ${m.author ?? "this member"}?`, "You won't see their messages. Unblock them in Me > Account and password.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Block", style: "destructive", onPress: () => block(m) },
+    ]);
+
+  const moderate = (m: ForumMessage) => {
+    if (!canReport(m)) return;
+    Alert.alert(m.author ?? "Member", undefined, [
+      { text: "Report message", style: "destructive", onPress: () => confirmReport(m) },
+      { text: `Block ${m.author ?? "member"}`, style: "destructive", onPress: () => confirmBlock(m) },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const select = (m: ForumMessage) => {
     setConfirmDelete(false);
     setSelected(selected === m.id || m.deleted_at ? null : m.id);
@@ -98,8 +143,11 @@ export function ChatRoom({
               {newDay ? <Text style={st.day}>{short(m.created_at.slice(0, 10))}</Text> : null}
               <Pressable
                 onPress={() => select(m)}
+                onLongPress={() => moderate(m)}
                 accessibilityRole="button"
-                accessibilityHint={threadable ? "Shows reply, edit and delete" : "Shows edit and delete"}
+                accessibilityHint={threadable ? "Shows reply, edit and delete. Press and hold to report" : "Shows edit and delete. Press and hold to report"}
+                accessibilityActions={canReport(m) ? [{ name: "longpress", label: "Report or block" }] : undefined}
+                onAccessibilityAction={(e) => e.nativeEvent.actionName === "longpress" && moderate(m)}
                 style={[st.bubble, mine ? st.mine : st.theirs, open && { borderColor: color.blueEdge }]}
               >
                 {!mine ? <Text style={st.author}>{m.author ?? "Member"}</Text> : null}
@@ -151,6 +199,8 @@ export function ChatRoom({
                       }}
                     />
                   ) : null}
+                  {canReport(m) ? <Act label="Report" tone={color.red} onPress={() => confirmReport(m)} /> : null}
+                  {canReport(m) ? <Act label="Block" tone={color.red} onPress={() => confirmBlock(m)} /> : null}
                   {canDelete(m) ? (
                     confirmDelete ? (
                       <Act label="Delete for everyone? Can't be undone" tone={color.red} onPress={() => run(() => data.deleteMessage(m.id))} />
