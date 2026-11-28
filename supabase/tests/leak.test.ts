@@ -854,11 +854,12 @@ describe("push", () => {
 
   it("every template's text is free of private content", async () => {
     const { render } = await import("@/lib/push");
+    const forum = { ...DEFAULT_FORUM_SETTINGS, timeZone: "Asia/Bangkok" }; // UTC+7, so 11:00Z reads as 6 pm
     const texts = [
-      render({ kind: "next_forum", heldOn: "2026-12-23", startsAt: "2026-12-23T11:00:00Z" }, DEFAULT_FORUM_SETTINGS),
-      render({ kind: "new_agenda", heldOn: "2026-12-23" }, DEFAULT_FORUM_SETTINGS),
-      render({ kind: "whip_nudge" }, DEFAULT_FORUM_SETTINGS),
-      render({ kind: "report_ready", month: "2026-12" }, DEFAULT_FORUM_SETTINGS),
+      render({ kind: "next_forum", heldOn: "2026-12-23", startsAt: "2026-12-23T11:00:00Z" }, forum),
+      render({ kind: "new_agenda", heldOn: "2026-12-23" }, forum),
+      render({ kind: "whip_nudge" }, forum),
+      render({ kind: "report_ready", month: "2026-12" }, forum),
     ];
     assert.equal(texts[0].body, "Next forum: Wed 23 Dec, 6 pm");
     assert.equal(texts[0].data.path, "/forum/2026-12-23");
