@@ -6,12 +6,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type Organisation = "EO" | "YPO" | "other";
 
 export type ForumSettings = {
-  name: string; // "The Shadow Forum"
-  shortName: string; // "Shadow Forum"
+  name: string; // e.g. "The Night Owls Forum"
+  shortName: string; // e.g. "Night Owls"
   organisation: Organisation;
   currency: string; // ISO 4217, e.g. "VND"
   duesPerForum: number; // per member per forum, in whole units of currency
-  timeZone: string; // IANA, e.g. "Asia/Ho_Chi_Minh"
+  timeZone: string; // IANA, e.g. "Asia/Singapore"
   siteUrl: string; // no trailing slash
   whoopEnabled: boolean;
   /** Rider (normalised full name) → coach's full name. */
@@ -21,15 +21,15 @@ export type ForumSettings = {
 /** What the browser may see (everything but the coach roster). */
 export type PublicForumSettings = Omit<ForumSettings, "coaches">;
 
-/** Used only when the row cannot be read (no keys at build time, database down). Matches the 0033 seed. */
+/** Used only when the row cannot be read (no keys at build time, database down). Neutral on purpose: each forum's own values live in its forum_settings row. */
 export const DEFAULT_FORUM_SETTINGS: ForumSettings = {
-  name: "The Shadow Forum",
-  shortName: "Shadow Forum",
+  name: "Our Forum",
+  shortName: "Forum",
   organisation: "EO",
-  currency: "VND",
-  duesPerForum: 2_500_000,
-  timeZone: "Asia/Ho_Chi_Minh",
-  siteUrl: "https://eoshadowforum.com",
+  currency: "USD",
+  duesPerForum: 0,
+  timeZone: "UTC",
+  siteUrl: "",
   whoopEnabled: true,
   coaches: {},
 };
@@ -40,7 +40,7 @@ export function publicSettings(s: ForumSettings): PublicForumSettings {
   return rest;
 }
 
-/** "Shadow Forum" → "shadow-forum": the MCP server name and file names. */
+/** "Night Owls Forum" → "night-owls-forum": the MCP server name and file names. */
 export const forumSlug = (s: Pick<ForumSettings, "shortName">) =>
   s.shortName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "forum";
 

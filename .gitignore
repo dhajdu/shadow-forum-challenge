@@ -9,7 +9,7 @@ out/
 .env*.local
 .env.production
 
-# private data — Dave's real WHOOP/journal exports, kept locally as test fixtures only
+# private data — real WHOOP/journal exports, kept locally as test fixtures only
 whoop-analysis/
 
 # os / editor
