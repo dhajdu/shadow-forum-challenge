@@ -60,7 +60,7 @@ export default function Home() {
       contentContainerStyle={{ paddingBottom: 110 }}
       refreshControl={<RefreshControl refreshing={pulling} tintColor={color.ink} onRefresh={async () => { setPulling(true); await reload(); setPulling(false); }} />}
     >
-      <PageBanner image="hero" height={heroH + insets.top} position="50% 30%">
+      <PageBanner image="hero" height={heroH + insets.top} position="50% 60%">
         <Small tone={color.inkSoft}>{`${greeting()}, ${first}`}</Small>
         <Eyebrow tone={color.inkSoft}>{firstForum ? "Your first forum" : "Next forum"}</Eyebrow>
         {next ? (
