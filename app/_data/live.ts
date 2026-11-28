@@ -26,6 +26,7 @@ import {
 import { agendaTheme } from "./recap";
 import { todayIn } from "./format";
 import { getForumSettings } from "@/lib/forum-settings";
+import { SEASON_RULE_COLUMNS } from "@/lib/goal-points";
 
 const VIEWER_COLS = "id, full_name, forum_joined_on, forum_left_on, is_admin, is_founding";
 const MEETING_COLS = "id, held_on, starts_at, place, title, kind, status, updated_at, meeting_docs(id, body_md, source_updated_at)";
@@ -155,7 +156,7 @@ export async function getLibraryDoc(db: Db, _v: Viewer, slug: string): Promise<L
 }
 
 export async function listSeasons(db: Db, _v: Viewer): Promise<Season[]> {
-  const { data, error } = await db.from("seasons").select("id, slug, name, starts_on, ends_on, ladder").order("starts_on", { ascending: false });
+  const { data, error } = await db.from("seasons").select(`id, slug, name, starts_on, ends_on, ${SEASON_RULE_COLUMNS}`).order("starts_on", { ascending: false });
   fail("seasons", error);
   return (data ?? []) as Season[];
 }
@@ -199,7 +200,7 @@ export async function listAllSeasons(db: Db, v: Viewer): Promise<Season[]> {
   return v.is_admin ? listSeasons(db, v) : [];
 }
 
-/** Insert under the "seasons admin insert" policy. The ladder stays as in lib/contest until it is editable. */
+/** Insert under the "seasons admin insert" policy. Rules are edited on /me/seasons (updateSeasonRules). */
 export async function createSeason(db: Db, _v: Viewer, s: NewSeason): Promise<AdminResult> {
   const { error } = await db.from("seasons").insert({ ...s });
   return error ? { ok: false, error: error.message } : { ok: true };

@@ -1,10 +1,13 @@
 import { getForumContext } from "@/app/_data/context";
-import { contestSeasonId } from "@/app/_data/season";
+import { listSeasons } from "@/app/_data/forum";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStandings } from "@/lib/standings";
 import { RaceBoard, type RaceRow } from "@/components/RaceBoard";
-import { dayOfContest, CONTEST_DAYS, PLACEMENT_PENALTIES } from "@/lib/contest";
+import { contestName, dayOfSeason, seasonForDay, seasonLadder, seasonLength } from "@/lib/contest";
+import { contestTracks, rulesOf } from "@/lib/goal-points";
+import { moneyShort } from "@/app/_data/kitty";
+import { GoalBoard } from "./GoalBoard";
 import styles from "./race.module.css";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +24,14 @@ export default async function RacePage() {
   if (!user) redirect("/");
   const { viewer, forum } = await getForumContext();
   const coaches = forum.coaches;
-  const contestSeason = await contestSeasonId(supabase, viewer);
+  // today's season (the layout shows a card instead when it has no contest)
+  const season = seasonForDay(await listSeasons(supabase, viewer));
+  if (!season) redirect("/goals");
+  // A season scored on goal check-ins (alone or with WHOOP) gets the goal board.
+  const rules = rulesOf(season);
+  if (contestTracks(rules, forum.whoopEnabled).goals) return <GoalBoard season={season} />;
+  const contestSeason = season.id;
+  const ladder = seasonLadder(season);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -29,7 +39,7 @@ export default async function RacePage() {
   // snapshot, my last upload and my last WHOOP sync — independent reads, fetched together.
   // The rider's own goal is in the same list — no goal yet → onboarding.
   const [{ data: goals }, standings, { data: snap }, { data: lastUpload }, { data: whoop }] = await Promise.all([
-    supabase.from("goals").select("user_id, title, current_status").eq("season_id", contestSeason ?? ""),
+    supabase.from("goals").select("user_id, title, current_status").eq("season_id", contestSeason),
     getStandings(supabase),
     supabase
       .from("standings_snapshots")
@@ -64,7 +74,7 @@ export default async function RacePage() {
     coach: coachNameFor(s.full_name, coaches),
   }));
 
-  const pot = PLACEMENT_PENALTIES.reduce((a, b) => a + b, 0);
+  const pot = ladder.reduce((a, b) => a + b, 0);
   const myIdx = standings.findIndex((s) => s.user_id === user.id);
   const me = myIdx >= 0 ? standings[myIdx] : null;
   const overdue = standings.filter((s) => s.stale).length;
@@ -86,14 +96,16 @@ export default async function RacePage() {
 
       <div className="race-head">
         <div>
-          <div className="eyebrow">Q4 2026 · <span className="live">● live</span></div>
-          <h1>Race Into the Shadow</h1>
-          <p className="sub">Highest average WHOOP score leads. Deepest into the shadow pays nothing.</p>
+          <div className="eyebrow">{season.name} · <span className="live">● live</span></div>
+          <h1>{contestName(season)}</h1>
+          <p className="sub">
+            Highest average WHOOP score leads. {/shadow/i.test(contestName(season)) ? "Deepest into the shadow pays nothing." : "First place pays nothing."}
+          </p>
         </div>
       </div>
 
       <div className={styles.layout}>
-        <RaceBoard rows={rows} />
+        <RaceBoard rows={rows} stakes={ladder} currency={forum.currency} goalStakes={{ rider: rules.missedGoalFine, coach: rules.coachShareFine }} />
 
         <aside className={styles.side}>
           <section className="card">
@@ -128,8 +140,8 @@ export default async function RacePage() {
           </section>
 
           <div className={`kpis ${styles.kpis}`}>
-            <div className="kpi"><b>{dayOfContest()}/{CONTEST_DAYS}</b><span>contest day</span></div>
-            <div className="kpi k-kitty"><b>{pot}M</b><span>pot</span></div>
+            <div className="kpi"><b>{dayOfSeason(season)}/{seasonLength(season)}</b><span>contest day</span></div>
+            <div className="kpi k-kitty"><b>{moneyShort(pot, forum.currency)}</b><span>pot</span></div>
           </div>
 
           <section className="card">

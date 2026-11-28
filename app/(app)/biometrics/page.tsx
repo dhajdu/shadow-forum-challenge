@@ -4,7 +4,7 @@ import { isExternallySynced } from "@/lib/whoop/config";
 import { ScoreTrend } from "@/components/ScoreTrend";
 import { Assistant } from "@/components/Assistant";
 import { getStandings } from "@/lib/standings";
-import { CONTEST_START_DAY } from "@/lib/contest";
+import { contestSeason } from "@/app/_data/season";
 import { selectAll } from "@/lib/supabase/selectAll";
 import type { JournalAnalysis } from "@/lib/analyst";
 import {
@@ -53,13 +53,15 @@ export default async function BiometricsPage({
 }: {
   searchParams: Promise<{ view?: string; whoop?: string }>;
 }) {
-  const { db: supabase, user } = await getForumContext();
+  const { db: supabase, user, viewer } = await getForumContext();
 
   const params = await searchParams;
   const view = params.view === "all" ? "all" : "contest";
   const today = new Date().toISOString().slice(0, 10);
   // journal window: ~3 months for the contest view, ~6 months for all time
   const journalSince = addDays(today, view === "all" ? -182 : -90);
+  // the contest strip starts on the first day of today's season
+  const seasonStart = (await contestSeason(supabase, viewer))?.starts_on ?? today;
 
   // independent reads — run them together
   const [
@@ -108,7 +110,7 @@ export default async function BiometricsPage({
   const above = rank > 1 ? standings[rank - 2] : null;
 
   const latest = latestDay(days);
-  const strip = contestStrip(days, CONTEST_START_DAY, today);
+  const strip = contestStrip(days, seasonStart, today);
   const best = strip.reduce<(typeof strip)[number] | null>(
     (b, c) => (c.score != null && (!b || c.score > (b.score as number)) ? c : b),
     null

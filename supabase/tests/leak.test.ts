@@ -1280,7 +1280,8 @@ describe("seasons", () => {
     assert.equal(c.seasonPhase(s, new Date("2026-12-24T00:00:00Z")), "upcoming");
     assert.equal(c.seasonPenalty(s, 7), 2);
     assert.deepEqual(c.seasonLadder({ ladder: null }), []);
-    assert.equal(c.hasContest({ ladder: null }), false);
+    assert.equal(c.hasContest({ scoring: null }), false, "no scoring picked: no contest");
+    assert.equal(c.hasContest({ scoring: "goals" }), true);
     assert.equal(c.seasonPenalty({ ladder: null }, 2), 0, "no contest, no penalty");
     assert.equal(c.newestSeason([{ starts_on: "2026-09-23" }, { starts_on: "2027-01-13" }])?.starts_on, "2027-01-13");
   });
@@ -1290,7 +1291,7 @@ describe("seasons", () => {
     const r = await runBookkeeper(admin);
     const { seasonPhase } = await import("@/lib/contest");
     const { hasContest } = await import("@/lib/contest");
-    const full = ok(await admin.from("seasons").select("id, starts_on, ends_on, ladder"), "full") as { starts_on: string; ends_on: string; ladder: unknown }[];
+    const full = ok(await admin.from("seasons").select("id, starts_on, ends_on, ladder, scoring"), "full") as { starts_on: string; ends_on: string; ladder: unknown; scoring: string | null }[];
     assert.equal(r.seasons.length, full.filter((s) => seasonPhase(s) === "over" && hasContest(s)).length);
   });
 });
@@ -1310,5 +1311,138 @@ describe("personal goals per season", () => {
     assert.ok(theirs.every((g) => g.user_id === member.december.id), "owner only");
     const q1Count = ok(await client.noah.from("personal_goals").select("id").eq("season_id", q1.id), "q1") as unknown[];
     assert.equal(q1Count.length, 2);
+  });
+});
+
+// ── Goal-scored contests: check-ins (0034) ───────────────
+describe("goal check-ins", () => {
+  type Checkin = { goal_id: string; user_id: string; checked_on: string; value: number };
+  const forumToday = async () => ok(await admin.rpc("forum_today"), "forum_today") as unknown as string;
+  let today = "";
+  let q1Goal = "";
+  const checkins = (k: PersonaKey) =>
+    client[k].from("goal_checkins").select("goal_id, user_id, checked_on, value").then((r) => ok(r, `checkins ${k}`) as Checkin[]);
+
+  before(async () => {
+    today = await forumToday();
+    // the Q4 rules as migrated: The Shadow Forum's WHOOP race, unchanged
+    const rules = ok(await admin.from("seasons").select("contest_name, scoring, ladder, missed_checkin_fine").eq("id", q4.id).single(), "q4 rules") as {
+      contest_name: string; scoring: string; ladder: number[]; missed_checkin_fine: number | null;
+    };
+    assert.deepEqual(rules, { contest_name: "Race Into the Shadow", scoring: "whoop", ladder: [0, 2000000, 3000000, 4000000, 5000000], missed_checkin_fine: null });
+    // past check-ins, written by the service role: one on each Q4 goal, one on a Q1 goal of Diego (January)
+    for (const k of ["founding", "noah"] as const) {
+      ok(await admin.from("goal_checkins").insert({ goal_id: goalId[k], user_id: member[k].id, checked_on: "2026-10-01", value: 3, note: `checkin ${k}` }), "checkin");
+    }
+    const g = ok(await admin.from("goals").insert({ user_id: member.january.id, title: "Q1 Diego", season_id: q1.id, target_value: 10 }).select("id").single(), "q1 goal") as { id: string };
+    q1Goal = g.id;
+    ok(await admin.from("goal_checkins").insert({ goal_id: q1Goal, user_id: member.january.id, checked_on: q1.starts_on, value: 4 }), "q1 checkin");
+  });
+
+  it("members see check-ins only for seasons they can see; leavers and undated members see none", async () => {
+    for (const k of KEYS) {
+      const rows = await checkins(k);
+      const goals = sorted(rows.map((r) => r.goal_id));
+      const expect = active(k)
+        ? sorted([...(seesSeason(k, q4) ? [goalId.founding, goalId.noah] : []), ...(seesSeason(k, q1) ? [q1Goal] : [])])
+        : [];
+      assert.deepEqual(goals, expect, `${k} check-ins`);
+    }
+    // December and January joined after Q4: none of its check-ins
+    for (const k of ["december", "january"] as const) assert.ok(!(await checkins(k)).some((r) => r.goal_id === goalId.noah), `${k} cannot see Q4`);
+  });
+
+  it("season_goal_board follows the same rule", async () => {
+    for (const k of KEYS) {
+      const rows = ok(await client[k].from("season_goal_board").select("season_id, goal_id"), "board") as { season_id: string; goal_id: string }[];
+      const mine = rows.filter((r) => [goalId.founding, goalId.noah, q1Goal].includes(r.goal_id));
+      for (const r of mine) assert.ok(seesSeason(k, seasons.find((s) => s.id === r.season_id)!) && active(k), `${k} sees ${r.season_id}`);
+      if (!active(k)) assert.equal(rows.length, 0, `${k} sees no board`);
+    }
+  });
+
+  it("a member writes only their own check-in, on their own goal, today, inside the season", async () => {
+    const q4Running = today >= q4.starts_on && today <= q4.ends_on;
+    // someone else's goal, as themselves or as the owner
+    assert.ok((await client.founding.from("goal_checkins").insert({ goal_id: goalId.noah, user_id: member.founding.id, value: 9 })).error, "not on another's goal");
+    assert.ok((await client.founding.from("goal_checkins").insert({ goal_id: goalId.noah, user_id: member.noah.id, value: 9 })).error, "not as another member");
+    // backdated
+    assert.ok((await client.noah.from("goal_checkins").insert({ goal_id: goalId.noah, user_id: member.noah.id, checked_on: "2026-10-02", value: 9 })).error, "no backdating");
+    // a season that has not started (Q1 for Diego during Q4)
+    if (today < q1.starts_on) {
+      assert.ok((await client.january.from("goal_checkins").insert({ goal_id: q1Goal, user_id: member.january.id, value: 5 })).error, "not before the season starts");
+    }
+    // a member who left
+    assert.ok((await client.leaver.from("goal_checkins").insert({ goal_id: goalId.founding, user_id: member.leaver.id, value: 1 })).error, "leaver cannot");
+    // own goal, today, in a running season: allowed, and it becomes the goal's current value
+    if (q4Running) {
+      assert.equal((await client.noah.from("goal_checkins").insert({ goal_id: goalId.noah, user_id: member.noah.id, value: 6, note: "today" })).error, null, "own check-in today");
+      const g = ok(await admin.from("goals").select("current_value").eq("id", goalId.noah).single(), "goal") as { current_value: number };
+      assert.equal(Number(g.current_value), 6);
+      // edit today's own check-in: yes; someone else's: silently nothing
+      assert.equal((await client.noah.from("goal_checkins").update({ value: 7 }).eq("goal_id", goalId.noah).eq("checked_on", today)).error, null);
+      await client.founding.from("goal_checkins").update({ value: 99 }).eq("goal_id", goalId.noah).eq("checked_on", today);
+      const mine = ok(await admin.from("goal_checkins").select("value").eq("goal_id", goalId.noah).eq("checked_on", today).single(), "today") as { value: number };
+      assert.equal(Number(mine.value), 7, "founding could not change Noah's check-in");
+    }
+    // the past check-in cannot be edited, even by its owner
+    await client.noah.from("goal_checkins").update({ value: 50 }).eq("goal_id", goalId.noah).eq("checked_on", "2026-10-01");
+    await client.founding.from("goal_checkins").update({ value: 50 }).eq("goal_id", goalId.noah).eq("checked_on", "2026-10-01");
+    const past = ok(await admin.from("goal_checkins").select("value").eq("goal_id", goalId.noah).eq("checked_on", "2026-10-01").single(), "past") as { value: number };
+    assert.equal(Number(past.value), 3);
+    // no deletes
+    await client.noah.from("goal_checkins").delete().eq("goal_id", goalId.noah);
+    assert.ok(((await admin.from("goal_checkins").select("id").eq("goal_id", goalId.noah)).data ?? []).length >= 1, "no deletes");
+  });
+
+  it("fines: members cannot book them or write contest_fines; the cron books none for the Shadow Forum's Q4", async () => {
+    const book = await client.founding.rpc("book_checkin_fine", {
+      p_season: q4.id, p_user: member.noah.id, p_period_start: q4.starts_on, p_period_end: q4.starts_on, p_note: "x",
+    });
+    assert.ok(book.error, "book_checkin_fine is service role only");
+    assert.ok((await (client.founding as unknown as SupabaseClient).from("contest_fines").insert({ season_id: q4.id, user_id: member.noah.id, period_start: q4.starts_on, amount: 1 })).error, "no client writes");
+    const { runCheckinFines } = await import("@/lib/agents");
+    const r = await runCheckinFines(admin, { dry: false });
+    assert.equal(r.booked, 0, "no fine rule in any migrated season");
+    assert.ok((await admin.rpc("book_checkin_fine", { p_season: q4.id, p_user: member.noah.id, p_period_start: q4.starts_on, p_period_end: "2026-09-29", p_note: "x" })).error, "Q4 sets no fine");
+  });
+
+  it("fines: a season with a fine books each missed period once, as a contest penalty in the kitty", async () => {
+    // a goal season that ended last month, with a weekly fine; Noah sets a goal and checks in once
+    const start = "2026-02-02";
+    const s = ok(
+      await admin
+        .from("seasons")
+        .insert({ slug: "leak-fines", name: "Leak Fines", starts_on: start, ends_on: "2026-02-22", scoring: "goals", contest_name: "Leak race", missed_checkin_fine: 500000 })
+        .select("id, slug, name, starts_on, ends_on")
+        .single(),
+      "fine season"
+    ) as Season;
+    try {
+      const g = ok(await admin.from("goals").insert({ user_id: member.noah.id, title: "fines goal", season_id: s.id, target_value: 10, created_at: "2026-01-01T00:00:00Z" }).select("id").single(), "goal") as { id: string };
+      ok(await admin.from("goal_checkins").insert({ goal_id: g.id, user_id: member.noah.id, checked_on: "2026-02-10", value: 5 }), "one check-in");
+      const { runCheckinFines } = await import("@/lib/agents");
+      const first = await runCheckinFines(admin, { dry: false });
+      const mine = first.seasons.find((x) => x.season === "leak-fines");
+      // Noah joined in July 2026, after this season: he owes nothing for it
+      assert.equal(mine?.booked, 0, "no fines before the member joined");
+
+      // the founding member owes all three weeks and checked in once
+      const fg = ok(await admin.from("goals").insert({ user_id: member.founding.id, title: "founding fines goal", season_id: s.id, target_value: 10, created_at: "2026-01-01T00:00:00Z" }).select("id").single(), "goal f") as { id: string };
+      ok(await admin.from("goal_checkins").insert({ goal_id: fg.id, user_id: member.founding.id, checked_on: "2026-02-03", value: 5 }), "founding check-in");
+      const second = await runCheckinFines(admin, { dry: false });
+      assert.equal(second.seasons.find((x) => x.season === "leak-fines")?.booked, 2, "two missed weeks booked");
+      const again = await runCheckinFines(admin, { dry: false });
+      assert.equal(again.seasons.find((x) => x.season === "leak-fines")?.booked, 0, "never twice");
+      const lines = ok(await (admin as unknown as SupabaseClient).from("kitty_entries").select("amount_vnd, category, member_id, note").like("note", "Missed check-in%Leak Fines%"), "lines") as { amount_vnd: number; category: string; member_id: string }[];
+      assert.equal(lines.length, 2);
+      assert.ok(lines.every((l) => l.category === "penalty" && Number(l.amount_vnd) === 500000 && l.member_id === member.founding.id));
+    } finally {
+      const ids = ((await (admin as unknown as SupabaseClient).from("contest_fines").select("kitty_entry_id").eq("season_id", s.id)).data ?? []).map((x: { kitty_entry_id: string }) => x.kitty_entry_id);
+      await admin.from("contest_fines").delete().eq("season_id", s.id);
+      if (ids.length) await (admin as unknown as SupabaseClient).from("kitty_entries").delete().in("id", ids);
+      await admin.from("goals").delete().eq("season_id", s.id);
+      await admin.from("seasons").delete().eq("id", s.id);
+    }
   });
 });

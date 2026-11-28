@@ -75,6 +75,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "goals"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "coaching_notes_goal_id_fkey"
+      columns: ["goal_id"]
+isOneToOne: false
+      referencedRelation: "season_goal_board"
+      referencedColumns: ["goal_id"]
     }
                   ]
                 },"constitution_signatures": {
@@ -142,6 +148,62 @@ isOneToOne: false
     },{
       foreignKeyName: "constitution_versions_published_by_fkey"
       columns: ["published_by"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"contest_fines": {
+                  Row: {
+                    "amount": number,"created_at": string,"kitty_entry_id": string | null,"period_start": string,"season_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"created_at"?: string,"kitty_entry_id"?: string | null,"period_start": string,"season_id": string,"user_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"created_at"?: string,"kitty_entry_id"?: string | null,"period_start"?: string,"season_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contest_fines_kitty_entry_id_fkey"
+      columns: ["kitty_entry_id"]
+isOneToOne: false
+      referencedRelation: "kitty_entries"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contest_fines_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "contest_fines_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "contest_fines_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "seasons"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contest_fines_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contest_fines_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "contest_fines_user_id_fkey"
+      columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
@@ -325,6 +387,50 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"goal_checkins": {
+                  Row: {
+                    "checked_on": string,"created_at": string,"goal_id": string,"id": string,"note": string | null,"user_id": string,"value": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked_on"?: string,"created_at"?: string,"goal_id": string,"id"?: string,"note"?: string | null,"user_id"?: string,"value": number
+                  }
+                  Update: {
+                    "checked_on"?: string,"created_at"?: string,"goal_id"?: string,"id"?: string,"note"?: string | null,"user_id"?: string,"value"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "goal_checkins_goal_id_fkey"
+      columns: ["goal_id"]
+isOneToOne: false
+      referencedRelation: "goals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "goal_checkins_goal_id_fkey"
+      columns: ["goal_id"]
+isOneToOne: false
+      referencedRelation: "season_goal_board"
+      referencedColumns: ["goal_id"]
+    },{
+      foreignKeyName: "goal_checkins_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "goal_checkins_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "goal_checkins_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"goal_progress": {
                   Row: {
                     "created_at": string,"goal_id": string,"id": string,"note": string | null,"progress": number,"status": string
@@ -343,6 +449,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "goals"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "goal_progress_goal_id_fkey"
+      columns: ["goal_id"]
+isOneToOne: false
+      referencedRelation: "season_goal_board"
+      referencedColumns: ["goal_id"]
     }
                   ]
                 },"goals": {
@@ -771,14 +883,14 @@ isOneToOne: false
                   ]
                 },"penalties": {
                   Row: {
-                    "amount_m": number,"created_at": string,"id": string,"kind": string,"period": string | null,"reason": string | null,"season_id": string | null,"user_id": string
+                    "amount": number | null,"amount_m": number,"created_at": string,"id": string,"kind": string,"period": string | null,"reason": string | null,"season_id": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_m": number,"created_at"?: string,"id"?: string,"kind": string,"period"?: string | null,"reason"?: string | null,"season_id"?: string | null,"user_id": string
+                    "amount"?: number | null,"amount_m": number,"created_at"?: string,"id"?: string,"kind": string,"period"?: string | null,"reason"?: string | null,"season_id"?: string | null,"user_id": string
                   }
                   Update: {
-                    "amount_m"?: number,"created_at"?: string,"id"?: string,"kind"?: string,"period"?: string | null,"reason"?: string | null,"season_id"?: string | null,"user_id"?: string
+                    "amount"?: number | null,"amount_m"?: number,"created_at"?: string,"id"?: string,"kind"?: string,"period"?: string | null,"reason"?: string | null,"season_id"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -917,14 +1029,14 @@ isOneToOne: false
                   ]
                 },"seasons": {
                   Row: {
-                    "created_at": string,"ends_on": string,"id": string,"ladder": Json | null,"metric": string | null,"name": string,"slug": string,"starts_on": string
+                    "checkin_days": number,"coach_share_fine": number | null,"contest_name": string | null,"created_at": string,"ends_on": string,"id": string,"ladder": Json | null,"metric": string | null,"missed_checkin_fine": number | null,"missed_goal_fine": number | null,"name": string,"points_checkin": number,"points_goal": number,"points_progress": number,"points_streak": number,"scoring": string | null,"slug": string,"starts_on": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"ends_on": string,"id"?: string,"ladder"?: Json | null,"metric"?: string | null,"name": string,"slug": string,"starts_on": string
+                    "checkin_days"?: number,"coach_share_fine"?: number | null,"contest_name"?: string | null,"created_at"?: string,"ends_on": string,"id"?: string,"ladder"?: Json | null,"metric"?: string | null,"missed_checkin_fine"?: number | null,"missed_goal_fine"?: number | null,"name": string,"points_checkin"?: number,"points_goal"?: number,"points_progress"?: number,"points_streak"?: number,"scoring"?: string | null,"slug": string,"starts_on": string
                   }
                   Update: {
-                    "created_at"?: string,"ends_on"?: string,"id"?: string,"ladder"?: Json | null,"metric"?: string | null,"name"?: string,"slug"?: string,"starts_on"?: string
+                    "checkin_days"?: number,"coach_share_fine"?: number | null,"contest_name"?: string | null,"created_at"?: string,"ends_on"?: string,"id"?: string,"ladder"?: Json | null,"metric"?: string | null,"missed_checkin_fine"?: number | null,"missed_goal_fine"?: number | null,"name"?: string,"points_checkin"?: number,"points_goal"?: number,"points_progress"?: number,"points_streak"?: number,"scoring"?: string | null,"slug"?: string,"starts_on"?: string
                   }
                   Relationships: [
                     
@@ -1114,6 +1226,50 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"season_goal_board": {
+                  Row: {
+                    "checkins": Json | null,"current_status": string | null,"current_value": number | null,"forum_joined_on": string | null,"forum_left_on": string | null,"full_name": string | null,"goal_id": string | null,"goal_set_at": string | null,"season_id": string | null,"target_value": number | null,"title": string | null,"unit": string | null,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["season_id"]
+    },{
+      foreignKeyName: "goals_season_id_fkey"
+      columns: ["season_id"]
+isOneToOne: false
+      referencedRelation: "seasons"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "goals_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "goals_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "goals_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"season_standings": {
                   Row: {
                     "all_avg": number | null,"all_days": number | null,"contest_avg": number | null,"contest_days": number | null,"contest_missed": number | null,"full_name": string | null,"last_data_day": string | null,"last_day": string | null,"season_id": string | null,"user_id": string | null
@@ -1159,6 +1315,12 @@ isOneToOne: true
           Functions: {
             "admin_preview":
 { Args: { "member": string }; Returns: Json
+                           },
+"book_checkin_fine":
+{ Args: { "p_note": string,"p_period_end": string,"p_period_start": string,"p_season": string,"p_user": string }; Returns: string
+                           },
+"can_check_in":
+{ Args: { "d": string,"g": string }; Returns: boolean
                            },
 "can_see_date":
 { Args: { "d": string }; Returns: boolean

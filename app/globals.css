@@ -94,6 +94,7 @@
   --content-w: 1120px;  /* page container max width */
   --read-w: 880px;      /* narrower reading column inside a page, left-aligned */
   --rail-w: 340px;      /* desktop Ask rail */
+  --field-min: 160px;   /* narrowest column of an auto-fit form grid (season rules) */
   --nav-on: rgba(255, 255, 255, .07);  /* selected nav item */
 }
 

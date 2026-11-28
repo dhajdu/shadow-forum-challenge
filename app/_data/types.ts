@@ -1,6 +1,7 @@
 // Shapes the forum pages use. They match shadow-api's migration 0012.
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import type { SeasonRuleColumns } from "@/lib/goal-points";
 
 export type Db = SupabaseClient<Database>;
 
@@ -33,7 +34,8 @@ export type LibraryAudience = "all" | "founding";
 export type LibraryDoc = { slug: string; title: string; audience: LibraryAudience; updated_at: string };
 export type LibraryDocDetail = LibraryDoc & { body_md: string };
 
-export type Season = { id: string; slug: string; name: string; starts_on: string; ends_on: string; ladder: number[] | null };
+/** A season and its contest rules (migration 0034); read the rules with rulesOf() from lib/goal-points. */
+export type Season = SeasonRuleColumns & { id: string; slug: string; name: string; starts_on: string; ends_on: string; ladder: number[] | null };
 
 /** The signed-in member's forum standing (profiles columns). */
 export type Viewer = {
@@ -54,7 +56,7 @@ export type Access = { joined_on: string | null; left_on: string | null; foundin
 
 export type AdminResult = { ok: true } | { ok: false; error: string };
 
-export type NewSeason = { name: string; slug: string; starts_on: string; ends_on: string; metric: string };
+export type NewSeason = { name: string; slug: string; starts_on: string; ends_on: string; metric: string | null; scoring: "goals" | "whoop" | "both" | null; contest_name: string | null };
 
 export type Preview = {
   meetings: Meeting[];

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { STALE_DAYS, type Standing } from "@/lib/standings";
-import { placementPenalty } from "@/lib/contest";
+import { moneyShort } from "@/app/_data/kitty";
 import type { GoalStatus } from "@/lib/database.types";
 import styles from "./RaceBoard.module.css";
 
@@ -24,7 +24,25 @@ export type RaceRow = Standing & {
 };
 
 // One standings table — each rider appears once: place, name (+ goal & coach), lane, avg, days, owes.
-export function RaceBoard({ rows }: { rows: RaceRow[] }) {
+// stakes: the season's placement ladder in whole units of the forum's currency;
+// goalStakes: what a missed business goal costs the rider and the coach (null: nothing).
+export function RaceBoard({
+  rows,
+  stakes,
+  currency,
+  goalStakes,
+}: {
+  rows: RaceRow[];
+  stakes: number[];
+  currency: string;
+  goalStakes: { rider: number | null; coach: number | null };
+}) {
+  const paid = stakes.filter((x) => x > 0);
+  const m = (n: number) => moneyShort(n, currency);
+  const pot = paid.length
+    ? ` · pot: 1st pays ${m(stakes[0] ?? 0)}, then ${paid.length > 1 ? `${m(Math.min(...paid))}–${m(Math.max(...paid))}` : m(paid[0])}`
+    : "";
+  const goal = [goalStakes.rider && `${m(goalStakes.rider)} rider`, goalStakes.coach && `${m(goalStakes.coach)} coach`].filter(Boolean).join(" + ");
   const max = Math.max(100, ...rows.map((s) => s.avg));
 
   return (
@@ -48,7 +66,7 @@ export function RaceBoard({ rows }: { rows: RaceRow[] }) {
       <div className={styles.rows}>
         {rows.map((s, i) => {
           const pos = max > 0 ? (s.avg / max) * 100 : 0;
-          const owes = placementPenalty(i);
+          const owes = stakes.length ? stakes[Math.min(i, stakes.length - 1)] : 0;
           return (
             <div key={s.user_id} className={`lane p${i + 1} ${styles.row}`}>
               <div className={`medal ${styles.medal}`}>{i + 1}</div>
@@ -91,7 +109,7 @@ export function RaceBoard({ rows }: { rows: RaceRow[] }) {
                 <small>{s.missed} missed</small>
               </div>
               <div className={`${styles.owes} ${owes === 0 ? styles.free : styles.owe}`}>
-                {owes === 0 ? "0" : `${owes}M`}
+                {owes === 0 ? "0" : moneyShort(owes, currency)}
                 <small>owes</small>
               </div>
             </div>
@@ -100,8 +118,8 @@ export function RaceBoard({ rows }: { rows: RaceRow[] }) {
       </div>
 
       <div className="board-foot">
-        A rider&apos;s silhouette sits at their average WHOOP score, from the light into the shadow · pot: 1st pays 0,
-        then 2M–5M · business goal miss = 5M rider + 5M coach, settled at year end.
+        A rider&apos;s silhouette sits at their average WHOOP score, from the light into the shadow{pot}
+        {goal ? ` · business goal miss = ${goal}, settled at year end` : ""}.
       </div>
     </div>
   );
