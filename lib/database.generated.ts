@@ -9,14 +9,14 @@ export type Database = {
           Tables: {
             "chat_messages": {
                   Row: {
-                    "cited_meeting_ids": (string)[],"content": string,"created_at": string,"id": string,"role": string,"user_id": string
+                    "cited_meeting_ids": (string)[],"content": string,"conversation_id": string,"created_at": string,"id": string,"role": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "cited_meeting_ids"?: (string)[],"content": string,"created_at"?: string,"id"?: string,"role": string,"user_id": string
+                    "cited_meeting_ids"?: (string)[],"content": string,"conversation_id"?: string,"created_at"?: string,"id"?: string,"role": string,"user_id": string
                   }
                   Update: {
-                    "cited_meeting_ids"?: (string)[],"content"?: string,"created_at"?: string,"id"?: string,"role"?: string,"user_id"?: string
+                    "cited_meeting_ids"?: (string)[],"content"?: string,"conversation_id"?: string,"created_at"?: string,"id"?: string,"role"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {

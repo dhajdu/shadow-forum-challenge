@@ -34,6 +34,14 @@ const DATE_LINE = /^([A-Za-z]{3,9})\.?\s+(\d{1,2})(st|nd|rd|th)?:?$/;
 const NAME_TOPIC = /^([A-Z][\p{L}.'’]*(?:\s[A-Z][\p{L}.'’]*)?)\s*[-–:]\s*(.+)$/u;
 const NAME_ONLY = /^([A-Z][\p{L}.'’]*(?:\s[A-Z][\p{L}.'’]*)?)$/u;
 
+/** A forum's theme: the agenda's Purpose, without a leading "To ". */
+export function agendaTheme(md: string | null | undefined): string | null {
+  const purpose = md ? parseRecap(md, "").purpose : null;
+  if (!purpose) return null;
+  const t = purpose.replace(/^to\s+/i, "").replace(/[.\s]+$/, "");
+  return (t.charAt(0).toUpperCase() + t.slice(1)).slice(0, 140);
+}
+
 /**
  * The Parking Lot comes in two shapes: grouped by forum date ("**Nov 25**" then "Name - topic"
  * lines, with "--" or unnamed lines as details) or, in early agendas, grouped by person.

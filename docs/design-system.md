@@ -134,7 +134,8 @@ Global classes in `app/globals.css` unless noted. Copy these.
 | Extra credit | `components/ExtraCredit.tsx` (`.xc-*`) | Personal goals list + add form |
 | Upload | `components/UploadWhoop.tsx` (`.upload .drop`) | Drop zone + file list |
 | Trend sparkline | `components/ScoreTrend.tsx` (`.trend`) | Inside `.trend-wrap` or `.trend-card` |
-| Assistant | `components/Assistant.tsx` | `.bubble`; full page on `/ask` |
+| Assistant | `components/Assistant.tsx` | `.bubble`; the biometrics chat on `/biometrics` |
+| Ask AI | `components/AskAI.tsx`, `components/AskDock.tsx` | Conversations (`.ask-*`, `.bubble`); floating `.ask-fab` and `.ask-panel` on every page, full size on `/ask` |
 | Empty state | `.trend-empty` | Centered muted line |
 
 Page-specific layout lives in CSS modules next to the page (`app/me/me.module.css`, `app/race/race.module.css`, `app/rider/[id]/rider.module.css`, `components/RaceBoard.module.css`). Those must use tokens too.

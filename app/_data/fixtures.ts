@@ -19,6 +19,7 @@ import {
   type Season,
   type Viewer,
 } from "./types";
+import { agendaTheme } from "./recap";
 
 const PLACEHOLDER_AGENDA = `## Agenda
 1. Opening and confidentiality
@@ -28,7 +29,7 @@ const PLACEHOLDER_AGENDA = `## Agenda
 
 Placeholder agenda. The real text is imported from Lark.`;
 
-type Row = Omit<MeetingDetail, "has_agenda" | "file_count" | "path">;
+type Row = Omit<MeetingDetail, "has_agenda" | "theme" | "file_count" | "path">;
 
 const m = (held_on: string, title: string, extra: Partial<Row> = {}): Row => ({
   id: `fx-${held_on}`,
@@ -96,7 +97,7 @@ const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_
 const active = (v: Viewer) => memberStatus(v, today()) === "active";
 const canSeeDate = (v: Viewer, d: string) => active(v) && (v.is_founding || (v.forum_joined_on != null && d >= v.forum_joined_on));
 const canSeeDoc = (v: Viewer, d: LibraryDoc) => active(v) && (d.audience === "all" || v.is_founding);
-const summary = ({ body_md, files, ...rest }: Row): Omit<Meeting, "path"> => ({ ...rest, has_agenda: body_md != null, file_count: files.length });
+const summary = ({ body_md, files, ...rest }: Row): Omit<Meeting, "path"> => ({ ...rest, has_agenda: body_md != null, theme: agendaTheme(body_md), file_count: files.length });
 
 /** Fixture viewer: the member's real name, founding, admin only outside production. */
 export async function getViewer(db: Db, userId: string): Promise<Viewer> {
@@ -119,7 +120,7 @@ export async function listMeetings(_db: Db, v: Viewer): Promise<Meeting[]> {
 export async function getMeeting(_db: Db, v: Viewer, key: string): Promise<MeetingDetail | null> {
   const row = MEETINGS.find((x) => x.held_on === key || x.id === key);
   if (!row || !canSeeDate(v, row.held_on)) return null;
-  return { ...row, path: `/forum/${key}`, has_agenda: row.body_md != null, file_count: row.files.length };
+  return { ...row, path: `/forum/${key}`, has_agenda: row.body_md != null, theme: agendaTheme(row.body_md), file_count: row.files.length };
 }
 
 export async function searchMeetings(db: Db, v: Viewer, q: string): Promise<Meeting[]> {
