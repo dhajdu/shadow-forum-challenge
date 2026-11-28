@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { getForumContext } from "@/app/_data/context";
 import { listMembers } from "@/app/_data/forum";
 import { AccessForm, InviteForm, LeaveForm } from "./MemberForms";
+import { getKitty } from "@/app/_data/kitty";
+import { setTreasurer } from "@/app/(app)/kitty/actions";
 import s from "./members.module.css";
 
 export default async function MembersPage() {
   const { db, viewer } = await getForumContext();
   if (!viewer.is_admin) notFound();
-  const members = await listMembers(db, viewer);
+  const [members, kitty] = await Promise.all([listMembers(db, viewer), getKitty(db)]);
 
   return (
     <main className="page">
@@ -53,6 +55,19 @@ export default async function MembersPage() {
             <p className="note-line">
               They get an email to set a password. Until they have a first-forum date they see nothing. Set it, then check it with Preview.
             </p>
+          </section>
+          <section className="zone-card">
+            <h2>Kitty treasurer</h2>
+            <form action={setTreasurer} className="actions-row">
+              <select className="field" name="treasurer_id" defaultValue={kitty.treasurerId ?? ""} aria-label="Treasurer">
+                <option value="">No treasurer</option>
+                {members.filter((m) => m.status !== "left").map((m) => (
+                  <option key={m.id} value={m.id}>{m.full_name}</option>
+                ))}
+              </select>
+              <button className="btn-ghost" type="submit">Save</button>
+            </form>
+            <p className="note-line">The member who holds the money. Shown on the Kitty page and Home.</p>
           </section>
           <section className="zone-card">
             <h2>Lark checklist</h2>
