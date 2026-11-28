@@ -21,7 +21,7 @@ export default async function LibraryDocPage({ params }: { params: Promise<{ slu
           <div className="eyebrow">Updated {longDay(doc.updated_at.slice(0, 10))}</div>
           <h2>{doc.title}</h2>
         </header>
-        <Markdown text={doc.body_md} />
+        <Markdown text={doc.body_md} title={doc.title} />
       </section>
     </>
   );

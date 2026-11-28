@@ -82,6 +82,7 @@
   --chat-bell: 36px;    /* Chat icon button */
   --date-tile: 132px;   /* Forum: coming-date tile min width */
   --sheet-desc-w: 220px; /* Kitty sheet: description column min width */
+  --term-w: 200px;      /* Constitution: term column */
   --side-w: 216px;      /* desktop sidebar */
   --tabbar-h: 60px;     /* phone bottom tabs, before the safe area */
   --content-w: 1120px;  /* page container max width */
@@ -541,6 +542,21 @@ a.row:hover .chev { color: var(--ink); transform: translateX(2px); }
 .prose p + p { margin-top: var(--sp-8); }
 .prose blockquote { margin: var(--sp-12) 0 var(--sp-20); padding-left: var(--sp-16); border-left: 2px solid var(--red); font-size: var(--fs-xl); line-height: 1.4; color: var(--ink); max-width: 52ch; }
 .prose hr { border: 0; border-top: var(--hair) solid var(--line); margin: var(--sp-24) 0; }
+.prose a { color: var(--blue); }
+.prose .md-line { display: block; }
+.prose .md-gap { display: block; height: var(--sp-8); }
+/* two-column tables (the Constitution): term on the left, the rule on the right */
+.md-terms { margin: var(--sp-16) 0; border-top: var(--hair) solid var(--line-soft); }
+.md-terms > div { display: grid; grid-template-columns: var(--term-w) minmax(0, 1fr); gap: var(--sp-24); padding: var(--sp-16) 0;
+  border-bottom: var(--hair) solid var(--line-soft); }
+.md-terms dt { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-lg); text-transform: uppercase;
+  line-height: 1.1; color: var(--ink); }
+.md-terms dd { margin: 0; color: var(--ink-soft); }
+@media (max-width: 640px) { .md-terms > div { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); } }
+.md-table { overflow-x: auto; margin: var(--sp-16) 0; border: var(--hair) solid var(--line); }
+.md-table table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.md-table th, .md-table td { padding: var(--sp-8) var(--sp-12); border-bottom: var(--hair) solid var(--line-soft); text-align: left; vertical-align: top; }
+.md-table th { background: var(--bg-2); color: var(--muted); font-size: var(--fs-xs); letter-spacing: var(--track-label); text-transform: uppercase; }
 .prose h3 { margin-top: var(--sp-24); }
 .prose p > b:only-child { display: block; margin-top: var(--sp-16); color: var(--ink); font-size: var(--fs-xs); letter-spacing: var(--track-label); text-transform: uppercase; }
 .btn.inline, .btn-ghost.inline { width: auto; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
