@@ -7,7 +7,15 @@
 .quick { display: flex; gap: var(--sp-8); flex-wrap: wrap; margin-top: var(--sp-12); }
 .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-32); align-items: start; }
 .grid :global(.zone-card), .settings :global(.zone-card) { margin-bottom: 0; min-width: 0; }
-.settings { margin-top: var(--sp-32); max-width: var(--read-w); }
+.settings { margin-top: var(--sp-32); max-width: var(--read-w); display: grid; gap: var(--sp-32); }
 @media (max-width: 899px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .passkey { display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-4); flex: none; max-width: 50%; text-align: right; }
 .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-soft); word-break: break-all; }
+.lede { color: var(--ink-soft); font-size: var(--fs-md); line-height: 1.55; margin: var(--sp-8) 0 var(--sp-16); }
+.urlRow { display: flex; align-items: center; gap: var(--sp-12); flex-wrap: wrap; padding: var(--sp-10) var(--sp-12); border: var(--hair) solid var(--line);
+  background: var(--bg-2); }
+.url { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-sm); color: var(--ink); word-break: break-all; }
+.step { margin: var(--sp-24) 0 var(--sp-8); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
+.steps { padding-left: var(--sp-20); display: grid; gap: var(--sp-6); color: var(--ink-soft); line-height: 1.5; }
+.examples, .can { list-style: none; display: grid; gap: var(--sp-6); color: var(--ink-soft); line-height: 1.5; }
+.examples li { color: var(--ink); }
