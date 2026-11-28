@@ -11,7 +11,7 @@ export const maxDuration = 60;
 // No shared key. Tools run as the member, so RLS decides what they see.
 
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVER_INFO = { name: "shadow-forum", title: "The Shadow Forum", version: "1.0.0" };
+const SERVER_INFO = { name: "shadow-forum", title: "The Shadow Forum", version: "2.0.0" };
 
 type RpcRequest = { jsonrpc: "2.0"; id?: string | number | null; method: string; params?: Record<string, unknown> };
 
@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
-        instructions: "Read-only access to The Shadow Forum: meetings and agendas you can see, and your own contest data.",
+        instructions:
+          "The Shadow Forum, as the signed-in member: forums and agendas, the Parking Lot, the library, the kitty (read it, add money in or out, submit expenses), the forum chat, goals, the contest race, WHOOP data and photos. You only see forum content from your own first forum on. Amounts are in VND. Confirm with the member before adding to the kitty, posting to the chat or deleting.",
       });
     }
     case "ping":
@@ -63,7 +64,8 @@ export async function POST(req: NextRequest) {
       const args = (msg.params?.arguments ?? {}) as Record<string, unknown>;
       if (!TOOLS.some((t) => t.name === name)) return rpcError(msg.id, -32602, `Unknown tool: ${name}`);
       try {
-        return reply(msg.id, await callTool(name, args, { supabase: auth.supabase, userId: auth.user.id }));
+        const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+        return reply(msg.id, await callTool(name, args, { supabase: auth.supabase, userId: auth.user.id, token, site: site(req) }));
       } catch {
         return reply(msg.id, { content: [{ type: "text", text: "The tool failed. Try again." }], isError: true });
       }

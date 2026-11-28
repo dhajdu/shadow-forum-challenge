@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireMember } from "@/lib/api";
-import { NO_RECORD, citations, excerptsFor, searchAgendas } from "@/lib/ask";
+import { NO_RECORD, citations, excerptsFor, readerOf, searchAgendas } from "@/lib/ask";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   if (!question) return NextResponse.json({ error: "No question." }, { status: 400 });
   const meetingId = typeof body.meetingId === "string" && body.meetingId ? body.meetingId : null;
 
-  const hits = await searchAgendas(supabase, question, { meetingId });
+  const hits = await searchAgendas(supabase, question, { meetingId, reader: await readerOf(supabase, user.id) });
   const cited = citations(hits);
   await supabase.from("chat_messages").insert({ user_id: user.id, role: "user", content: question });
 

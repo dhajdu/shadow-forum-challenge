@@ -144,12 +144,22 @@ before(async () => {
     ) as { id: string };
     meetingId[m.key] = row.id;
     meetingHeld[row.id] = m.held_on;
-    ok(await admin.from("meeting_docs").insert({ meeting_id: row.id, title: `Agenda ${m.key}`, body_md: `secret agenda ${m.key}` }), "doc");
+    ok(await admin.from("meeting_docs").insert({ meeting_id: row.id, title: `Agenda ${m.key}`, body_md: `secret agenda ${m.key}\n\nchunk ${m.key} Manila trip secretword${m.key}` }), "doc");
     ok(await admin.from("meeting_chunks").insert({ meeting_id: row.id, content: `chunk ${m.key} Manila trip secretword${m.key}` }), "chunk");
     ok(
       await admin.storage.from("meeting-files").upload(`${row.id}/agenda.txt`, new Blob([`file ${m.key}`]), { upsert: true }),
       "file"
     );
+  }
+
+  // Every agenda repeats the running Parking Lot: the August agenda still lists a February topic.
+  const parking = "## Parking Lot\n\n**Feb 5**\n\nLeak Founding - parkfebword topic\n\n**Aug 24**\n\nLeak Nam - parkaugword topic";
+  ok(await admin.from("meeting_docs").insert({ meeting_id: meetingId.aug, title: "Parking", body_md: parking }), "parking doc");
+  ok(await admin.from("meeting_chunks").insert({ meeting_id: meetingId.aug, content: `Parking\n\n${parking}` }), "parking chunk");
+
+  // kitty: one line from before Nam Trung joined, one after
+  for (const [entry_on, note] of [["2026-02-10", "kittyfeb venue"], ["2026-08-24", "kittyaug dues"]] as const) {
+    ok(await (admin as unknown as SupabaseClient).from("kitty_entries").insert({ entry_on, direction: "in", amount_vnd: 2_500_000, category: "dues", note, created_by: member.founding.id }), "kitty");
   }
 
   // library
@@ -272,9 +282,9 @@ describe("tables, per persona", () => {
         const ms = ok(await c().from("meetings").select("id"), "meetings") as { id: string }[];
         assert.deepEqual(sorted(ms.map((m) => keyOfMeeting(m.id))), visibleMeetings(k));
         const docs = ok(await c().from("meeting_docs").select("meeting_id"), "docs") as { meeting_id: string }[];
-        assert.deepEqual(sorted(docs.map((d) => keyOfMeeting(d.meeting_id))), visibleMeetings(k));
+        assert.deepEqual(sorted([...new Set(docs.map((d) => keyOfMeeting(d.meeting_id)))]), visibleMeetings(k));
         const chunks = ok(await c().from("meeting_chunks").select("meeting_id, held_on"), "chunks") as { meeting_id: string; held_on: string }[];
-        assert.deepEqual(sorted(chunks.map((d) => keyOfMeeting(d.meeting_id))), visibleMeetings(k));
+        assert.deepEqual(sorted([...new Set(chunks.map((d) => keyOfMeeting(d.meeting_id)))]), visibleMeetings(k));
         for (const ch of chunks) assert.equal(ch.held_on, meetingHeld[ch.meeting_id], "chunk held_on copied from meeting");
       });
 
@@ -563,7 +573,8 @@ describe("MCP", () => {
       const init = await rpc(k, "initialize", { protocolVersion: "2025-06-18" });
       assert.equal(init.body?.result?.protocolVersion, "2025-06-18");
       const tools = (await rpc(k, "tools/list")).body?.result?.tools as { name: string }[];
-      assert.deepEqual(tools.map((t) => t.name).sort(), ["get_agenda", "list_meetings", "my_contest", "search_agendas"]);
+      const { TOOLS } = await import("@/lib/mcp");
+      assert.deepEqual(tools.map((t) => t.name).sort(), TOOLS.map((t) => t.name).sort());
 
       const list = toolJson((await rpc(k, "tools/call", { name: "list_meetings", arguments: {} })).body).meetings as { id: string }[];
       assert.deepEqual(sorted(list.filter((m) => keyOfMeeting(m.id) !== m.id).map((m) => keyOfMeeting(m.id))), visibleMeetings(k));
@@ -585,6 +596,86 @@ describe("MCP", () => {
       assert.deepEqual(sorted((contest.seasons as { id: string }[]).map((s) => s.id)), sorted(seasons.filter((s) => seesSeason(k, s)).map((s) => s.id)));
     });
   }
+});
+
+const call = async (k: PersonaKey, name: string, args: Record<string, unknown> = {}) => {
+  const r = (await rpc(k, "tools/call", { name, arguments: args })).body?.result as { isError?: boolean; structuredContent?: Record<string, unknown>; content: { text: string }[] };
+  return { error: !!r?.isError, json: (r?.structuredContent ?? {}) as Record<string, unknown>, text: JSON.stringify(r) };
+};
+
+describe("MCP: join-date rule on every tool", () => {
+  it("the Parking Lot never shows topics from before a member's first forum", async () => {
+    const founding = await call("founding", "get_agenda", { meeting_id: meetingId.aug });
+    assert.match(founding.text, /parkfebword/);
+    const nam = await call("nam", "get_agenda", { meeting_id: meetingId.aug });
+    assert.doesNotMatch(nam.text, /parkfebword/, "get_agenda");
+    assert.match(nam.text, /parkaugword/);
+    assert.doesNotMatch((await call("nam", "get_parking_lot")).text, /parkfebword/, "get_parking_lot");
+    assert.match((await call("nam", "get_parking_lot")).text, /parkaugword/);
+    assert.match((await call("founding", "get_parking_lot")).text, /parkfebword/);
+    assert.doesNotMatch((await call("nam", "search_agendas", { query: "parkfebword" })).text, /parkfebword/, "search_agendas");
+    assert.match((await call("founding", "search_agendas", { query: "parkfebword" })).text, /parkfebword/);
+  });
+
+  it("Ask gets no pre-join Parking Lot excerpt either", async () => {
+    const { searchAgendas, readerOf } = await import("@/lib/ask");
+    const nam = await searchAgendas(client.nam, "parkfebword", { reader: await readerOf(client.nam, member.nam.id) });
+    assert.equal(nam.length, 0);
+    const f = await searchAgendas(client.founding, "parkfebword", { reader: await readerOf(client.founding, member.founding.id) });
+    assert.equal(f.length, 1);
+  });
+
+  it("kitty: everyone sees the same balance, lines only from their first forum", async () => {
+    const f = (await call("founding", "get_kitty")).json;
+    const n = (await call("nam", "get_kitty")).json;
+    assert.equal(f.balance_vnd, n.balance_vnd);
+    assert.match(JSON.stringify(f.entries), /kittyfeb/);
+    assert.doesNotMatch(JSON.stringify(n.entries), /kittyfeb/);
+    assert.match(JSON.stringify(n.entries), /kittyaug/);
+    assert.doesNotMatch(JSON.stringify((await call("december", "get_kitty")).json.entries), /kitty(feb|aug)/);
+  });
+
+  it("kitty: a member submits an expense, cannot backdate before joining, can void", async () => {
+    assert.ok((await call("nam", "add_kitty_entry", { direction: "out", amount: "750k" })).error, "money out needs a note");
+    const saved = await call("nam", "add_kitty_entry", { direction: "out", amount: "750k", category: "spend", note: "flowers for the venue" });
+    assert.equal(saved.error, false, saved.text);
+    const line = saved.json.saved as { id: string; amount_vnd: number; category: string };
+    assert.equal(Number(line.amount_vnd), 750_000);
+    assert.equal(line.category, "spend");
+    assert.ok((await call("nam", "add_kitty_entry", { direction: "in", amount: "2.5M", entry_on: "2026-02-05" })).error, "before first forum");
+    assert.ok((await call("december", "add_kitty_entry", { direction: "in", amount: "2.5M" })).error, "not yet a forum member today");
+    assert.equal((await call("nam", "void_kitty_entry", { id: line.id })).error, false);
+    assert.ok((await call("nam", "void_kitty_entry", { id: line.id })).error, "a void cannot be repeated");
+  });
+
+  it("chat: post and read, nothing from before the first forum", async () => {
+    const posted = await call("nam", "post_chat_message", { text: "mcp hello forum" });
+    assert.equal(posted.error, false, posted.text);
+    const nam = await call("nam", "read_chat", { limit: 200 });
+    assert.match(nam.text, /mcp hello forum/);
+    assert.match((await call("founding", "read_chat", { limit: 200 })).text, /mcp hello forum/);
+    assert.ok((await call("december", "post_chat_message", { text: "too early" })).error);
+  });
+
+  it("personal goals: add, update, delete only your own", async () => {
+    const added = await call("nam", "add_personal_goal", { title: "mcp goal", target_value: 10 });
+    assert.equal(added.error, false, added.text);
+    const id = (added.json.added as { id: string }).id;
+    assert.equal((await call("nam", "update_personal_goal", { id, current_value: 4 })).error, false);
+    assert.ok((await call("founding", "update_personal_goal", { id, current_value: 9 })).error, "not someone else's");
+    assert.ok((await call("founding", "delete_personal_goal", { id })).error, "not someone else's");
+    assert.equal((await call("nam", "delete_personal_goal", { id })).error, false);
+  });
+
+  it("library, members, biometrics and photos follow the same rule", async () => {
+    assert.doesNotMatch((await call("nam", "list_library")).text, /leak-expense/, "founding-only doc");
+    assert.match((await call("founding", "list_library")).text, /leak-expense/);
+    assert.ok((await call("nam", "get_library_doc", { slug: "leak-expense" })).error);
+    const bio = (await call("nam", "my_biometrics", { days: 180 })).json.days as { day: string }[];
+    assert.ok(bio.every((d) => d.day >= "2026-07-28"));
+    assert.equal((await call("nam", "whoami")).json.full_name, "Leak Nam Trung");
+    assert.doesNotMatch((await call("nam", "list_members")).text, /Leak Leaver/, "leavers are not listed");
+  });
 });
 
 // ── Push and the app build gate ──────────────────────────
