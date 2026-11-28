@@ -19,6 +19,18 @@ export const sha256Hex = (text: string) => createHash("sha256").update(text, "ut
 export const consentText = (version: number) =>
   `I have read the Constitution of The Shadow Forum (version ${version}) and I agree to it. I understand that typing my name is my signature.`;
 
+/** Where a member who hasn't signed the newest Constitution is held until they do. */
+export const SIGN_PATH = "/forum/resources/constitution";
+
+/** True when there is a Constitution this member can sign and they haven't signed its newest version. */
+export async function mustSignConstitution(db: Db, userId: string): Promise<boolean> {
+  const sb = db as unknown as SupabaseClient;
+  const { data: v } = await sb.from("constitution_versions").select("id").order("version", { ascending: false }).limit(1).maybeSingle();
+  if (!v) return false; // none published, or not an active member (RLS)
+  const { count } = await sb.from("constitution_signatures").select("id", { count: "exact", head: true }).eq("version_id", v.id).eq("user_id", userId);
+  return (count ?? 0) === 0;
+}
+
 export async function getConstitution(db: Db): Promise<{ current: ConstitutionVersion | null; versions: ConstitutionVersion[]; signatures: Signature[] }> {
   const sb = db as unknown as SupabaseClient;
   const [{ data: v }, { data: s }] = await Promise.all([

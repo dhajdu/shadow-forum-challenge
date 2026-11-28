@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
-import { USER_ID_HEADER, USER_EMAIL_HEADER } from "@/lib/supabase/session";
+import { PATH_HEADER, USER_ID_HEADER, USER_EMAIL_HEADER } from "@/lib/supabase/session";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -49,6 +49,7 @@ export async function updateSession(request: NextRequest) {
   const headers = new Headers(request.headers);
   headers.delete(USER_ID_HEADER);
   headers.delete(USER_EMAIL_HEADER);
+  headers.set(PATH_HEADER, path);
   if (user) {
     headers.set(USER_ID_HEADER, user.id);
     if (user.email) headers.set(USER_EMAIL_HEADER, user.email);

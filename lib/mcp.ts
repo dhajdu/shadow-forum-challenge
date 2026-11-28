@@ -8,7 +8,7 @@ import type { Database, GoalStatus } from "@/lib/database.types";
 import { NO_RECORD, readerOf, searchAgendas, type AgendaReader } from "@/lib/ask";
 import { goalSeasonId, saveGoalMeasure, createRiderGoal } from "@/lib/goals";
 import { parseRecap, visibleAgendaMd, visibleParking } from "@/app/_data/recap";
-import { getKitty, parseVnd, vndFull } from "@/app/_data/kitty";
+import { getKitty, parseVnd, vndFull, IN_CATEGORIES, OUT_CATEGORIES } from "@/app/_data/kitty";
 import { listGallery } from "@/app/_data/gallery";
 import { todayVN } from "@/app/_data/format";
 import type { Db } from "@/app/_data/types";
@@ -83,12 +83,12 @@ export const TOOLS = [
     name: "add_kitty_entry",
     title: "Add to the kitty ledger",
     description:
-      "Record money in or out of the forum kitty. Use direction 'out' with category 'spend' to submit an expense you paid for the forum (note says what it was for). Use 'in' for dues or penalties paid. Amount in VND: a number or text like '2.5M' or '750k'.",
+      "Record money in or out of the forum kitty. Use direction 'out' for an expense (category retreat, forum_away, after_forum, space_rental or other; note says what it was for). Use 'in' for dues, fines or penalties paid. Amount in VND: a number or text like '2.5M' or '750k'.",
     inputSchema: obj(
       {
         direction: { type: "string", enum: ["in", "out"] },
         amount: S("Amount in VND, e.g. 2500000, '2.5M' or '750k'"),
-        category: { type: "string", enum: ["dues", "penalty", "spend", "other"] },
+        category: { type: "string", enum: [...new Set([...IN_CATEGORIES, ...OUT_CATEGORIES])] },
         note: S("What it was for. Required for money out."),
         entry_on: S("Date, YYYY-MM-DD (default today)"),
         member: S("Who paid in, or who spent / was paid back: a member's name or id (default you)"),
@@ -328,7 +328,8 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
       if (!amount) return fail("Give an amount in VND, like 2.5M or 2,500,000.");
       const note = str(args.note) || null;
       if (direction === "out" && !note) return fail("Say what the money went on (note).");
-      const category = ["dues", "penalty", "spend", "other"].includes(String(args.category)) ? String(args.category) : direction === "out" ? "spend" : "other";
+      const allowed: readonly string[] = direction === "out" ? OUT_CATEGORIES : IN_CATEGORIES;
+      const category = allowed.includes(String(args.category)) ? String(args.category) : direction === "in" ? "dues" : "other";
       let memberId: string | null = userId;
       const who = str(args.member, 100);
       if (who) {
