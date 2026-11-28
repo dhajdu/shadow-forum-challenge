@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireMember } from "@/lib/api";
 import { NO_RECORD, citations, excerptsFor, readerOf, searchAgendas } from "@/lib/ask";
+import { readForumSettings } from "@/lib/forum-config";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -10,8 +11,8 @@ export const maxDuration = 60;
 // service-role key here; eslint enforces it), so search only returns meetings the
 // member may see.
 
-const SYSTEM = [
-  "You answer questions about The Shadow Forum's meeting agendas for one forum member.",
+const system = (forumName: string) => [
+  `You answer questions about ${forumName}'s meeting agendas for one forum member.`,
   "Use only the excerpts in the member's message. Each excerpt is labelled with its meeting's date and title.",
   "Cite the meetings you used inline, for example (23 Dec 2026 Forum).",
   `If the excerpts do not answer the question, reply exactly: "${NO_RECORD}" Do not guess, and never suggest that other meetings, records or members' content exist.`,
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     output_config: { effort: "medium" },
-    system: SYSTEM,
+    system: system((await readForumSettings(supabase)).name),
     messages: [...history, { role: "user", content: `${excerptsFor(hits)}\n\nQuestion: ${question}` }],
   });
 

@@ -49,7 +49,7 @@ export function webhookSigningSecret(env: NodeJS.ProcessEnv = process.env): stri
 
 /**
  * Forum user ids whose whoop_days rows are written by an external sync
- * (Dave Hajdu's master database) and must not be overwritten by this API sync.
+ * (a member's own master database) and must not be overwritten by this API sync.
  * Comma-separated auth user uuids. Empty means nobody is excluded.
  */
 export function externallySyncedUserIds(raw = process.env.WHOOP_EXTERNAL_SYNC_USER_IDS): Set<string> {

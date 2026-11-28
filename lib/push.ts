@@ -7,6 +7,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { isActive, loadMembers, memberCanSeeDate, type Member } from "@/lib/access";
+import { getForumSettings, type ForumSettings } from "@/lib/forum-settings";
+import { localStamp } from "@/app/_data/format";
 
 type Admin = SupabaseClient<Database>;
 
@@ -17,31 +19,31 @@ export type PushMessage =
   | { kind: "report_ready"; month: string } // month YYYY-MM
   | { kind: "forum_message"; sentOn: string }; // sentOn YYYY-MM-DD, the message's day
 
-const TZ = "Asia/Ho_Chi_Minh";
+type Forum = Pick<ForumSettings, "name" | "timeZone">;
 
-function when(heldOn: string, startsAt: string | null): string {
-  const d = startsAt ? new Date(startsAt) : new Date(`${heldOn}T00:00:00+07:00`);
-  const day = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TZ });
+function when(heldOn: string, startsAt: string | null, timeZone: string): string {
+  const d = new Date(startsAt ?? localStamp(timeZone, heldOn));
+  const day = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone });
   if (!startsAt) return day;
-  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: TZ }).replace(":00", "").toLowerCase();
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone }).replace(":00", "").toLowerCase();
   return `${day}, ${time}`;
 }
 
-/** The only texts a push can carry. */
-export function render(m: PushMessage): { title: string; body: string; data: Record<string, string> } {
+/** The only texts a push can carry. The title is the forum's name. */
+export function render(m: PushMessage, forum: Forum): { title: string; body: string; data: Record<string, string> } {
   switch (m.kind) {
     case "next_forum":
-      return { title: "The Shadow Forum", body: `Next forum: ${when(m.heldOn, m.startsAt)}`, data: { path: `/forum/${m.heldOn}` } };
+      return { title: forum.name, body: `Next forum: ${when(m.heldOn, m.startsAt, forum.timeZone)}`, data: { path: `/forum/${m.heldOn}` } };
     case "new_agenda":
-      return { title: "The Shadow Forum", body: "A new agenda is in Forum", data: { path: `/forum/${m.heldOn}` } };
+      return { title: forum.name, body: "A new agenda is in Forum", data: { path: `/forum/${m.heldOn}` } };
     case "forum_message":
-      return { title: "The Shadow Forum", body: "New message in the forum chat", data: { path: "/forum/chat" } };
+      return { title: forum.name, body: "New message in the forum chat", data: { path: "/forum/chat" } };
     case "whip_nudge":
       return { title: "The Whip", body: "Time to sync your WHOOP", data: { path: "/biometrics" } };
     case "report_ready":
     {
       const label = new Date(`${m.month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
-      return { title: "The Shadow Forum", body: `The ${label} report is ready`, data: { path: `/contest/report/${m.month}` } };
+      return { title: forum.name, body: `The ${label} report is ready`, data: { path: `/contest/report/${m.month}` } };
     }
   }
 }
@@ -75,7 +77,7 @@ export async function sendPush(admin: Admin, userIds: string[], msg: PushMessage
     .is("revoked_at", null);
   if (error) throw new Error(error.message);
   const list = devices ?? [];
-  const { title, body, data } = render(msg);
+  const { title, body, data } = render(msg, await getForumSettings());
 
   let sent = 0;
   const dead: string[] = [];

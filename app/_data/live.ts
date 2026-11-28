@@ -24,6 +24,8 @@ import {
   type Viewer,
 } from "./types";
 import { agendaTheme } from "./recap";
+import { todayIn } from "./format";
+import { getForumSettings } from "@/lib/forum-settings";
 
 const VIEWER_COLS = "id, full_name, forum_joined_on, forum_left_on, is_admin, is_founding";
 const MEETING_COLS = "id, held_on, starts_at, place, title, kind, status, updated_at, meeting_docs(id, body_md, source_updated_at)";
@@ -168,7 +170,7 @@ export async function listMembers(db: Db, v: Viewer): Promise<Member[]> {
   if (!v.is_admin) return [];
   const { data, error } = await db.from("profiles").select(`${VIEWER_COLS}, email`).order("forum_joined_on", { ascending: true, nullsFirst: false });
   fail("members", error);
-  const day = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+  const day = todayIn((await getForumSettings()).timeZone);
   return ((data ?? []) as (Viewer & { email: string | null })[]).map((r) => ({
     ...r,
     status: memberStatus(r, day),

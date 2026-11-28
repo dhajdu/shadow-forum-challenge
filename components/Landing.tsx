@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { signUpWithCode } from "@/app/actions/signup";
 import { PasswordField } from "@/components/PasswordField";
+import { useForumSettings } from "@/components/ForumSettingsProvider";
 
 type Mode = "signin" | "signup" | "forgot";
 
 export function Landing() {
   const router = useRouter();
+  const forum = useForumSettings();
   const supabase = createClient();
   const [mode, setMode] = useState<Mode>("signin");
   const [code, setCode] = useState("");
@@ -93,7 +95,7 @@ export function Landing() {
 
       <section className="panel">
         <div className="eyebrow">By invitation only</div>
-        <h1 className="title">The Shadow Forum</h1>
+        <h1 className="title">{forum.name}</h1>
         <p className="tagline">Into the Shadow</p>
 
         <form onSubmit={onSubmit}>
@@ -180,7 +182,7 @@ export function Landing() {
         </div>
       </section>
 
-      <div className="footer">The Shadow Forum</div>
+      <div className="footer">{forum.name}</div>
     </main>
   );
 }

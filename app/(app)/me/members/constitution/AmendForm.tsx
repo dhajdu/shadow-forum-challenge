@@ -13,7 +13,7 @@ export function AmendForm({ body, next }: { body: string; next: number }) {
     <form action={action} className="esign">
       <label className="esign-field">
         <span>What the amendment changes (members read this first)</span>
-        <textarea className="field" name="change_note" rows={3} required maxLength={2000} placeholder="e.g. Breaks are now fined 200,000 VND, not 500,000." />
+        <textarea className="field" name="change_note" rows={3} required maxLength={2000} placeholder="e.g. Late arrival is now fined, after a 10-minute grace." />
       </label>
       <label className="esign-field">
         <span>The Constitution, as amended</span>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, Caveat, Inter } from "next/font/google";
+import { ForumSettingsProvider } from "@/components/ForumSettingsProvider";
+import { getForumSettings, publicSettings } from "@/lib/forum-settings";
 import "./globals.css";
 
 // Neon Noir type: Archivo (condensed, via its width axis) for display, Inter for text.
@@ -8,38 +10,43 @@ const body = Inter({ subsets: ["latin", "vietnamese"], variable: "--font-body", 
 // Typed signatures (Constitution e-sign) show in a hand-written face.
 const signature = Caveat({ subsets: ["latin", "latin-ext"], variable: "--font-signature", display: "swap" });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://eoshadowforum.com";
-const TITLE = "The Shadow Forum";
 const DESCRIPTION = "Into the Shadow — a private Q4 accountability challenge. By invitation only.";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: TITLE,
-  description: DESCRIPTION,
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  const forum = await getForumSettings();
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || forum.siteUrl;
+  const TITLE = forum.name;
+  return {
+    metadataBase: new URL(SITE_URL),
     title: TITLE,
     description: DESCRIPTION,
-    url: SITE_URL,
-    siteName: TITLE,
-    type: "website",
-    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "The Shadow Forum — Race into the shadow" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: TITLE,
-    description: DESCRIPTION,
-    images: ["/og.jpg"],
-  },
-};
+    openGraph: {
+      title: TITLE,
+      description: DESCRIPTION,
+      url: SITE_URL,
+      siteName: TITLE,
+      type: "website",
+      images: [{ url: "/og.jpg", width: 1200, height: 630, alt: `${TITLE} — Race into the shadow` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: TITLE,
+      description: DESCRIPTION,
+      images: ["/og.jpg"],
+    },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${signature.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ForumSettingsProvider value={publicSettings(await getForumSettings())}>{children}</ForumSettingsProvider>
+      </body>
     </html>
   );
 }

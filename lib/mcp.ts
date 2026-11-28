@@ -1,4 +1,4 @@
-// MCP tools for The Shadow Forum: everything a member can do on the website, from
+// MCP tools for the forum: everything a member can do on the website, from
 // their own AI assistant. Every tool runs on the calling member's own Supabase
 // client (their OAuth access token), so RLS applies, including the join-date rule.
 // Agenda text also goes through visibleAgendaMd, because each agenda repeats the
@@ -8,9 +8,10 @@ import type { Database, GoalStatus } from "@/lib/database.types";
 import { NO_RECORD, readerOf, searchAgendas, type AgendaReader } from "@/lib/ask";
 import { goalSeasonId, saveGoalMeasure, createRiderGoal } from "@/lib/goals";
 import { parseRecap, visibleAgendaMd, visibleParking } from "@/app/_data/recap";
-import { getKitty, parseVnd, vndFull, IN_CATEGORIES, OUT_CATEGORIES } from "@/app/_data/kitty";
+import { getKitty, parseMoney, moneyFull, moneyShort, IN_CATEGORIES, OUT_CATEGORIES } from "@/app/_data/kitty";
 import { listGallery } from "@/app/_data/gallery";
-import { timeOf, todayVN } from "@/app/_data/format";
+import { localStamp, timeOf, todayIn } from "@/app/_data/format";
+import { readForumSettings, type ForumSettings } from "@/lib/forum-config";
 import { AGENDA_KINDS, PLANNING_GUIDE, standardRunSheet } from "@/lib/forum-planning";
 import type { Db } from "@/app/_data/types";
 
@@ -70,7 +71,7 @@ export const TOOLS = [
   },
   { name: "get_parking_lot", title: "Parking Lot", description: "Topics members asked to bring back to the forum, from the newest agenda.", inputSchema: obj(), annotations: READ },
   // ── Forum planning (reads for everyone, writes for forum admins) ──
-  { name: "planning_guide", title: "Forum planning guide", description: "How a Shadow Forum is planned: the standard run sheet, rotation, readiness checks and rules. Read it before planning a forum.", inputSchema: obj(), annotations: READ },
+  { name: "planning_guide", title: "Forum planning guide", description: "How a forum is planned: the standard run sheet, rotation, readiness checks and rules. Read it before planning a forum.", inputSchema: obj(), annotations: READ },
   {
     name: "get_forum_plan",
     title: "Get a forum's plan",
@@ -184,7 +185,7 @@ export const TOOLS = [
   {
     name: "get_kitty",
     title: "Kitty balance and ledger",
-    description: "The forum kitty: balance, dues per forum, treasurer, and ledger lines (money in and out) you can see. Amounts are in VND.",
+    description: "The forum kitty: balance, dues per forum, treasurer, and ledger lines (money in and out) you can see. Amounts are whole units of the forum's currency (the currency field).",
     inputSchema: obj({ limit: { type: "integer", minimum: 1, maximum: 200, description: "Ledger lines, newest first (default 30)" } }),
     annotations: READ,
   },
@@ -192,11 +193,11 @@ export const TOOLS = [
     name: "add_kitty_entry",
     title: "Add to the kitty ledger",
     description:
-      "Record money in or out of the forum kitty. Use direction 'out' for an expense (category retreat, forum_away, after_forum, space_rental or other; note says what it was for). Use 'in' for dues, fines or penalties paid. Amount in VND: a number or text like '2.5M' or '750k'.",
+      "Record money in or out of the forum kitty. Use direction 'out' for an expense (category retreat, forum_away, after_forum, space_rental or other; note says what it was for). Use 'in' for dues, fines or penalties paid. Amount in the forum's currency (get_kitty shows it): a whole number or text like '2.5M' or '750k'.",
     inputSchema: obj(
       {
         direction: { type: "string", enum: ["in", "out"] },
-        amount: S("Amount in VND, e.g. 2500000, '2.5M' or '750k'"),
+        amount: S("Amount in the forum's currency, e.g. 2500000, '2.5M' or '750k'"),
         category: { type: "string", enum: [...new Set([...IN_CATEGORIES, ...OUT_CATEGORIES])] },
         note: S("What it was for. Required for money out."),
         entry_on: S("Date, YYYY-MM-DD (default today)"),
@@ -336,7 +337,7 @@ type PlanMeeting = {
 };
 
 /** The forum on a date (or the multi-day forum covering it), by id, or the next one. */
-async function planMeeting(c: MemberClient, args: Args): Promise<PlanMeeting | null> {
+async function planMeeting(c: MemberClient, args: Args, f: ForumSettings): Promise<PlanMeeting | null> {
   const q = () => any(c).from("meetings").select(PLAN_COLS);
   const id = str(args.meeting_id);
   const date = day(args.date);
@@ -347,7 +348,7 @@ async function planMeeting(c: MemberClient, args: Args): Promise<PlanMeeting | n
     return (await q().lte("held_on", date).gte("ends_on", date).limit(1).maybeSingle()).data as PlanMeeting | null;
   }
   if (id || (args.date != null && args.date !== "")) return null;
-  return (await q().gte("held_on", todayVN()).neq("status", "held").neq("kind", "social").order("held_on").limit(1).maybeSingle()).data as PlanMeeting | null;
+  return (await q().gte("held_on", todayIn(f.timeZone)).neq("status", "held").neq("kind", "social").order("held_on").limit(1).maybeSingle()).data as PlanMeeting | null;
 }
 
 const isAdmin = async (c: MemberClient, userId: string) =>
@@ -360,7 +361,7 @@ const presentAt = (people: Profile[], heldOn: string) =>
 type Presentation = { meeting_id: string; presenter_id: string; coach_id: string | null; kind: string };
 type AgendaItem = { position: number; day: string | null; starts_at: string | null; minutes: number | null; kind: string; title: string; owner_id: string | null; details: string | null };
 
-async function forumPlan(c: MemberClient, m: PlanMeeting) {
+async function forumPlan(c: MemberClient, m: PlanMeeting, f: ForumSettings) {
   const [people, pres, planners, items] = await Promise.all([
     profiles(c),
     any(c).from("meeting_presentations").select("meeting_id, presenter_id, coach_id, kind").eq("meeting_id", m.id),
@@ -385,8 +386,8 @@ async function forumPlan(c: MemberClient, m: PlanMeeting) {
   }
   const { host_id, ...forum } = m;
   return {
-    forum: { ...forum, host: nameOf(host_id), starts_at: m.starts_at ? timeOf(m.starts_at) : null },
-    days_until: Math.round((Date.parse(m.held_on) - Date.parse(todayVN())) / 86400000),
+    forum: { ...forum, host: nameOf(host_id), starts_at: m.starts_at ? timeOf(m.starts_at, f.timeZone) : null },
+    days_until: Math.round((Date.parse(m.held_on) - Date.parse(todayIn(f.timeZone))) / 86400000),
     members_present: present.length,
     members: present.map((p) => p.full_name),
     presentations,
@@ -417,16 +418,17 @@ async function agendaText(c: MemberClient, meetingId: string, heldOn: string, re
 
 export async function callTool(name: string, args: Args, ctx: Ctx): Promise<ToolResult> {
   const { supabase: c, userId } = ctx;
+  const f = await readForumSettings(c); // on the member's session, like every tool
   switch (name) {
     case "whoami": {
       const [{ data: me }, kitty] = await Promise.all([
         c.from("profiles").select("full_name, email, forum_joined_on, is_founding, is_admin").eq("id", userId).maybeSingle(),
         any(c).from("kitty_settings").select("treasurer_id").maybeSingle(),
       ]);
-      return json({ ...(me ?? {}), is_treasurer: (kitty.data as { treasurer_id: string | null } | null)?.treasurer_id === userId, today: todayVN() });
+      return json({ ...(me ?? {}), is_treasurer: (kitty.data as { treasurer_id: string | null } | null)?.treasurer_id === userId, today: todayIn(f.timeZone) });
     }
     case "list_members": {
-      const today = todayVN();
+      const today = todayIn(f.timeZone);
       const people = (await profiles(c)).filter((p) => !p.forum_left_on || p.forum_left_on > today);
       return json({
         members: people.map((p) => ({ id: p.id, name: p.full_name, first_forum: p.is_founding ? "founding member" : p.forum_joined_on, admin: p.is_admin })),
@@ -444,7 +446,7 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
       const { data } = await c
         .from("meetings")
         .select("id, held_on, starts_at, title, kind, status, place")
-        .gte("held_on", todayVN())
+        .gte("held_on", todayIn(f.timeZone))
         .neq("status", "held")
         .order("held_on")
         .limit(1)
@@ -488,19 +490,20 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
       return data ? json({ doc: data }) : fail("No such document.");
     }
     case "get_kitty": {
-      const [k, people] = await Promise.all([getKitty(db(c)), profiles(c)]);
+      const [k, people] = await Promise.all([getKitty(db(c), f.duesPerForum), profiles(c)]);
       const nameOf = new Map(people.map((p) => [p.id, p.full_name]));
       const limit = Math.min(200, Math.max(1, Number(args.limit) || 30));
       return json({
-        balance_vnd: k.balance,
-        balance: k.balance == null ? null : vndFull(k.balance),
-        dues_per_forum_vnd: k.dues,
+        balance_amount: k.balance,
+        balance: k.balance == null ? null : moneyFull(k.balance, f.currency),
+        currency: f.currency,
+        dues_per_forum: k.dues,
         treasurer: k.treasurerId ? nameOf.get(k.treasurerId) ?? null : null,
         entries: k.entries.slice(0, limit).map((e) => ({
           id: e.id,
           date: e.entry_on,
           direction: e.direction,
-          amount_vnd: e.amount_vnd,
+          amount: e.amount_vnd,
           category: e.category,
           member: e.member_id ? nameOf.get(e.member_id) ?? null : null,
           note: e.note,
@@ -512,8 +515,8 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
     case "add_kitty_entry": {
       const direction = args.direction === "out" ? "out" : args.direction === "in" ? "in" : null;
       if (!direction) return fail("direction must be 'in' or 'out'.");
-      const amount = parseVnd(String(args.amount ?? ""));
-      if (!amount) return fail("Give an amount in VND, like 2.5M or 2,500,000.");
+      const amount = parseMoney(String(args.amount ?? ""), f.currency);
+      if (!amount) return fail(`Give a whole amount in ${f.currency}, like ${moneyShort(f.duesPerForum || 250, f.currency)}.`);
       const note = str(args.note) || null;
       if (direction === "out" && !note) return fail("Say what the money went on (note).");
       const allowed: readonly string[] = direction === "out" ? OUT_CATEGORIES : IN_CATEGORIES;
@@ -538,7 +541,7 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
         .select("id, entry_on, direction, amount_vnd, category, note")
         .single();
       if (error) return fail("Could not save that line. Dates before your first forum can't be used.");
-      return json({ saved: data, amount: vndFull(amount) });
+      return json({ saved: data, amount: moneyFull(amount, f.currency) });
     }
     case "void_kitty_entry": {
       const id = str(args.id);
@@ -550,7 +553,7 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
     case "read_chat": {
       const limit = Math.min(200, Math.max(1, Number(args.limit) || 50));
       let q = any(c).from("forum_messages").select("id, author_id, body, created_at, edited_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(limit);
-      if (day(args.since)) q = q.gt("created_at", `${day(args.since)}T23:59:59+07:00`);
+      if (day(args.since)) q = q.gt("created_at", localStamp(f.timeZone, day(args.since)!, "23:59:59"));
       const [{ data }, people] = await Promise.all([q, profiles(c)]);
       const nameOf = new Map(people.map((p) => [p.id, p.full_name]));
       const rows = ((data ?? []) as { id: string; author_id: string; body: string; created_at: string; edited_at: string | null }[]).reverse();
@@ -655,11 +658,11 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
     case "planning_guide":
       return { content: [{ type: "text", text: PLANNING_GUIDE }] };
     case "get_forum_plan": {
-      const m = await planMeeting(c, args);
-      return m ? json(await forumPlan(c, m)) : fail("No forum found.");
+      const m = await planMeeting(c, args, f);
+      return m ? json(await forumPlan(c, m, f)) : fail("No forum found.");
     }
     case "get_rotation": {
-      const from = day(args.from) ?? todayVN();
+      const from = day(args.from) ?? todayIn(f.timeZone);
       const to = day(args.to) ?? `${Number(from.slice(0, 4)) + 1}${from.slice(4)}`;
       const [{ data: ms }, people] = await Promise.all([
         any(c).from("meetings").select("id, held_on, ends_on, kind, title, place, host_id").gte("held_on", from).lte("held_on", to).order("held_on"),
@@ -684,7 +687,7 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
     }
     case "update_forum": {
       if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
-      const m = await planMeeting(c, { date: args.date });
+      const m = await planMeeting(c, { date: args.date }, f);
       if (!m) return fail("No forum found on that date.");
       const patch: Record<string, unknown> = {};
       for (const k of ["place", "address", "theme", "title", "after_activity"] as const) if (typeof args[k] === "string") patch[k] = str(args[k]) || null;
@@ -702,7 +705,7 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
       }
       if (typeof args.starts_at === "string") {
         if (args.starts_at && !HHMM.test(args.starts_at)) return fail("starts_at is HH:MM.");
-        patch.starts_at = args.starts_at ? `${m.held_on}T${args.starts_at.padStart(5, "0")}:00+07:00` : null;
+        patch.starts_at = args.starts_at ? localStamp(f.timeZone, m.held_on, args.starts_at) : null;
       }
       if (args.ends_on !== undefined) {
         if (args.ends_on && !day(args.ends_on)) return fail("ends_on is YYYY-MM-DD.");
@@ -710,14 +713,14 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
       }
       if (Array.isArray(args.conversation_starters)) patch.conversation_starters = args.conversation_starters.map((q) => str(q)).filter(Boolean);
       if (!Object.keys(patch).length) return fail("Nothing to change.");
-      const before = (await forumPlan(c, m)).forum;
+      const before = (await forumPlan(c, m, f)).forum;
       const { data, error } = await any(c).from("meetings").update(patch).eq("id", m.id).select(PLAN_COLS).single();
       if (error || !data) return fail("Could not update the forum.");
-      return json({ before, after: (await forumPlan(c, data as PlanMeeting)).forum });
+      return json({ before, after: (await forumPlan(c, data as PlanMeeting, f)).forum });
     }
     case "set_agenda": {
       if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
-      const m = await planMeeting(c, { date: args.date });
+      const m = await planMeeting(c, { date: args.date }, f);
       if (!m) return fail("No forum found on that date.");
       if (!Array.isArray(args.items)) return fail("Give items as a list.");
       const people = await profiles(c);
@@ -736,20 +739,20 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
         }
         items.push({ kind, title, starts_at: raw.starts_at || null, minutes: num(raw.minutes), day: day(raw.day), owner_id: owner, details: str(raw.details, 4000) || null });
       }
-      const before = (await forumPlan(c, m)).run_sheet;
+      const before = (await forumPlan(c, m, f)).run_sheet;
       const { error } = await any(c).rpc("set_meeting_agenda", { p_meeting: m.id, p_items: items });
       if (error) return fail("Could not save the run sheet.");
-      return json({ before, after: (await forumPlan(c, m)).run_sheet });
+      return json({ before, after: (await forumPlan(c, m, f)).run_sheet });
     }
     case "set_presentation":
     case "remove_presentation": {
       if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
-      const m = await planMeeting(c, { date: args.date });
+      const m = await planMeeting(c, { date: args.date }, f);
       if (!m) return fail("No forum found on that date.");
       const people = await profiles(c);
       const presenter = memberFrom(people, str(args.presenter, 100));
       if (typeof presenter === "string") return fail(presenter);
-      const before = (await forumPlan(c, m)).presentations;
+      const before = (await forumPlan(c, m, f)).presentations;
       if (name === "remove_presentation") {
         const { data } = await any(c).from("meeting_presentations").delete().eq("meeting_id", m.id).eq("presenter_id", presenter.id).select("id");
         if (!data?.length) return fail(`${presenter.full_name} is not presenting then.`);
@@ -766,11 +769,11 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
           .upsert({ meeting_id: m.id, presenter_id: presenter.id, coach_id: coachId, kind: args.kind === "live" ? "live" : "planned" }, { onConflict: "meeting_id,presenter_id" });
         if (error) return fail("Could not save the presentation.");
       }
-      return json({ before, after: (await forumPlan(c, m)).presentations });
+      return json({ before, after: (await forumPlan(c, m, f)).presentations });
     }
     case "set_planners": {
       if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
-      const m = await planMeeting(c, { date: args.date });
+      const m = await planMeeting(c, { date: args.date }, f);
       if (!m) return fail("No forum found on that date.");
       if (!Array.isArray(args.members)) return fail("Give members as a list.");
       const people = await profiles(c);
@@ -780,7 +783,7 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
         if (typeof who === "string") return fail(who);
         if (!ids.includes(who.id)) ids.push(who.id);
       }
-      const before = (await forumPlan(c, m)).planners;
+      const before = (await forumPlan(c, m, f)).planners;
       let del = any(c).from("meeting_planners").delete().eq("meeting_id", m.id);
       if (ids.length) del = del.not("member_id", "in", `(${ids.join(",")})`);
       const { error: delError } = await del;
@@ -788,10 +791,10 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
         ? await any(c).from("meeting_planners").upsert(ids.map((member_id) => ({ meeting_id: m.id, member_id })), { onConflict: "meeting_id,member_id", ignoreDuplicates: true })
         : { error: null };
       if (delError || insError) return fail("Could not save the planners.");
-      return json({ before, after: (await forumPlan(c, m)).planners });
+      return json({ before, after: (await forumPlan(c, m, f)).planners });
     }
     case "get_roles": {
-      const year = Number(args.year) || Number(todayVN().slice(0, 4));
+      const year = Number(args.year) || Number(todayIn(f.timeZone).slice(0, 4));
       const [{ data }, people] = await Promise.all([any(c).from("forum_roles").select("role, member_id").eq("year", year), profiles(c)]);
       const rows = (data ?? []) as { role: string; member_id: string }[];
       const roles = Object.fromEntries(

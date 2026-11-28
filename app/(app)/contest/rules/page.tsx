@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PLACEMENT_PENALTIES, MISSED_GOAL_PENALTY, COACH_SHARE_PENALTY, CONTEST_START, CONTEST_END } from "@/lib/contest";
 import { getSessionUser } from "@/lib/supabase/session";
+import { getForumSettings } from "@/lib/forum-settings";
 
 const fmt = (d: Date) =>
   d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -11,6 +12,7 @@ export default async function RulesPage() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
+  const { currency } = await getForumSettings();
 
   return (
     <main className="app">
@@ -19,7 +21,7 @@ export default async function RulesPage() {
         <div>
           <div className="eyebrow">The pact</div>
           <h1>The Rules</h1>
-          <p className="sub">Q4 2026 · agreed by the five. Amounts in VND.</p>
+          <p className="sub">Q4 2026 · agreed by the five. Amounts in {currency}.</p>
         </div>
       </div>
 
@@ -27,8 +29,8 @@ export default async function RulesPage() {
         <h3>1 · Business goal</h3>
         <p className="rule-p">
           Each rider commits to one Q4 business goal. <b>Hit it and you pay nothing.</b> Miss it and
-          <b> {MISSED_GOAL_PENALTY}M VND</b> is owed by <b>the rider</b> and another
-          <b> {COACH_SHARE_PENALTY}M VND</b> by <b>their coach</b> — skin in the game on both sides of the 1-on-1.
+          <b> {MISSED_GOAL_PENALTY}M {currency}</b> is owed by <b>the rider</b> and another
+          <b> {COACH_SHARE_PENALTY}M {currency}</b> by <b>their coach</b> — skin in the game on both sides of the 1-on-1.
         </p>
       </section>
 
@@ -46,7 +48,7 @@ export default async function RulesPage() {
             {PLACEMENT_PENALTIES.map((amt, i) => (
               <tr key={i}>
                 <td>{ordinal(i)}{i === 0 ? " (winner)" : ""}</td>
-                <td className={`r amt ${amt === 0 ? "free" : "owe"}`}>{amt === 0 ? "0" : `${amt}M VND`}</td>
+                <td className={`r amt ${amt === 0 ? "free" : "owe"}`}>{amt === 0 ? "0" : `${amt}M ${currency}`}</td>
               </tr>
             ))}
           </tbody>

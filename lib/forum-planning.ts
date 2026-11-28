@@ -36,7 +36,7 @@ export function standardRunSheet(present: number): RunSheetLine[] {
   });
 }
 
-export const PLANNING_GUIDE = `# Planning a Shadow Forum
+export const PLANNING_GUIDE = `# Planning a forum
 
 You are helping the forum's moderator. The moderator changes every year, so use the forum's data, not memory.
 

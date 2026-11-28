@@ -12,7 +12,7 @@ export default async function AgendaPage({ params }: { params: Promise<{ date: s
   const { date } = await params;
   // a date (web links) or a meeting id (push deep links)
   if (!/^(\d{4}-\d{2}-\d{2}|[0-9a-f-]{36})$/i.test(date)) notFound();
-  const { db, viewer } = await getForumContext();
+  const { db, viewer, forum } = await getForumContext();
   // not visible and not there look the same: 404, with no hint either way
   const m = await getMeeting(db, viewer, date);
   if (!m) notFound();
@@ -31,7 +31,7 @@ export default async function AgendaPage({ params }: { params: Promise<{ date: s
         <h2 className={r.title}>{m.title}</h2>
         <p className={r.when}>
           {weekdayDay(m.held_on)} {m.held_on.slice(0, 4)}
-          {m.starts_at ? ` · ${timeOf(m.starts_at)}` : ""}
+          {m.starts_at ? ` · ${timeOf(m.starts_at, forum.timeZone)}` : ""}
           {place ? ` · ${place}` : ""}
         </p>
         {recap?.purpose && <blockquote className={r.purpose}>{recap.purpose}</blockquote>}

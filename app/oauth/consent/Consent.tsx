@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { OAuthAuthorizationDetails } from "@supabase/supabase-js";
+import { useForumSettings } from "@/components/ForumSettingsProvider";
 
 const SCOPE_LABEL: Record<string, string> = {
   openid: "Know it's you",
@@ -11,6 +12,7 @@ const SCOPE_LABEL: Record<string, string> = {
 };
 
 export function Consent({ authorizationId }: { authorizationId: string }) {
+  const forum = useForumSettings();
   const [details, setDetails] = useState<OAuthAuthorizationDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -48,7 +50,7 @@ export function Consent({ authorizationId }: { authorizationId: string }) {
     <div className="consent">
       <h1 className="consent-title">{details.client.name || "An assistant"} wants to read your forum</h1>
       <p className="consent-p">
-        Signed in as <b>{details.user.email}</b>. It will see only what you can see in the Shadow Forum, from your first
+        Signed in as <b>{details.user.email}</b>. It will see only what you can see in the {forum.shortName}, from your first
         forum on, and it cannot change anything.
       </p>
       {scopes.length > 0 && (

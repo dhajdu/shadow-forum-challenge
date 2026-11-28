@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { coachNameFor, normalizeName } from "@/lib/roster";
+import { getForumSettings } from "@/lib/forum-settings";
 
 /**
  * Set each goal's coach_id from the roster: coach = the profile whose name is
@@ -8,6 +9,7 @@ import { coachNameFor, normalizeName } from "@/lib/roster";
  * more participants join.
  */
 export async function reconcileCoaches(supabase: SupabaseClient<Database>) {
+  const { coaches } = await getForumSettings();
   const { data: goals } = await supabase.from("goals").select("id, user_id, coach_id");
   const { data: profs } = await supabase.from("profiles").select("id, full_name");
 
@@ -21,7 +23,7 @@ export async function reconcileCoaches(supabase: SupabaseClient<Database>) {
   for (const g of (goals ?? []) as { id: string; user_id: string; coach_id: string | null }[]) {
     const ownerName = nameById.get(g.user_id);
     if (!ownerName) continue;
-    const coachName = coachNameFor(ownerName);
+    const coachName = coachNameFor(ownerName, coaches);
     const coachId = coachName ? idByName.get(normalizeName(coachName)) ?? null : null;
     if (coachId && coachId !== g.coach_id) {
       await supabase.from("goals").update({ coach_id: coachId }).eq("id", g.id);

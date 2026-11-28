@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { selectAll } from "@/lib/supabase/selectAll";
 import { requireMember } from "@/lib/api";
+import { readForumSettings } from "@/lib/forum-config";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
     .join("\n");
 
   const system = [
-    "You are the WHOOP data analyst inside The Shadow Forum, a private fitness-accountability app.",
+    `You are the WHOOP data analyst inside ${(await readForumSettings(supabase)).name}, a private fitness-accountability app.`,
     "You are helping ONE rider understand THEIR OWN WHOOP data. You only ever have access to this rider's data — never reference or compare to anyone else.",
     "Give clear analysis, insights, and practical recommendations. Be concise and specific, use the numbers, and point out trends.",
     "Reply in plain text — no markdown tables, no ## headers, no ** bold. Use short paragraphs and simple '- ' bullets. Keep it tight.",

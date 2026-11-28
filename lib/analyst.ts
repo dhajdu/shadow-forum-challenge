@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 import { selectAll } from "@/lib/supabase/selectAll";
 import { isActive, loadMembers } from "@/lib/access";
+import { getForumSettings } from "@/lib/forum-settings";
 
 type Admin = SupabaseClient<Database>;
 
@@ -43,8 +44,8 @@ const SCHEMA = {
   },
 };
 
-const SYSTEM = [
-  "You analyse one member's WHOOP data for The Shadow Forum, a private fitness-accountability contest.",
+const system = (forumName: string) => [
+  `You analyse one member's WHOOP data for ${forumName}, a private fitness-accountability contest.`,
   "Each line is one day: race score (0-100, the average of recovery %, sleep performance % and strain as % of 21), the components, HRV and resting HR, then that day's journal answers (yes / no).",
   "Compare journal behaviours with the scores. Journal answers describe the day they're logged on, so look mainly at their effect on the NEXT day's recovery, sleep and score.",
   "Only report patterns the data supports: quote the numbers (averages with vs without, and how many days), and say when a sample is small. Don't give medical advice.",
@@ -95,7 +96,7 @@ async function analyseMember(client: Anthropic, admin: Admin, userId: string): P
     model: ANALYST_MODEL,
     max_tokens: 16000,
     output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA } },
-    system: SYSTEM,
+    system: system((await getForumSettings()).name),
     messages: [{ role: "user", content: `Last ${WINDOW_DAYS} days, oldest first:\n${dailyLines(days, journal)}` }],
   });
   if (response.stop_reason !== "end_turn") return null; // refusal or cut off
