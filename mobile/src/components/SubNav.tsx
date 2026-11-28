@@ -1,12 +1,14 @@
-// Section tabs that are real routes (same paths as the website), drawn as the segmented control.
+// Section tabs that are real routes (the website's paths), drawn as red-underlined text tabs.
 import { router, usePathname } from "expo-router";
-import { Seg } from "./ui";
+import { Tabs } from "./ui";
 
-export function SubNav({ items }: { items: readonly { href: string; label: string; match?: (p: string) => boolean }[] }) {
+type Item = { href: string; label: string; match?: (p: string) => boolean };
+
+export function SubNav({ items }: { items: readonly Item[] }) {
   const path = usePathname();
   const on = items.find((i) => (i.match ? i.match(path) : path === i.href)) ?? items[0];
   return (
-    <Seg
+    <Tabs
       options={items.map((i) => ({ key: i.href, label: i.label }))}
       value={on.href}
       onChange={(href) => {
@@ -16,17 +18,18 @@ export function SubNav({ items }: { items: readonly { href: string; label: strin
   );
 }
 
-export const FORUM_NAV = [
-  { href: "/forum", label: "Agendas" },
-  { href: "/forum/dates", label: "Dates" },
-  { href: "/forum/library", label: "Library" },
-  { href: "/forum/chat", label: "Chat" },
-] as const;
+export const FORUM_NAV: readonly Item[] = [
+  { href: "/forum", label: "Agenda" },
+  { href: "/forum/topics", label: "Topics" },
+  { href: "/forum/photos", label: "Photos" },
+  { href: "/forum/kitty", label: "Kitty" },
+  { href: "/forum/resources", label: "Resources", match: (p) => p.startsWith("/forum/resources") },
+];
 
-export const CONTEST_NAV = [
+export const CONTEST_NAV: readonly Item[] = [
   { href: "/contest", label: "Race" },
-  { href: "/contest/goal", label: "My goal" },
-  { href: "/contest/kitty", label: "Kitty" },
+  { href: "/contest/goals", label: "Goals" },
+  { href: "/contest/kitty", label: "Penalties" },
   { href: "/contest/rules", label: "Rules" },
-  { href: "/contest/report", label: "Report", match: (p: string) => p.startsWith("/contest/report") },
-] as const;
+  { href: "/contest/report", label: "Report", match: (p) => p.startsWith("/contest/report") },
+];

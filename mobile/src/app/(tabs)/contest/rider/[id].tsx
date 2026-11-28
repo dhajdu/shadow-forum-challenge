@@ -3,8 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { CONTEST_START_DAY, FORMULA, isStale, one, ordinal, ranked, scoreColor } from "@shared/contest";
 import { contestRows } from "@shared/stats";
 import { Spark } from "@/components/charts";
-import { Head } from "@/components/Head";
-import { Banner, Big, Body, Card, Chip, Empty, Header, Kpi, Loading, Screen } from "@/components/ui";
+import { Banner, Big, Body, Card, Chip, Empty, Kpi, Loading, Screen } from "@/components/ui";
 import * as data from "@/data";
 import { short } from "@/lib/format";
 import { useLoad } from "@/lib/useLoad";
@@ -20,18 +19,16 @@ export default function Rider() {
     return { row: rank >= 0 ? list[rank] : null, rank, total: list.length, goal, days };
   }, [id]);
 
-  if (loading && !d) return <Screen><Head back="Contest" /><Loading /></Screen>;
-  if (error) return <Screen><Head back="Contest" /><Banner tone={color.red}>{error}</Banner></Screen>;
+  if (loading && !d) return <Screen banner="stances" back="Race"><Loading /></Screen>;
+  if (error) return <Screen banner="stances" back="Race"><Banner tone={color.red}>{error}</Banner></Screen>;
   // Not found and not allowed look the same.
-  if (!d?.row) return <Screen><Head back="Contest" /><Empty>No rider here.</Empty></Screen>;
+  if (!d?.row) return <Screen banner="stances" back="Race"><Empty>No rider here.</Empty></Screen>;
   const { row, rank, total, goal, days } = d;
   const history = days.slice(-90).map((x) => x.score);
   const rows = contestRows(days);
 
   return (
-    <Screen>
-      <Head back="Contest" title={row.full_name.split(" ")[0]} />
-      <Header title={row.full_name} />
+    <Screen banner="stances" back="Race" title={row.full_name}>
       <Body muted>
         Rank #{rank + 1} · race avg {one(row.contest_avg)}
       </Body>

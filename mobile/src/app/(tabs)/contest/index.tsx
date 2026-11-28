@@ -48,7 +48,7 @@ function Race() {
     <>
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Kpi value={`${dayOfContest()}/${CONTEST_DAYS}`} label="Day" />
-        <Kpi value={`${pot}M`} label="Kitty so far" tone={color.amber} />
+        <Kpi value={`${pot}M`} label="Penalties so far" tone={color.amber} />
         <Kpi value={scored.length ? one(avg) : "—"} label="Group avg" tone={scored.length ? scoreColor(avg) : color.ink} />
       </View>
 

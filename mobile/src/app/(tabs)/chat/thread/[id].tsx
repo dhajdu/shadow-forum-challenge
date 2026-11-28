@@ -1,7 +1,6 @@
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo } from "react";
 import { ChatRoom } from "@/components/ChatRoom";
-import { Head } from "@/components/Head";
 import { Banner, Empty, Loading, Screen } from "@/components/ui";
 import * as data from "@/data";
 import { refreshUnread } from "@/lib/unread";
@@ -9,7 +8,7 @@ import { threads } from "@/lib/threads";
 import { useLoad } from "@/lib/useLoad";
 import { color } from "@/theme/tokens";
 
-// /forum/thread/<first message id> — a chat thread: the message, a reply count, the replies and a
+// /chat/thread/<first message id> — a chat thread: the message, a reply count, the replies and a
 // composer that posts { body, reply_to: <first message id> }.
 export default function Thread() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,8 +35,7 @@ export default function Thread() {
   }, [d, id]);
 
   return (
-    <Screen scroll={false}>
-      <Head title="Thread" back="Chat" />
+    <Screen scroll={false} banner="chat" back="Chat" title="Thread">
       {loading && !d ? <Loading /> : null}
       {error ? <Banner tone={color.red}>{error}</Banner> : null}
       {/* Not found and not allowed look the same. */}

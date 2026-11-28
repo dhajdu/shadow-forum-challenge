@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Alert, View } from "react-native";
-import { Head } from "@/components/Head";
 import { Banner, Body, Button, Card, Empty, Field, Loading, Row, Screen, Seg, Tag } from "@/components/ui";
 import * as data from "@/data";
 import { long } from "@/lib/format";
@@ -33,8 +32,7 @@ export default function Members() {
   }
 
   return (
-    <Screen>
-      <Head back="Me" title="Members and access" />
+    <Screen banner="me" back="Me" title="Members">
       {loading && !list ? <Loading /> : null}
       {error ? <Banner tone={color.red}>{error}</Banner> : null}
       {msg ? <Banner tone={msg.ok ? color.green : color.red}>{msg.text}</Banner> : null}

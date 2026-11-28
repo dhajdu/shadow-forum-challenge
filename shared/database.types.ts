@@ -1,4 +1,4 @@
-// COPY of lib/database.types.ts from shadow-api's branch, with the import pointed at ./database.generated. Re-copy, never edit.
+// COPY of lib/database.types.ts with the import pointed at ./database.generated. Re-copy, never edit.
 // The app's database types: the CLI-generated schema (lib/database.generated.ts,
 // regenerate with `npm run types`) plus a thin override for what the generator
 // cannot see:
@@ -15,7 +15,7 @@ export type GoalStatus = "on_track" | "at_risk" | "behind" | "hit";
 export type UploadStatus = "uploaded" | "processing" | "parsed" | "error";
 export type PenaltyKind = "placement" | "missed_goal" | "coach_share";
 export type WhoopConnectionStatus = "connected" | "disconnected" | "revoked";
-export type MeetingKind = "forum" | "retreat" | "kickoff";
+export type MeetingKind = "forum" | "away" | "retreat" | "kickoff";
 export type MeetingStatus = "planned" | "held";
 export type LibraryAudience = "all" | "founding";
 export type PushPlatform = "ios" | "android";

@@ -2,16 +2,15 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ChatRoom } from "@/components/ChatRoom";
 import { SampleNote } from "@/components/SampleNote";
-import { FORUM_NAV, SubNav } from "@/components/SubNav";
-import { Banner, Header, Loading, Screen } from "@/components/ui";
+import { Banner, Loading, Screen } from "@/components/ui";
 import * as data from "@/data";
 import { refreshUnread } from "@/lib/unread";
 import { threads } from "@/lib/threads";
 import { useLoad } from "@/lib/useLoad";
 import { color } from "@/theme/tokens";
 
-// /forum/chat — one group chat for the whole forum, with threads like the website: a reply sits in
-// the thread under the message it answers (/forum/thread/<id>), not in this list. The database
+// /chat — one group chat for the whole forum, with threads like the website: a reply sits in
+// the thread under the message it answers (/chat/thread/<id>), not in this list. The database
 // shows messages from the member's first forum on; the app never filters.
 export default function Chat() {
   const { data: d, error, loading, reload } = useLoad(async () => {
@@ -42,9 +41,7 @@ export default function Chat() {
   const { top, replies } = useMemo(() => threads(d?.messages ?? []), [d]);
 
   return (
-    <Screen scroll={false}>
-      <Header title="Forum" />
-      <SubNav items={FORUM_NAV} />
+    <Screen scroll={false} banner="chat" title="Chat">
       <SampleNote />
       {loading && !d ? <Loading /> : null}
       {error ? <Banner tone={color.red}>{error}</Banner> : null}
@@ -53,7 +50,7 @@ export default function Chat() {
           me={d.me}
           messages={top}
           replies={replies}
-          onOpenThread={(id) => router.push(`/forum/thread/${id}`)}
+          onOpenThread={(id) => router.push(`/chat/thread/${id}`)}
           reload={reload}
           placeholder="Message the forum…"
           empty="No messages yet. Say hello to the forum."

@@ -8,10 +8,10 @@ import { color, fs } from "@/theme/tokens";
 // /contest/rules — the rules as agreed (same text as the iOS app and the website).
 export default function RulesPage() {
   return (
-    <ContestShell>
+    <ContestShell gate={false}>
       {(season) => (
         <>
-          <Body muted>{season.name} · agreed by the five. Amounts in VND.</Body>
+          <Body muted>{season ? `${season.name} · ` : ""}Agreed by the five. Amounts in VND.</Body>
           <Card title="1 · Business goal">
             <Body>
               Each rider commits to one business goal for the season. Hit it and you pay nothing. Miss it and {MISSED_GOAL_PENALTY}M VND is owed by the rider and another{" "}

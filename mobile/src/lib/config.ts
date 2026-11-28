@@ -7,7 +7,7 @@ import Constants from "expo-constants";
 export const config = {
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
-  apiBaseUrl: (process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://eoshadowforum.com").replace(/\/$/, ""),
+  apiBaseUrl: (process.env.EXPO_PUBLIC_API_BASE_URL || "https://eoshadowforum.com").replace(/\/$/, ""),
   /** Fixture persona for demos and screenshots: "founding" | "nam" | "minhanh". Empty = live. */
   demoPersona: process.env.EXPO_PUBLIC_DEMO_PERSONA ?? "",
   easProjectId: (Constants.expoConfig?.extra?.eas?.projectId as string | undefined) ?? undefined,
