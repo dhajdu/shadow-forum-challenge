@@ -40,7 +40,7 @@ export type BannerName = keyof typeof BANNERS;
 export function PageBanner({
   image,
   height = bannerH,
-  position = "50% 40%",
+  position = "50% 72%",
   children,
 }: {
   image: BannerName;

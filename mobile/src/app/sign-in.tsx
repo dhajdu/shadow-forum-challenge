@@ -37,7 +37,7 @@ export default function SignIn() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 60 }}>
-        <PageBanner image="landing" height={heroH} position="50% 35%">
+        <PageBanner image="landing" height={heroH} position="50% 60%">
           <Eyebrow tone={color.inkSoft}>By invitation only</Eyebrow>
           <Display size={60}>The Shadow Forum</Display>
           <Small tone={color.inkSoft}>Into the Shadow</Small>
