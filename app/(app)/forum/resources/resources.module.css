@@ -1,0 +1,20 @@
+/* Resources: the forum toolkit. */
+.page { max-width: var(--read-w); }
+.lede { color: var(--ink-soft); font-size: var(--fs-md); line-height: 1.55; margin-bottom: var(--sp-8); }
+.block { margin-top: var(--sp-32); }
+.label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); margin-bottom: var(--sp-8); }
+.tools { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--hair); background: var(--line-soft);
+  border: var(--hair) solid var(--line-soft); }
+.tool { display: flex; flex-direction: column; gap: var(--sp-6); padding: var(--sp-20); background: var(--bg); }
+.tool b { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-xl); text-transform: uppercase;
+  line-height: 1; color: var(--ink); }
+.tool p { color: var(--ink-soft); font-size: var(--fs-sm); line-height: 1.5; flex: 1; }
+.when { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--red); }
+.open { color: var(--blue); text-decoration: none; font-size: var(--fs-sm); font-weight: 600; }
+.open:hover { color: var(--ink); }
+.johari { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--sp-20); align-items: center; margin-top: var(--sp-16);
+  padding: var(--sp-16); border: var(--hair) solid var(--line-soft); }
+.johari img { width: 100%; height: auto; display: block; }
+.johari figcaption { color: var(--ink-soft); font-size: var(--fs-sm); line-height: 1.55; }
+.johari figcaption b { display: block; color: var(--ink); font-size: var(--fs-md); margin-bottom: var(--sp-6); }
+@media (max-width: 700px) { .tools, .johari { grid-template-columns: minmax(0, 1fr); } }
