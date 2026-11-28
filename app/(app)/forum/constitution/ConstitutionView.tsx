@@ -4,6 +4,7 @@ import { consentText, getConstitution } from "@/app/_data/constitution";
 import { longDay } from "@/app/_data/format";
 import { Markdown } from "@/components/Markdown";
 import { SignForm } from "./SignForm";
+import { MarkPrompted } from "./MarkPrompted";
 import s from "./constitution.module.css";
 
 type Person = { id: string; full_name: string; is_founding: boolean; forum_joined_on: string | null; forum_left_on: string | null };
@@ -31,6 +32,7 @@ export async function ConstitutionView() {
 
   return (
     <article className={s.wrap}>
+      {!mine && <MarkPrompted version={current.version} />}
       <header className={s.head}>
         <div className="eyebrow">Version {current.version} · in force since {day(current.published_at)}</div>
         <h2>Approved Constitution</h2>
