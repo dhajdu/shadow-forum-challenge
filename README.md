@@ -10,7 +10,7 @@ A private Q4 2026 accountability app for five members: a WHOOP-score contest —
 ## Getting started
 ```bash
 npm install
-cp .env.example .env.local   # fill in Supabase + integration keys
+# .env.local at the repo root lists every variable (never committed; ask Dave for values)
 npm run dev                  # http://localhost:3000
 ```
 

@@ -17,4 +17,4 @@ Next.js 15 (App Router), React 19, TypeScript, Supabase (Auth, Postgres with RLS
 - Page layout goes in a CSS module next to the page; shared patterns go in `app/globals.css`.
 - Checks: `npm run typecheck`, `npm run lint`. `npm run build` needs Supabase keys in `.env.local`.
 - Migrations live in `supabase/migrations/`, numbered sequentially.
-- New env var: add to `.env.example`, `.env.local` and Vercel in the same PR.
+- New env var: add it to `.env.local` (name and a one-line comment) and to Vercel in the same PR. There is no `.env.example`.
