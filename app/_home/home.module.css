@@ -1,4 +1,4 @@
-/* Home, Neon Noir: a full-bleed hero with the next forum, then hairline sections; Ask rail on wide screens. */
+/* Home, Neon Noir: a full-bleed hero with the next forum, then hairline sections. Ask AI floats (components/AskDock.tsx). */
 .home { min-width: 0; }
 :global(.shell-main) > .home { padding-top: 0; }
 
@@ -17,8 +17,6 @@
 .body { display: flex; flex-wrap: wrap; gap: var(--sp-32) var(--sp-48); align-items: flex-start; }
 :global(.shell-main) > .home .body { padding-top: var(--sp-8); }
 .mainCol { flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-20); }
-.rail { flex: 1 1 320px; min-width: 0; display: none; border-top: var(--hair) solid var(--line); padding-top: var(--sp-20); }
-.rail :global(.chat) { max-height: calc(100dvh - 300px); }
 
 .label { display: block; font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
 .block { border-top: var(--hair) solid var(--line); padding-top: var(--sp-16); }
@@ -51,9 +49,6 @@
 @media (min-width: 768px) {
   .hero { min-height: var(--hero-h-lg); }
   .heroInner { padding: var(--sp-60) var(--sp-48) var(--sp-32); }
-}
-@media (min-width: 1280px) {
-  .rail { display: block; position: sticky; top: var(--sp-24); }
 }
 .galleryHead { display: flex; justify-content: space-between; align-items: baseline; text-decoration: none; margin-bottom: var(--sp-10); }
 .gallery { list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--sp-4); }

@@ -18,6 +18,7 @@ export type Meeting = {
   status: MeetingStatus;
   updated_at: string; // for "new since your last visit"
   has_agenda: boolean;
+  theme: string | null; // the agenda's Purpose line, e.g. "Explore 5 cool business ideas"
   file_count: number | null; // null: not counted on list views
   path: string; // /forum/<date>, or /forum/<id> when another meeting shares the date
 };

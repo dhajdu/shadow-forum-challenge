@@ -5,7 +5,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export function MeetingRow({ m }: { m: Meeting }) {
   const meta = [
-    m.status === "planned" ? "Coming" : m.has_agenda ? "Agenda" : null,
+    m.theme ?? (m.status === "planned" ? "Coming" : m.has_agenda ? "Agenda" : null),
     m.file_count ? `${m.file_count} file${m.file_count === 1 ? "" : "s"}` : null,
   ]
     .filter(Boolean)

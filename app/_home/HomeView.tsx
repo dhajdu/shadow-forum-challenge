@@ -9,7 +9,6 @@ import { getLibraryDoc, listLibrary, listMeetings, listSeasons, memberStatus, to
 import { parseVision } from "@/app/_data/vision";
 import { shortDay, timeOf, weekdayDay } from "@/app/_data/format";
 import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
-import { ForumAsk } from "@/components/ForumAsk";
 import { listGallery } from "@/app/_data/gallery";
 import { getKitty, vndShort } from "@/app/_data/kitty";
 import { getConstitution } from "@/app/_data/constitution";
@@ -320,10 +319,6 @@ export async function HomeView() {
           )}
         </div>
 
-        <aside className={s.rail} aria-label="Ask AI">
-          <h2 className={s.label}>Ask AI about the forum</h2>
-          <ForumAsk suggestions={["What did I commit to at the last forum?"]} />
-        </aside>
       </div>
     </main>
   );

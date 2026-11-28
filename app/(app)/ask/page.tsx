@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getForumContext } from "@/app/_data/context";
 import { getMeeting } from "@/app/_data/forum";
 import { longDay, shortDay } from "@/app/_data/format";
-import { ForumAsk } from "@/components/ForumAsk";
+import { AskAI } from "@/components/AskAI";
 import { PageBanner } from "@/components/PageBanner";
 import s from "./ask.module.css";
 
@@ -31,7 +31,7 @@ export default async function AskPage({ searchParams }: { searchParams: Promise<
     </PageBanner>
     <main className="page">
       <section className={`zone-card ${s.card}`}>
-        <ForumAsk meeting={meeting} suggestions={FORUM_SUGGESTIONS} />
+        <AskAI meeting={meeting} suggestions={FORUM_SUGGESTIONS} />
       </section>
     </main>
     </>

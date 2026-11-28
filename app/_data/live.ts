@@ -23,6 +23,7 @@ import {
   type Season,
   type Viewer,
 } from "./types";
+import { agendaTheme } from "./recap";
 
 const VIEWER_COLS = "id, full_name, forum_joined_on, forum_left_on, is_admin, is_founding";
 const MEETING_COLS = "id, held_on, starts_at, place, title, kind, status, updated_at, meeting_docs(id, body_md, source_updated_at)";
@@ -54,6 +55,7 @@ function toMeeting(r: MeetingRow): Omit<Meeting, "path"> {
     status: r.status,
     updated_at: [r.updated_at, ...docTimes].sort().at(-1) ?? r.updated_at,
     has_agenda: docs.some((d) => d.body_md.trim() !== ""),
+    theme: docs.map((d) => agendaTheme(d.body_md)).find(Boolean) ?? null,
     file_count: null,
   };
 }

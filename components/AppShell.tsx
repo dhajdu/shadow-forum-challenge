@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { TabNav } from "@/components/TabNav";
 import { ChatBell } from "@/components/ChatBell";
+import { AskDock } from "@/components/AskDock";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getForumContext } from "@/app/_data/context";
 
@@ -24,7 +25,7 @@ async function unreadChat(): Promise<{ me: string; unread: number }> {
   }
 }
 
-/** Signed-in frame: sidebar on desktop, bottom tabs on phone widths, Chat icon top right. */
+/** Signed-in frame: sidebar on desktop, bottom tabs on phone widths, Chat icon top right, Ask AI floating bottom right. */
 export async function AppShell({ isAdmin, children }: { isAdmin: boolean; children: React.ReactNode }) {
   const { me, unread } = await unreadChat();
   return (
@@ -43,6 +44,7 @@ export async function AppShell({ isAdmin, children }: { isAdmin: boolean; childr
       <ChatBell unread={unread} me={me} className="floating" />
       <div className="shell-main">{children}</div>
       <TabNav variant="bottom" />
+      <AskDock />
     </div>
   );
 }
