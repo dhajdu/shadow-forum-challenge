@@ -97,7 +97,7 @@ export const TOOLS = [
         address: S("Venue address"),
         theme: S("Theme"),
         title: S("Title"),
-        kind: { type: "string", enum: ["forum", "away", "retreat", "kickoff"] },
+        kind: { type: "string", enum: ["forum", "away", "retreat", "kickoff", "social"] },
         starts_at: S("Start time, HH:MM in GMT+7"),
         ends_on: S("Last day of a multi-day forum, YYYY-MM-DD"),
         conversation_starters: { type: "array", items: { type: "string" }, description: "The starter questions, in order" },
@@ -347,7 +347,7 @@ async function planMeeting(c: MemberClient, args: Args): Promise<PlanMeeting | n
     return (await q().lte("held_on", date).gte("ends_on", date).limit(1).maybeSingle()).data as PlanMeeting | null;
   }
   if (id || (args.date != null && args.date !== "")) return null;
-  return (await q().gte("held_on", todayVN()).neq("status", "held").order("held_on").limit(1).maybeSingle()).data as PlanMeeting | null;
+  return (await q().gte("held_on", todayVN()).neq("status", "held").neq("kind", "social").order("held_on").limit(1).maybeSingle()).data as PlanMeeting | null;
 }
 
 const isAdmin = async (c: MemberClient, userId: string) =>
@@ -375,12 +375,14 @@ async function forumPlan(c: MemberClient, m: PlanMeeting) {
   const gaps: string[] = [];
   if (!m.host_id) gaps.push("No host.");
   if (!m.place) gaps.push("No location: the host chooses it.");
-  if (!m.theme) gaps.push("No theme.");
-  if (!m.conversation_starters?.length) gaps.push("Conversation starters TBD.");
-  if (!presentations.some((p) => p.kind === "planned")) gaps.push("No planned presentation.");
-  for (const p of presentations) if (!p.coach) gaps.push(`${p.presenter} has no coach.`);
-  if ((m.kind === "away" || m.kind === "retreat") && !plannerNames.length) gaps.push("No planner for this away forum or retreat.");
-  if (!run_sheet.length) gaps.push("No run sheet yet: start from standard_run_sheet.");
+  if (m.kind !== "social") {
+    if (!m.theme) gaps.push("No theme.");
+    if (!m.conversation_starters?.length) gaps.push("Conversation starters TBD.");
+    if (!presentations.some((p) => p.kind === "planned")) gaps.push("No planned presentation.");
+    for (const p of presentations) if (!p.coach) gaps.push(`${p.presenter} has no coach.`);
+    if ((m.kind === "away" || m.kind === "retreat") && !plannerNames.length) gaps.push("No planner for this away forum or retreat.");
+    if (!run_sheet.length) gaps.push("No run sheet yet: start from standard_run_sheet.");
+  }
   const { host_id, ...forum } = m;
   return {
     forum: { ...forum, host: nameOf(host_id), starts_at: m.starts_at ? timeOf(m.starts_at) : null },
@@ -695,7 +697,7 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
         }
       }
       if (args.kind !== undefined) {
-        if (!["forum", "away", "retreat", "kickoff"].includes(String(args.kind))) return fail("kind must be forum, away, retreat or kickoff.");
+        if (!["forum", "away", "retreat", "kickoff", "social"].includes(String(args.kind))) return fail("kind must be forum, away, retreat, kickoff or social.");
         patch.kind = args.kind;
       }
       if (typeof args.starts_at === "string") {
