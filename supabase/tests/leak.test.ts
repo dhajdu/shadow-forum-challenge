@@ -58,6 +58,11 @@ const MEETINGS = [
 ];
 const meetingId: Record<string, string> = {};
 const meetingHeld: Record<string, string> = {};
+const LEAK_Q4_RULES = { contest_name: "Leak Race", scoring: "whoop", ladder: [0, 2000000, 3000000, 4000000, 5000000], missed_checkin_fine: null };
+const LEAK_SEASONS = [
+  { slug: "leak-q4", name: "Leak Q4", starts_on: "2026-09-24", ends_on: "2026-12-22", ...LEAK_Q4_RULES },
+  { slug: "leak-q1", name: "Leak Q1", starts_on: "2027-01-02", ends_on: "2027-03-31", contest_name: null, scoring: null, ladder: null, missed_checkin_fine: null },
+];
 let seasons: Season[] = [];
 let q4: Season;
 let q1: Season;
@@ -131,10 +136,13 @@ before(async () => {
     token[k] = s.data.session!.access_token;
   }
 
-  // seasons: Q4 2026 and Q1 2027, both from the migrations
+  // seasons: the suite's own Q4 2026 (a WHOOP race, no check-in fine) and Q1 2027
+  // (no contest). Each starts a day after any season the migrations may seed, so
+  // season_of() is unambiguous whether or not those exist.
+  ok(await admin.from("seasons").insert(LEAK_SEASONS), "leak seasons");
   seasons = ok(await admin.from("seasons").select("id, slug, name, starts_on, ends_on"), "seasons") as Season[];
-  q4 = seasons.find((s) => s.slug === "2026-q4")!;
-  q1 = seasons.find((s) => s.slug === "2027-q1")!;
+  q4 = seasons.find((s) => s.slug === "leak-q4")!;
+  q1 = seasons.find((s) => s.slug === "leak-q1")!;
   assert.ok(q4 && q1, "seasons seeded");
 
   // meetings, docs, chunks, files
@@ -229,8 +237,15 @@ before(async () => {
   }
 });
 
-after(() => {
+after(async () => {
   globalThis.fetch = realFetch;
+  // rows that point at the suite's seasons go first; the local reset clears the rest
+  const ids = [q4?.id, q1?.id].filter(Boolean);
+  if (ids.length) {
+    await admin.from("contest_fines").delete().in("season_id", ids);
+    for (const t of ["penalties", "personal_goals", "goals"] as const) await admin.from(t).delete().in("season_id", ids);
+    await admin.from("seasons").delete().in("id", ids);
+  }
 });
 
 // ── Expectations, from the rule itself ───────────────────
@@ -254,8 +269,8 @@ describe("expectations match the plan's table", () => {
   it("Q4 season: founding and Noah Turner only", () => {
     assert.deepEqual(KEYS.filter((k) => seesSeason(k, q4)), ["founding", "noah"]);
   });
-  it("Q1 2027 (from 1 Jan): every active member, including those whose first forum is in January", () => {
-    assert.equal(q1.starts_on, "2027-01-01");
+  it("Q1 2027 (from 2 Jan): every active member, including those whose first forum is in January", () => {
+    assert.equal(q1.starts_on, "2027-01-02");
     assert.deepEqual(KEYS.filter((k) => seesSeason(k, q1)), ["founding", "noah", "december", "january"]);
   });
 });
@@ -881,7 +896,8 @@ describe("admin", () => {
     assert.equal(p.active, true);
     assert.deepEqual(sorted(p.meetings.map((m) => keyOfMeeting(m.id)).filter((k) => MEETINGS.some((m) => m.key === k))), visibleMeetings("december"));
     assert.deepEqual(p.library.filter((s) => s.startsWith("leak-")), ["leak-constitution"]);
-    assert.deepEqual(p.seasons, [q1.id]);
+    assert.deepEqual(sorted(p.seasons), sorted(seasons.filter((s) => seesSeason("december", s)).map((s) => s.id)));
+    assert.ok(p.seasons.includes(q1.id) && !p.seasons.includes(q4.id), "Q1, not Q4");
     const leaver = (await client.founding.rpc("admin_preview", { member: member.leaver.id })).data as { meetings: unknown[]; library: unknown[]; seasons: unknown[] };
     assert.deepEqual([leaver.meetings.length, leaver.library.length, leaver.seasons.length], [0, 0, 0]);
     assert.ok((await client.noah.rpc("admin_preview", { member: member.founding.id })).error, "non-admin denied");
@@ -968,15 +984,27 @@ describe("forum settings", () => {
 describe("WHOOP app flow", () => {
   it("a stored state ends on the app scheme, works once, and unknown states fail on the web /me", async () => {
     const { GET } = await import("@/app/api/whoop/callback/route");
+    const saved = process.env.MOBILE_APP_SCHEME;
+    process.env.MOBILE_APP_SCHEME = "leakapp";
     ok(await admin.from("whoop_oauth_states").insert({ state: "LeakAbc1", user_id: member.noah.id }), "state");
     const first = await GET(req("/api/whoop/callback?state=LeakAbc1&error=access_denied"));
-    assert.equal(first.headers.get("location"), "shadowforum://me?whoop=denied");
+    assert.equal(first.headers.get("location"), "leakapp://me?whoop=denied");
     const replay = await GET(req("/api/whoop/callback?state=LeakAbc1&error=access_denied"));
     assert.match(replay.headers.get("location") ?? "", /^http:\/\/localhost\/me\?whoop=error$/);
     const rows = ok(await admin.from("whoop_oauth_states").select("state").eq("state", "LeakAbc1"), "gone") as unknown[];
     assert.equal(rows.length, 0, "state consumed");
     const read = await client.noah.from("whoop_oauth_states").select("state");
     assert.ok(read.error, "members have no access to the states table at all");
+
+    // no MOBILE_APP_SCHEME: an app flow ends on the web /me instead
+    delete process.env.MOBILE_APP_SCHEME;
+    ok(await admin.from("whoop_oauth_states").insert({ state: "LeakAbc2", user_id: member.noah.id }), "state 2");
+    const web = await GET(req("/api/whoop/callback?state=LeakAbc2&error=access_denied"));
+    assert.match(web.headers.get("location") ?? "", /^http:\/\/localhost\/me\?whoop=denied$/);
+    const rows2 = ok(await admin.from("whoop_oauth_states").select("state").eq("state", "LeakAbc2"), "gone 2") as unknown[];
+    assert.equal(rows2.length, 0, "state consumed");
+    if (saved === undefined) delete process.env.MOBILE_APP_SCHEME;
+    else process.env.MOBILE_APP_SCHEME = saved;
   });
 });
 
@@ -1325,11 +1353,11 @@ describe("goal check-ins", () => {
 
   before(async () => {
     today = await forumToday();
-    // the Q4 rules as migrated: The Shadow Forum's WHOOP race, unchanged
+    // the Q4 rules as inserted: a WHOOP race with a ladder and no check-in fine
     const rules = ok(await admin.from("seasons").select("contest_name, scoring, ladder, missed_checkin_fine").eq("id", q4.id).single(), "q4 rules") as {
       contest_name: string; scoring: string; ladder: number[]; missed_checkin_fine: number | null;
     };
-    assert.deepEqual(rules, { contest_name: "Race Into the Shadow", scoring: "whoop", ladder: [0, 2000000, 3000000, 4000000, 5000000], missed_checkin_fine: null });
+    assert.deepEqual(rules, LEAK_Q4_RULES);
     // past check-ins, written by the service role: one on each Q4 goal, one on a Q1 goal of Diego (January)
     for (const k of ["founding", "noah"] as const) {
       ok(await admin.from("goal_checkins").insert({ goal_id: goalId[k], user_id: member[k].id, checked_on: "2026-10-01", value: 3, note: `checkin ${k}` }), "checkin");
@@ -1395,7 +1423,7 @@ describe("goal check-ins", () => {
     assert.ok(((await admin.from("goal_checkins").select("id").eq("goal_id", goalId.noah)).data ?? []).length >= 1, "no deletes");
   });
 
-  it("fines: members cannot book them or write contest_fines; the cron books none for the Shadow Forum's Q4", async () => {
+  it("fines: members cannot book them or write contest_fines; the cron books none for a WHOOP-scored season with no missed-check-in fine", async () => {
     const book = await client.founding.rpc("book_checkin_fine", {
       p_season: q4.id, p_user: member.noah.id, p_period_start: q4.starts_on, p_period_end: q4.starts_on, p_note: "x",
     });
@@ -1403,8 +1431,10 @@ describe("goal check-ins", () => {
     assert.ok((await (client.founding as unknown as SupabaseClient).from("contest_fines").insert({ season_id: q4.id, user_id: member.noah.id, period_start: q4.starts_on, amount: 1 })).error, "no client writes");
     const { runCheckinFines } = await import("@/lib/agents");
     const r = await runCheckinFines(admin, { dry: false });
-    assert.equal(r.booked, 0, "no fine rule in any migrated season");
-    assert.ok((await admin.rpc("book_checkin_fine", { p_season: q4.id, p_user: member.noah.id, p_period_start: q4.starts_on, p_period_end: "2026-09-29", p_note: "x" })).error, "Q4 sets no fine");
+    assert.equal(r.seasons.find((x) => x.season === q4.slug)?.booked ?? 0, 0, "Q4 sets no fine rule");
+    const q4Fines = ok(await (admin as unknown as SupabaseClient).from("contest_fines").select("user_id").eq("season_id", q4.id), "q4 fines") as unknown[];
+    assert.equal(q4Fines.length, 0, "nothing booked against Q4");
+    assert.ok((await admin.rpc("book_checkin_fine", { p_season: q4.id, p_user: member.noah.id, p_period_start: q4.starts_on, p_period_end: "2026-09-30", p_note: "x" })).error, "Q4 sets no fine");
   });
 
   it("fines: a season with a fine books each missed period once, as a contest penalty in the kitty", async () => {
