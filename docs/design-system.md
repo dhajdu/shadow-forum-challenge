@@ -4,7 +4,7 @@ The source of truth for how the web app looks. Direction "A · Neon Noir" (picke
 the night city done properly. Near-black ground, the landing photo bleeding into Home, huge condensed
 uppercase titles and dates, red and blue neon used only as thin accents. No boxed cards: hairlines separate.
 Tokens live in [`app/globals.css`](../app/globals.css) `:root`. The iOS app mirrors the core palette in
-[`ios/ShadowForum/Theme/Theme.swift`](../ios/ShadowForum/Theme/Theme.swift).
+the iOS app's `Theme.swift`.
 Browsable reference (tokens, brand book): https://claude.ai/artifact/K8kPJELdj1AoFzUXi8M2kX
 
 ## Rules

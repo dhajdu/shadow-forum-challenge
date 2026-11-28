@@ -8,7 +8,7 @@ import { KittyForm } from "./KittyForm";
 import { voidEntry } from "./actions";
 import s from "./kitty.module.css";
 
-const LARK = " (Lark Expense Sheet)"; // note suffix on lines imported from an earlier expense sheet; matches stored data
+const IMPORTED = / \((?:\w+ )?Expense Sheet\)$/; // note suffix on lines imported from an earlier expense sheet (stored data)
 
 type Person = { id: string; full_name: string; is_founding: boolean; forum_joined_on: string | null; forum_left_on: string | null };
 
@@ -131,9 +131,9 @@ export default async function KittyPage() {
                       <td className={s.date}>{longDay(e.entry_on)}</td>
                       <td><span className={`${s.cat} ${e.direction === "in" ? s.catIn : s.catOut}`}>{CATEGORY_LABEL[e.category]}</span></td>
                       <td className={s.desc}>
-                        {[meetingLabel(e.meeting_id), e.note?.replace(LARK, "")].filter(Boolean).join(" · ") || "—"}
+                        {[meetingLabel(e.meeting_id), e.note?.replace(IMPORTED, "")].filter(Boolean).join(" · ") || "—"}
                         <small>
-                          {e.note?.includes(LARK) ? "imported from the Expense Sheet" : `added by ${first(e.created_by)}`}
+                          {(e.note && IMPORTED.test(e.note)) ? "imported from the Expense Sheet" : `added by ${first(e.created_by)}`}
                           {e.voided_at ? ` · voided by ${first(e.voided_by)}` : ""}
                         </small>
                       </td>

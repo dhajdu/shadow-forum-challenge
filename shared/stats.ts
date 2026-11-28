@@ -1,4 +1,4 @@
-// Presentation helpers ported from ios/ShadowForum/Core/Stats.swift (itself from the web's app/me/stats.ts).
+// Presentation helpers ported from the iOS app's Stats.swift (itself from the web's app/me/stats.ts).
 // They only arrange rows the server already scored. No scoring happens here.
 import { addDays, CONTEST_START_DAY, STRAIN_MAX, today } from "./contest";
 

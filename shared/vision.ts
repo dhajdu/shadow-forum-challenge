@@ -1,5 +1,5 @@
 // Copied from app/_data/vision.ts for the app (pure, no imports). Keep the two in step.
-// The forum's vision lives in the "Home of the Shadow" library doc (slug "home"), so Dave can edit it.
+// The forum's vision lives in the home library doc (slug "home"), so an admin can edit it.
 export type Vision = { is: string | null; ambition: string | null };
 
 /** The quote under a "# … <title>" heading. */
@@ -18,5 +18,5 @@ function quoteUnder(md: string, title: RegExp): string | null {
 }
 
 export function parseVision(md: string): Vision {
-  return { is: quoteUnder(md, /shadow forum is/i), ambition: quoteUnder(md, /ambition/i) };
+  return { is: quoteUnder(md, /forum is/i), ambition: quoteUnder(md, /ambition/i) };
 }

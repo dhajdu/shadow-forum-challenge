@@ -1,5 +1,5 @@
 // Copied from app/_data/recap.ts for the app (pure, no imports). Keep the two in step.
-// Turns an imported Lark agenda (Markdown) into a forum recap: purpose, timed sections and the
+// Turns an imported agenda (Markdown) into a forum recap: purpose, timed sections and the
 // Parking Lot as structured topics. Pure functions; no data access.
 
 export type RecapSection = { title: string; minutes: number | null; body: string };
