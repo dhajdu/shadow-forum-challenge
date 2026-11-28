@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getRequestUser } from "@/lib/supabase/request";
 import { isActiveCaller } from "@/lib/access";
 import { TOOLS, callTool } from "@/lib/mcp";
+import { PLANNING_GUIDE } from "@/lib/forum-planning";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -12,6 +13,13 @@ export const maxDuration = 60;
 
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const SERVER_INFO = { name: "shadow-forum", title: "The Shadow Forum", version: "2.0.0" };
+
+const PLAN_PROMPT = {
+  name: "plan_forum",
+  title: "Plan a forum",
+  description: "Plan a Shadow Forum session as the moderator: run sheet, host, presentations, gaps.",
+  arguments: [{ name: "date", description: "Forum date, YYYY-MM-DD (default the next forum)", required: false }],
+};
 
 type RpcRequest = { jsonrpc: "2.0"; id?: string | number | null; method: string; params?: Record<string, unknown> };
 
@@ -49,14 +57,25 @@ export async function POST(req: NextRequest) {
       const asked = String(msg.params?.protocolVersion ?? "");
       return reply(msg.id, {
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
-        capabilities: { tools: { listChanged: false } },
+        capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions:
-          "The Shadow Forum, as the signed-in member: forums and agendas, the Parking Lot, the library, the kitty (read it, add money in or out, submit expenses), the forum chat, goals, the contest race, WHOOP data and photos. Agendas, the Parking Lot and goals start from your own first forum; the chat, photos, the kitty and resources are open in full. Amounts are in VND. Confirm with the member before adding to the kitty, posting to the chat or deleting.",
+          "The Shadow Forum, as the signed-in member: forums and agendas, the Parking Lot, the library, the kitty (read it, add money in or out, submit expenses), the forum chat, goals, the contest race, WHOOP data and photos. Agendas, the Parking Lot and goals start from your own first forum; the chat, photos, the kitty and resources are open in full. Amounts are in VND. Confirm with the member before adding to the kitty, posting to the chat or deleting. Forum planning (hosts, run sheets, presentations, planners, roles): call planning_guide first and follow it; only forum admins can change the plan, and every change needs the member's OK first.",
       });
     }
     case "ping":
       return reply(msg.id, {});
+    case "prompts/list":
+      return reply(msg.id, { prompts: [PLAN_PROMPT] });
+    case "prompts/get": {
+      if (msg.params?.name !== PLAN_PROMPT.name) return rpcError(msg.id, -32602, `Unknown prompt: ${String(msg.params?.name ?? "")}`);
+      const date = String((msg.params?.arguments as Record<string, unknown> | undefined)?.date ?? "").trim();
+      const ask = date ? `Plan the forum on ${date}.` : "Plan the next forum.";
+      return reply(msg.id, {
+        description: PLAN_PROMPT.description,
+        messages: [{ role: "user", content: { type: "text", text: `${PLANNING_GUIDE}\n\n---\n\n${ask} Start with get_forum_plan, then show the run sheet, the gaps and one question.` } }],
+      });
+    }
     case "tools/list":
       return reply(msg.id, { tools: TOOLS });
     case "tools/call": {

@@ -10,7 +10,8 @@ import { goalSeasonId, saveGoalMeasure, createRiderGoal } from "@/lib/goals";
 import { parseRecap, visibleAgendaMd, visibleParking } from "@/app/_data/recap";
 import { getKitty, parseVnd, vndFull, IN_CATEGORIES, OUT_CATEGORIES } from "@/app/_data/kitty";
 import { listGallery } from "@/app/_data/gallery";
-import { todayVN } from "@/app/_data/format";
+import { timeOf, todayVN } from "@/app/_data/format";
+import { AGENDA_KINDS, PLANNING_GUIDE, standardRunSheet } from "@/lib/forum-planning";
 import type { Db } from "@/app/_data/types";
 
 type MemberClient = SupabaseClient<Database>;
@@ -68,6 +69,114 @@ export const TOOLS = [
     annotations: READ,
   },
   { name: "get_parking_lot", title: "Parking Lot", description: "Topics members asked to bring back to the forum, from the newest agenda.", inputSchema: obj(), annotations: READ },
+  // ── Forum planning (reads for everyone, writes for forum admins) ──
+  { name: "planning_guide", title: "Forum planning guide", description: "How a Shadow Forum is planned: the standard run sheet, rotation, readiness checks and rules. Read it before planning a forum.", inputSchema: obj(), annotations: READ },
+  {
+    name: "get_forum_plan",
+    title: "Get a forum's plan",
+    description: "One forum's plan: host, place, theme, starters, presentations and coaches, planners, run sheet, after-forum activity, members present, a timed standard run sheet and the gaps still open. Pass date (YYYY-MM-DD, any day of a multi-day retreat) or meeting_id; default the next forum.",
+    inputSchema: obj({ date: S("Forum date, YYYY-MM-DD"), meeting_id: S("Meeting id") }),
+    annotations: READ,
+  },
+  {
+    name: "get_rotation",
+    title: "Hosts and presentations",
+    description: "Host, presenters and coaches for each forum in a date range (default the next 12 months).",
+    inputSchema: obj({ from: S("YYYY-MM-DD"), to: S("YYYY-MM-DD") }),
+    annotations: READ,
+  },
+  {
+    name: "update_forum",
+    title: "Update a forum",
+    description: "Admin: change a forum's host, place, address, theme, title, kind, start time, end date, conversation starters or after-forum activity. Only the fields you pass change. Returns before and after.",
+    inputSchema: obj(
+      {
+        date: S("Forum date, YYYY-MM-DD"),
+        host: S("Member name or id; empty string clears it"),
+        place: S("Venue name"),
+        address: S("Venue address"),
+        theme: S("Theme"),
+        title: S("Title"),
+        kind: { type: "string", enum: ["forum", "away", "retreat", "kickoff"] },
+        starts_at: S("Start time, HH:MM in GMT+7"),
+        ends_on: S("Last day of a multi-day forum, YYYY-MM-DD"),
+        conversation_starters: { type: "array", items: { type: "string" }, description: "The starter questions, in order" },
+        after_activity: S("After-forum activity"),
+      },
+      ["date"]
+    ),
+    annotations: WRITE,
+  },
+  {
+    name: "set_agenda",
+    title: "Set a forum's run sheet",
+    description: "Admin: replace a forum's whole run sheet. Items are in order; each has kind, title, and optionally starts_at (HH:MM), minutes, day (YYYY-MM-DD, multi-day agendas), owner (member name or id) and details. Returns before and after.",
+    inputSchema: obj(
+      {
+        date: S("Forum date, YYYY-MM-DD"),
+        items: {
+          type: "array",
+          items: obj(
+            {
+              kind: { type: "string", enum: [...AGENDA_KINDS] },
+              title: S("What it is"),
+              starts_at: S("HH:MM"),
+              minutes: { type: "integer", minimum: 0, maximum: 1440 },
+              day: S("YYYY-MM-DD"),
+              owner: S("Member name or id"),
+              details: S("Notes, questions, links"),
+            },
+            ["kind", "title"]
+          ),
+        },
+      },
+      ["date", "items"]
+    ),
+    annotations: { readOnlyHint: false, destructiveHint: true },
+  },
+  {
+    name: "set_presentation",
+    title: "Set a presentation",
+    description: "Admin: set who presents at a forum and who coaches them (kind 'planned', or 'live' for the optional live-coached one). Setting the same presenter again changes the coach.",
+    inputSchema: obj({ date: S("Forum date, YYYY-MM-DD"), presenter: S("Member name or id"), coach: S("Member name or id (optional)"), kind: { type: "string", enum: ["planned", "live"] } }, ["date", "presenter"]),
+    annotations: WRITE,
+  },
+  {
+    name: "remove_presentation",
+    title: "Remove a presentation",
+    description: "Admin: take a presenter off a forum.",
+    inputSchema: obj({ date: S("Forum date, YYYY-MM-DD"), presenter: S("Member name or id") }, ["date", "presenter"]),
+    annotations: { readOnlyHint: false, destructiveHint: true },
+  },
+  {
+    name: "set_planners",
+    title: "Set planners",
+    description: "Admin: set who plans an away forum or retreat. Replaces the current planners.",
+    inputSchema: obj({ date: S("Forum date, YYYY-MM-DD"), members: { type: "array", items: { type: "string" }, description: "Member names or ids" } }, ["date", "members"]),
+    annotations: WRITE,
+  },
+  {
+    name: "get_roles",
+    title: "Forum roles",
+    description: "The year's roles: moderator, moderator elect, treasurer, retreat planner. A role with nobody is undecided. Default this year.",
+    inputSchema: obj({ year: { type: "integer", minimum: 2025, maximum: 2100 } }),
+    annotations: READ,
+  },
+  {
+    name: "set_role",
+    title: "Set a forum role",
+    description: "Admin: give a member a role for a year, or take it away (remove true). A role can have more than one member (e.g. two retreat planners).",
+    inputSchema: obj(
+      {
+        year: { type: "integer", minimum: 2025, maximum: 2100 },
+        role: { type: "string", enum: ["moderator", "moderator_elect", "treasurer", "retreat_planner"] },
+        member: S("Member name or id"),
+        remove: { type: "boolean", description: "Take the role away instead" },
+      },
+      ["year", "role", "member"]
+    ),
+    annotations: WRITE,
+  },
   // ── Library ──
   { name: "list_library", title: "Forum library", description: "Forum documents you can read: the vision (Home of the Shadow), the Constitution, Resources and more.", inputSchema: obj(), annotations: READ },
   { name: "get_library_doc", title: "Read a library document", description: "One library document's text, by slug from list_library (e.g. home, constitution, resources).", inputSchema: obj({ slug: S("Document slug") }, ["slug"]), annotations: READ },
@@ -212,6 +321,83 @@ async function profiles(c: MemberClient): Promise<Profile[]> {
   const { data } = await c.from("profiles").select("id, full_name, forum_joined_on, forum_left_on, is_founding, is_admin").order("full_name");
   return (data ?? []) as Profile[];
 }
+
+/** One member from a name (any part, case-insensitive) or id; an error text when none or several match. */
+function memberFrom(people: Profile[], who: string): Profile | string {
+  const match = UUID.test(who) ? people.filter((p) => p.id === who) : people.filter((p) => p.full_name.toLowerCase().includes(who.toLowerCase()));
+  if (match.length === 1) return match[0];
+  return match.length ? `More than one member matches "${who}". Use their full name.` : `No member matches "${who}".`;
+}
+
+const PLAN_COLS = "id, held_on, ends_on, starts_at, title, kind, status, place, address, host_id, theme, conversation_starters, after_activity";
+type PlanMeeting = {
+  id: string; held_on: string; ends_on: string | null; starts_at: string | null; title: string | null; kind: string; status: string;
+  place: string | null; address: string | null; host_id: string | null; theme: string | null; conversation_starters: string[] | null; after_activity: string | null;
+};
+
+/** The forum on a date (or the multi-day forum covering it), by id, or the next one. */
+async function planMeeting(c: MemberClient, args: Args): Promise<PlanMeeting | null> {
+  const q = () => any(c).from("meetings").select(PLAN_COLS);
+  const id = str(args.meeting_id);
+  const date = day(args.date);
+  if (UUID.test(id)) return (await q().eq("id", id).maybeSingle()).data as PlanMeeting | null;
+  if (date) {
+    const exact = (await q().eq("held_on", date).limit(1).maybeSingle()).data as PlanMeeting | null;
+    if (exact) return exact;
+    return (await q().lte("held_on", date).gte("ends_on", date).limit(1).maybeSingle()).data as PlanMeeting | null;
+  }
+  if (id || (args.date != null && args.date !== "")) return null;
+  return (await q().gte("held_on", todayVN()).neq("status", "held").order("held_on").limit(1).maybeSingle()).data as PlanMeeting | null;
+}
+
+const isAdmin = async (c: MemberClient, userId: string) =>
+  !!((await c.from("profiles").select("is_admin").eq("id", userId).maybeSingle()).data as { is_admin: boolean } | null)?.is_admin;
+
+/** Members at a forum: joined on or before it, not left before it. */
+const presentAt = (people: Profile[], heldOn: string) =>
+  people.filter((p) => (p.is_founding || (p.forum_joined_on != null && p.forum_joined_on <= heldOn)) && (!p.forum_left_on || p.forum_left_on > heldOn));
+
+type Presentation = { meeting_id: string; presenter_id: string; coach_id: string | null; kind: string };
+type AgendaItem = { position: number; day: string | null; starts_at: string | null; minutes: number | null; kind: string; title: string; owner_id: string | null; details: string | null };
+
+async function forumPlan(c: MemberClient, m: PlanMeeting) {
+  const [people, pres, planners, items] = await Promise.all([
+    profiles(c),
+    any(c).from("meeting_presentations").select("meeting_id, presenter_id, coach_id, kind").eq("meeting_id", m.id),
+    any(c).from("meeting_planners").select("member_id").eq("meeting_id", m.id),
+    any(c).from("meeting_agenda_items").select("position, day, starts_at, minutes, kind, title, owner_id, details").eq("meeting_id", m.id).order("position"),
+  ]);
+  const nameOf = (id: string | null) => (id ? people.find((p) => p.id === id)?.full_name ?? null : null);
+  const presentations = ((pres.data ?? []) as Presentation[]).map((p) => ({ presenter: nameOf(p.presenter_id), coach: nameOf(p.coach_id), kind: p.kind }));
+  const present = presentAt(people, m.held_on);
+  const run_sheet = ((items.data ?? []) as AgendaItem[]).map(({ owner_id, starts_at, ...i }) => ({ ...i, starts_at: starts_at?.slice(0, 5) ?? null, owner: nameOf(owner_id) }));
+  const plannerNames = ((planners.data ?? []) as { member_id: string }[]).map((p) => nameOf(p.member_id));
+  const gaps: string[] = [];
+  if (!m.host_id) gaps.push("No host.");
+  if (!m.place) gaps.push("No location: the host chooses it.");
+  if (!m.theme) gaps.push("No theme.");
+  if (!m.conversation_starters?.length) gaps.push("Conversation starters TBD.");
+  if (!presentations.some((p) => p.kind === "planned")) gaps.push("No planned presentation.");
+  for (const p of presentations) if (!p.coach) gaps.push(`${p.presenter} has no coach.`);
+  if ((m.kind === "away" || m.kind === "retreat") && !plannerNames.length) gaps.push("No planner for this away forum or retreat.");
+  if (!run_sheet.length) gaps.push("No run sheet yet: start from standard_run_sheet.");
+  const { host_id, ...forum } = m;
+  return {
+    forum: { ...forum, host: nameOf(host_id), starts_at: m.starts_at ? timeOf(m.starts_at) : null },
+    days_until: Math.round((Date.parse(m.held_on) - Date.parse(todayVN())) / 86400000),
+    members_present: present.length,
+    members: present.map((p) => p.full_name),
+    presentations,
+    planners: plannerNames,
+    run_sheet,
+    standard_run_sheet: standardRunSheet(present.length),
+    gaps,
+  };
+}
+
+const ADMIN_ONLY = "Only a forum admin can change the plan.";
+const ROLES = ["moderator", "moderator_elect", "treasurer", "retreat_planner"] as const;
+const HHMM = /^\d{1,2}:\d{2}$/;
 
 async function meetingBy(c: MemberClient, args: Args) {
   const id = str(args.meeting_id);
@@ -463,6 +649,167 @@ export async function callTool(name: string, args: Args, ctx: Ctx): Promise<Tool
     case "list_gallery": {
       const photos = await listGallery(db(c), Math.min(100, Math.max(1, Number(args.limit) || 20)));
       return json({ photos: photos.map((p) => ({ id: p.id, taken_on: p.taken_on, caption: p.caption, by: p.uploader, url: p.web, thumb: p.thumb })) });
+    }
+    case "planning_guide":
+      return { content: [{ type: "text", text: PLANNING_GUIDE }] };
+    case "get_forum_plan": {
+      const m = await planMeeting(c, args);
+      return m ? json(await forumPlan(c, m)) : fail("No forum found.");
+    }
+    case "get_rotation": {
+      const from = day(args.from) ?? todayVN();
+      const to = day(args.to) ?? `${Number(from.slice(0, 4)) + 1}${from.slice(4)}`;
+      const [{ data: ms }, people] = await Promise.all([
+        any(c).from("meetings").select("id, held_on, ends_on, kind, title, place, host_id").gte("held_on", from).lte("held_on", to).order("held_on"),
+        profiles(c),
+      ]);
+      const meetings = (ms ?? []) as { id: string; held_on: string; ends_on: string | null; kind: string; title: string | null; place: string | null; host_id: string | null }[];
+      const { data: pres } = meetings.length
+        ? await any(c).from("meeting_presentations").select("meeting_id, presenter_id, coach_id, kind").in("meeting_id", meetings.map((m) => m.id))
+        : { data: [] };
+      const nameOf = (id: string | null) => (id ? people.find((p) => p.id === id)?.full_name ?? null : null);
+      return json({
+        forums: meetings.map((m) => ({
+          date: m.held_on,
+          ends_on: m.ends_on,
+          kind: m.kind,
+          title: m.title,
+          place: m.place,
+          host: nameOf(m.host_id),
+          presentations: ((pres ?? []) as Presentation[]).filter((p) => p.meeting_id === m.id).map((p) => ({ presenter: nameOf(p.presenter_id), coach: nameOf(p.coach_id), kind: p.kind })),
+        })),
+      });
+    }
+    case "update_forum": {
+      if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
+      const m = await planMeeting(c, { date: args.date });
+      if (!m) return fail("No forum found on that date.");
+      const patch: Record<string, unknown> = {};
+      for (const k of ["place", "address", "theme", "title", "after_activity"] as const) if (typeof args[k] === "string") patch[k] = str(args[k]) || null;
+      if (typeof args.host === "string") {
+        if (!str(args.host)) patch.host_id = null;
+        else {
+          const who = memberFrom(await profiles(c), str(args.host, 100));
+          if (typeof who === "string") return fail(who);
+          patch.host_id = who.id;
+        }
+      }
+      if (args.kind !== undefined) {
+        if (!["forum", "away", "retreat", "kickoff"].includes(String(args.kind))) return fail("kind must be forum, away, retreat or kickoff.");
+        patch.kind = args.kind;
+      }
+      if (typeof args.starts_at === "string") {
+        if (args.starts_at && !HHMM.test(args.starts_at)) return fail("starts_at is HH:MM.");
+        patch.starts_at = args.starts_at ? `${m.held_on}T${args.starts_at.padStart(5, "0")}:00+07:00` : null;
+      }
+      if (args.ends_on !== undefined) {
+        if (args.ends_on && !day(args.ends_on)) return fail("ends_on is YYYY-MM-DD.");
+        patch.ends_on = day(args.ends_on);
+      }
+      if (Array.isArray(args.conversation_starters)) patch.conversation_starters = args.conversation_starters.map((q) => str(q)).filter(Boolean);
+      if (!Object.keys(patch).length) return fail("Nothing to change.");
+      const before = (await forumPlan(c, m)).forum;
+      const { data, error } = await any(c).from("meetings").update(patch).eq("id", m.id).select(PLAN_COLS).single();
+      if (error || !data) return fail("Could not update the forum.");
+      return json({ before, after: (await forumPlan(c, data as PlanMeeting)).forum });
+    }
+    case "set_agenda": {
+      if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
+      const m = await planMeeting(c, { date: args.date });
+      if (!m) return fail("No forum found on that date.");
+      if (!Array.isArray(args.items)) return fail("Give items as a list.");
+      const people = await profiles(c);
+      const items: Record<string, unknown>[] = [];
+      for (const [n, raw] of (args.items as Args[]).entries()) {
+        const kind = String(raw?.kind ?? "");
+        const title = str(raw?.title, 300);
+        if (!(AGENDA_KINDS as readonly string[]).includes(kind) || !title) return fail(`Item ${n + 1} needs a valid kind and a title.`);
+        if (raw.starts_at && !HHMM.test(String(raw.starts_at))) return fail(`Item ${n + 1}: starts_at is HH:MM.`);
+        if (raw.day && !day(raw.day)) return fail(`Item ${n + 1}: day is YYYY-MM-DD.`);
+        let owner: string | null = null;
+        if (str(raw.owner)) {
+          const who = memberFrom(people, str(raw.owner, 100));
+          if (typeof who === "string") return fail(`Item ${n + 1}: ${who}`);
+          owner = who.id;
+        }
+        items.push({ kind, title, starts_at: raw.starts_at || null, minutes: num(raw.minutes), day: day(raw.day), owner_id: owner, details: str(raw.details, 4000) || null });
+      }
+      const before = (await forumPlan(c, m)).run_sheet;
+      const { error } = await any(c).rpc("set_meeting_agenda", { p_meeting: m.id, p_items: items });
+      if (error) return fail("Could not save the run sheet.");
+      return json({ before, after: (await forumPlan(c, m)).run_sheet });
+    }
+    case "set_presentation":
+    case "remove_presentation": {
+      if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
+      const m = await planMeeting(c, { date: args.date });
+      if (!m) return fail("No forum found on that date.");
+      const people = await profiles(c);
+      const presenter = memberFrom(people, str(args.presenter, 100));
+      if (typeof presenter === "string") return fail(presenter);
+      const before = (await forumPlan(c, m)).presentations;
+      if (name === "remove_presentation") {
+        const { data } = await any(c).from("meeting_presentations").delete().eq("meeting_id", m.id).eq("presenter_id", presenter.id).select("id");
+        if (!data?.length) return fail(`${presenter.full_name} is not presenting then.`);
+      } else {
+        let coachId: string | null = null;
+        if (str(args.coach)) {
+          const coach = memberFrom(people, str(args.coach, 100));
+          if (typeof coach === "string") return fail(coach);
+          if (coach.id === presenter.id) return fail("A presenter cannot coach themselves.");
+          coachId = coach.id;
+        }
+        const { error } = await any(c)
+          .from("meeting_presentations")
+          .upsert({ meeting_id: m.id, presenter_id: presenter.id, coach_id: coachId, kind: args.kind === "live" ? "live" : "planned" }, { onConflict: "meeting_id,presenter_id" });
+        if (error) return fail("Could not save the presentation.");
+      }
+      return json({ before, after: (await forumPlan(c, m)).presentations });
+    }
+    case "set_planners": {
+      if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
+      const m = await planMeeting(c, { date: args.date });
+      if (!m) return fail("No forum found on that date.");
+      if (!Array.isArray(args.members)) return fail("Give members as a list.");
+      const people = await profiles(c);
+      const ids: string[] = [];
+      for (const w of args.members) {
+        const who = memberFrom(people, str(w, 100));
+        if (typeof who === "string") return fail(who);
+        if (!ids.includes(who.id)) ids.push(who.id);
+      }
+      const before = (await forumPlan(c, m)).planners;
+      let del = any(c).from("meeting_planners").delete().eq("meeting_id", m.id);
+      if (ids.length) del = del.not("member_id", "in", `(${ids.join(",")})`);
+      const { error: delError } = await del;
+      const { error: insError } = ids.length
+        ? await any(c).from("meeting_planners").upsert(ids.map((member_id) => ({ meeting_id: m.id, member_id })), { onConflict: "meeting_id,member_id", ignoreDuplicates: true })
+        : { error: null };
+      if (delError || insError) return fail("Could not save the planners.");
+      return json({ before, after: (await forumPlan(c, m)).planners });
+    }
+    case "get_roles": {
+      const year = Number(args.year) || Number(todayVN().slice(0, 4));
+      const [{ data }, people] = await Promise.all([any(c).from("forum_roles").select("role, member_id").eq("year", year), profiles(c)]);
+      const rows = (data ?? []) as { role: string; member_id: string }[];
+      const roles = Object.fromEntries(
+        ROLES.map((r) => [r, rows.filter((x) => x.role === r).map((x) => people.find((p) => p.id === x.member_id)?.full_name ?? "Member")])
+      );
+      return json({ year, roles });
+    }
+    case "set_role": {
+      if (!(await isAdmin(c, userId))) return fail(ADMIN_ONLY);
+      const year = Number(args.year);
+      const role = String(args.role);
+      if (!Number.isInteger(year) || year < 2025 || year > 2100) return fail("Give a year.");
+      if (!(ROLES as readonly string[]).includes(role)) return fail("Unknown role.");
+      const who = memberFrom(await profiles(c), str(args.member, 100));
+      if (typeof who === "string") return fail(who);
+      const { error } = args.remove
+        ? await any(c).from("forum_roles").delete().eq("year", year).eq("role", role).eq("member_id", who.id)
+        : await any(c).from("forum_roles").upsert({ year, role, member_id: who.id }, { onConflict: "year,role,member_id", ignoreDuplicates: true });
+      if (error) return fail("Could not save the role.");
+      return callTool("get_roles", { year }, ctx);
     }
     default:
       return fail(`Unknown tool: ${name}`);

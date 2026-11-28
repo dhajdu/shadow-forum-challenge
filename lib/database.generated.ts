@@ -77,6 +77,76 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"constitution_signatures": {
+                  Row: {
+                    "consent": string,"id": string,"ip": string | null,"sha256_shown": string,"signed_at": string,"typed_name": string,"user_agent": string | null,"user_id": string,"version_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consent": string,"id"?: string,"ip"?: string | null,"sha256_shown": string,"signed_at"?: string,"typed_name": string,"user_agent"?: string | null,"user_id"?: string,"version_id": string
+                  }
+                  Update: {
+                    "consent"?: string,"id"?: string,"ip"?: string | null,"sha256_shown"?: string,"signed_at"?: string,"typed_name"?: string,"user_agent"?: string | null,"user_id"?: string,"version_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "constitution_signatures_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "constitution_signatures_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "constitution_signatures_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "constitution_signatures_version_id_fkey"
+      columns: ["version_id"]
+isOneToOne: false
+      referencedRelation: "constitution_versions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"constitution_versions": {
+                  Row: {
+                    "body_md": string,"change_note": string | null,"id": string,"published_at": string,"published_by": string | null,"sha256": string,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body_md": string,"change_note"?: string | null,"id"?: string,"published_at"?: string,"published_by"?: string | null,"sha256": string,"version": number
+                  }
+                  Update: {
+                    "body_md"?: string,"change_note"?: string | null,"id"?: string,"published_at"?: string,"published_by"?: string | null,"sha256"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "constitution_versions_published_by_fkey"
+      columns: ["published_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "constitution_versions_published_by_fkey"
+      columns: ["published_by"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "constitution_versions_published_by_fkey"
+      columns: ["published_by"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"forum_messages": {
                   Row: {
                     "author_id": string,"body": string,"created_at": string,"deleted_at": string | null,"edited_at": string | null,"id": string,"notified_at": string | null,"photo_id": string | null,"reply_to": string | null,"sent_on": string
@@ -149,6 +219,38 @@ isOneToOne: true
       foreignKeyName: "forum_read_marks_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: true
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"forum_roles": {
+                  Row: {
+                    "created_at": string,"id": string,"member_id": string,"role": string,"year": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"member_id": string,"role": string,"year": number
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"member_id"?: string,"role"?: string,"year"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "forum_roles_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "forum_roles_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "forum_roles_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
       referencedRelation: "season_standings"
       referencedColumns: ["user_id"]
     }
@@ -311,6 +413,112 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"kitty_entries": {
+                  Row: {
+                    "amount_vnd": number,"category": string,"created_at": string,"created_by": string,"direction": string,"entry_on": string,"id": string,"meeting_id": string | null,"member_id": string | null,"note": string | null,"voided_at": string | null,"voided_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount_vnd": number,"category"?: string,"created_at"?: string,"created_by"?: string,"direction": string,"entry_on"?: string,"id"?: string,"meeting_id"?: string | null,"member_id"?: string | null,"note"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                  }
+                  Update: {
+                    "amount_vnd"?: number,"category"?: string,"created_at"?: string,"created_by"?: string,"direction"?: string,"entry_on"?: string,"id"?: string,"meeting_id"?: string | null,"member_id"?: string | null,"note"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "kitty_entries_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kitty_entries_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "kitty_entries_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "kitty_entries_meeting_id_fkey"
+      columns: ["meeting_id"]
+isOneToOne: false
+      referencedRelation: "meetings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kitty_entries_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kitty_entries_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "kitty_entries_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "kitty_entries_voided_by_fkey"
+      columns: ["voided_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kitty_entries_voided_by_fkey"
+      columns: ["voided_by"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "kitty_entries_voided_by_fkey"
+      columns: ["voided_by"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"kitty_settings": {
+                  Row: {
+                    "dues_vnd": number,"id": boolean,"treasurer_id": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "dues_vnd"?: number,"id"?: boolean,"treasurer_id"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "dues_vnd"?: number,"id"?: boolean,"treasurer_id"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "kitty_settings_treasurer_id_fkey"
+      columns: ["treasurer_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kitty_settings_treasurer_id_fkey"
+      columns: ["treasurer_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "kitty_settings_treasurer_id_fkey"
+      columns: ["treasurer_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"library_docs": {
                   Row: {
                     "audience": string | null,"body_md": string | null,"file_path": string | null,"id": string,"slug": string,"sort": number,"title": string,"updated_at": string
@@ -324,6 +532,44 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"meeting_agenda_items": {
+                  Row: {
+                    "created_at": string,"day": string | null,"details": string | null,"id": string,"kind": string,"meeting_id": string,"minutes": number | null,"owner_id": string | null,"position": number,"starts_at": string | null,"title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"day"?: string | null,"details"?: string | null,"id"?: string,"kind": string,"meeting_id": string,"minutes"?: number | null,"owner_id"?: string | null,"position": number,"starts_at"?: string | null,"title": string
+                  }
+                  Update: {
+                    "created_at"?: string,"day"?: string | null,"details"?: string | null,"id"?: string,"kind"?: string,"meeting_id"?: string,"minutes"?: number | null,"owner_id"?: string | null,"position"?: number,"starts_at"?: string | null,"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meeting_agenda_items_meeting_id_fkey"
+      columns: ["meeting_id"]
+isOneToOne: false
+      referencedRelation: "meetings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meeting_agenda_items_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meeting_agenda_items_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "meeting_agenda_items_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
                   ]
                 },"meeting_chunks": {
                   Row: {
@@ -365,19 +611,131 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"meetings": {
+                },"meeting_planners": {
                   Row: {
-                    "created_at": string,"held_on": string,"id": string,"kind": string,"lark_node_token": string | null,"place": string | null,"starts_at": string | null,"status": string,"title": string | null,"updated_at": string
+                    "meeting_id": string,"member_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"held_on": string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
+                    "meeting_id": string,"member_id": string
                   }
                   Update: {
-                    "created_at"?: string,"held_on"?: string,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"title"?: string | null,"updated_at"?: string
+                    "meeting_id"?: string,"member_id"?: string
                   }
                   Relationships: [
-                    
+                    {
+      foreignKeyName: "meeting_planners_meeting_id_fkey"
+      columns: ["meeting_id"]
+isOneToOne: false
+      referencedRelation: "meetings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meeting_planners_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meeting_planners_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "meeting_planners_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"meeting_presentations": {
+                  Row: {
+                    "coach_id": string | null,"created_at": string,"id": string,"kind": string,"meeting_id": string,"presenter_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "coach_id"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"meeting_id": string,"presenter_id": string
+                  }
+                  Update: {
+                    "coach_id"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"meeting_id"?: string,"presenter_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meeting_presentations_coach_id_fkey"
+      columns: ["coach_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meeting_presentations_coach_id_fkey"
+      columns: ["coach_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "meeting_presentations_coach_id_fkey"
+      columns: ["coach_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "meeting_presentations_meeting_id_fkey"
+      columns: ["meeting_id"]
+isOneToOne: false
+      referencedRelation: "meetings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meeting_presentations_presenter_id_fkey"
+      columns: ["presenter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meeting_presentations_presenter_id_fkey"
+      columns: ["presenter_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "meeting_presentations_presenter_id_fkey"
+      columns: ["presenter_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"meetings": {
+                  Row: {
+                    "address": string | null,"after_activity": string | null,"conversation_starters": (string)[] | null,"created_at": string,"ends_on": string | null,"held_on": string,"host_id": string | null,"id": string,"kind": string,"lark_node_token": string | null,"place": string | null,"starts_at": string | null,"status": string,"theme": string | null,"title": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "address"?: string | null,"after_activity"?: string | null,"conversation_starters"?: (string)[] | null,"created_at"?: string,"ends_on"?: string | null,"held_on": string,"host_id"?: string | null,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"theme"?: string | null,"title"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "address"?: string | null,"after_activity"?: string | null,"conversation_starters"?: (string)[] | null,"created_at"?: string,"ends_on"?: string | null,"held_on"?: string,"host_id"?: string | null,"id"?: string,"kind"?: string,"lark_node_token"?: string | null,"place"?: string | null,"starts_at"?: string | null,"status"?: string,"theme"?: string | null,"title"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meetings_host_id_fkey"
+      columns: ["host_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meetings_host_id_fkey"
+      columns: ["host_id"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "meetings_host_id_fkey"
+      columns: ["host_id"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
                   ]
                 },"penalties": {
                   Row: {
@@ -797,6 +1155,9 @@ isOneToOne: true
 "is_open_season":
 { Args: { "s": string }; Returns: boolean
                            },
+"kitty_balance":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "match_meeting_chunks":
 { Args: { "match_count"?: number,"only_meeting"?: string,"query": string }; Returns: {
               "content": string,"held_on": string,"id": string,"meeting_id": string,"rank": number
@@ -816,6 +1177,9 @@ isOneToOne: true
                            },
 "season_of":
 { Args: { "d": string }; Returns: string
+                           },
+"set_meeting_agenda":
+{ Args: { "p_items": Json,"p_meeting": string }; Returns: undefined
                            },
 "set_member_access":
 { Args: { "admin": boolean,"founding": boolean,"joined_on": string,"left_on": string,"member": string }; Returns: undefined
