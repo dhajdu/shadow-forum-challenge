@@ -4,12 +4,23 @@ import { getForumContext } from "@/app/_data/context";
 import { getLibraryDoc } from "@/app/_data/forum";
 import { longDay } from "@/app/_data/format";
 import { Markdown } from "@/components/Markdown";
+import { ConstitutionView } from "../../constitution/ConstitutionView";
 import s from "../../forum.module.css";
 
 export default async function LibraryDocPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   if (slug === "resources") redirect("/forum/resources"); // the toolkit is the Resources tab itself
   if (slug === "expense-sheet") redirect("/kitty"); // the Expense Sheet became the Kitty
+  if (slug === "constitution") {
+    const signed = await ConstitutionView();
+    if (signed)
+      return (
+        <>
+          <Link href="/forum/resources" className="back">← Resources</Link>
+          <section className={`zone-card ${s.below}`}>{signed}</section>
+        </>
+      );
+  }
   const { db, viewer } = await getForumContext();
   const doc = await getLibraryDoc(db, viewer, slug);
   if (!doc) notFound();
