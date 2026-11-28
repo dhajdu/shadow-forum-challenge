@@ -83,7 +83,7 @@ export function Assistant() {
       <div className="chat">
         {messages.length === 0 && (
           <div className="chat-empty">
-            Ask anything about your WHOOP data — trends, insights, what to improve. Only you can see your data.
+            Ask AI anything about your WHOOP data: trends, insights, what to improve. Only you can see your data and your questions.
           </div>
         )}
         {messages.map((m, i) => (
@@ -115,7 +115,7 @@ export function Assistant() {
           className="field"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your data…"
+          placeholder="Ask AI about your biometrics…"
         />
         <button className="btn chat-send" type="submit" disabled={busy || !input.trim()}>
           {busy ? "…" : "Ask AI"}

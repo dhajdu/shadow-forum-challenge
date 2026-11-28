@@ -86,7 +86,7 @@ export function ForumAsk({
     <div className="assistant">
       {meeting && <p className="note-line">Asking about {meeting.label}.</p>}
       <div className="chat">
-        {messages.length === 0 && <div className="chat-empty">Ask about your forums: what was agreed, who committed to what, what came up.</div>}
+        {messages.length === 0 && <div className="chat-empty">Ask AI about your forums: what was agreed, who committed to what, what came up. The AI answers from the agendas you can see and cites them.</div>}
         {messages.map((m, i) => (
           <div key={i} className={`bubble ${m.role}`}>
             {m.content}
@@ -123,7 +123,7 @@ export function ForumAsk({
           ask(input);
         }}
       >
-        <input className="field" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about your forum…" aria-label="Question" />
+        <input className="field" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask AI about the forum…" aria-label="Question for the AI" />
         <button className="btn chat-send" type="submit" disabled={busy || !input.trim()}>{busy ? "…" : "Ask AI"}</button>
       </form>
     </div>
