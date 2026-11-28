@@ -11,7 +11,7 @@ import { Banner, Body, Button, Card, Display, Empty, Eyebrow, Loading, Row, Scre
 import * as data from "@/data";
 import { stamp, time } from "@/lib/format";
 import { useLoad } from "@/lib/useLoad";
-import { color, font, fs } from "@/theme/tokens";
+import { color, font, fs, space } from "@/theme/tokens";
 
 const hm = (t: string | null) => (t ? t.slice(0, 5) : "");
 
@@ -38,7 +38,7 @@ export default function ForumPage() {
     <Screen banner="back" back="Forum">
       <View style={{ gap: 6 }}>
         <Eyebrow>{coming ? "Coming forum" : "Forum recap"}</Eyebrow>
-        <Display size={48}>{coming ? stamp(m.held_on) : meetingTitle(m)}</Display>
+        <Display size={48} style={{ marginBottom: space.rowGap }}>{coming ? stamp(m.held_on) : meetingTitle(m)}</Display>
         <Small tone={color.inkSoft}>
           {[coming ? meetingTitle(m) : stamp(m.held_on), m.starts_at ? time(m.starts_at) : null, m.place ?? recap?.place ?? "Place to be confirmed", m.host_id ? `host ${name(m.host_id)}` : null].filter(Boolean).join(" · ")}
         </Small>

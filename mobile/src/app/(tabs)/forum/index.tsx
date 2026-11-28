@@ -9,7 +9,7 @@ import { Banner, Body, Button, DayNum, Display, Empty, Eyebrow, Field, Loading, 
 import * as data from "@/data";
 import { long, time, weekday } from "@/lib/format";
 import { useLoad } from "@/lib/useLoad";
-import { color } from "@/theme/tokens";
+import { color, space } from "@/theme/tokens";
 
 const monthName = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
 const mon = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
@@ -43,7 +43,7 @@ export default function Agenda() {
           {next ? (
             <View style={{ gap: 6 }}>
               <Eyebrow>{next.held_on === d.me.forum_joined_on ? "Your first forum" : "Next forum"}</Eyebrow>
-              <Display size={58}>{weekday(next.held_on)}</Display>
+              <Display size={58} style={{ marginBottom: space.rowGap }}>{weekday(next.held_on)}</Display>
               <Small tone={color.inkSoft}>
                 {[next.starts_at ? time(next.starts_at) : null, next.place ?? "Place to be confirmed", next.host_id ? `host ${d.ppl.get(next.host_id)?.full_name ?? ""}` : null].filter(Boolean).join(" · ")}
               </Small>
