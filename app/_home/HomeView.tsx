@@ -10,6 +10,7 @@ import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
 import { ForumAsk } from "@/components/ForumAsk";
 import { listGallery } from "@/app/_data/gallery";
 import { getKitty, vndShort } from "@/app/_data/kitty";
+import { getConstitution } from "@/app/_data/constitution";
 import { getStandings } from "@/lib/standings";
 import { dayOfSeason, hasContest, seasonLength } from "@/lib/contest";
 import type { GoalStatus } from "@/lib/database.types";
@@ -30,14 +31,20 @@ type NewItem = { key: string; href: string; text: string; when: string };
 
 export async function HomeView() {
   const { db, user, viewer, today } = await getForumContext();
-  const [meetings, library, seasons, photos, home, kitty] = await Promise.all([
+  const [meetings, library, seasons, photos, home, kitty, constitution] = await Promise.all([
     listMeetings(db, viewer),
     listLibrary(db, viewer),
     listSeasons(db, viewer),
     listGallery(db, 6),
     getLibraryDoc(db, viewer, "home"),
     getKitty(db).catch(() => null),
+    getConstitution(db).catch(() => null),
   ]);
+  // the newest Constitution this member still has to sign
+  const toSign =
+    constitution?.current && !constitution.signatures.some((x) => x.version_id === constitution.current!.id && x.user_id === user.id)
+      ? constitution.current
+      : null;
   const treasurer = kitty?.treasurerId
     ? (await db.from("profiles").select("full_name").eq("id", kitty.treasurerId).maybeSingle()).data?.full_name?.split(/\s+/)[0] ?? null
     : null;
@@ -178,6 +185,16 @@ export async function HomeView() {
                   : "Dave adds your first forum date, and your forums appear here from then on."}
               </p>
             </section>
+          )}
+
+          {toSign && (
+            <Link href="/forum/resources/constitution#sign" className={s.line}>
+              <span>
+                <span className={s.label}>The Constitution · version {toSign.version}</span>
+                <b>{toSign.version > 1 ? "Amended. Read what changed and sign again" : "Read it and sign"}</b>
+              </span>
+              <span className={`${s.status} ${s.at_risk}`}>Sign →</span>
+            </Link>
           )}
 
           {goalSeason && (

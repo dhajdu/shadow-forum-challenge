@@ -20,6 +20,7 @@ export default async function MembersPage() {
         <p className="sub">One date per member is the whole access setup: they see forums, agendas and contest seasons from their first forum on.</p>
         <nav className="actions-row">
           <Link href="/me/seasons" className="btn-ghost inline">Seasons</Link>
+          <Link href="/me/members/constitution" className="btn-ghost inline">Amend the Constitution</Link>
         </nav>
       </header>
 

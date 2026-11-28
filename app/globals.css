@@ -50,6 +50,7 @@
 
   --font-display-stack: var(--font-display), "Arial Narrow", sans-serif;
   --font-body-stack: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-signature-stack: var(--font-signature), "Snell Roundhand", cursive;
   --display-width: 62%;   /* Archivo width axis: condensed */
   --track-label: .28em;   /* uppercase labels */
   --r-btn: 2px;
@@ -83,6 +84,7 @@
   --date-tile: 132px;   /* Forum: coming-date tile min width */
   --sheet-desc-w: 220px; /* Kitty sheet: description column min width */
   --term-w: 200px;      /* Constitution: term column */
+  --fs-sig: 30px;       /* typed signature */
   --side-w: 216px;      /* desktop sidebar */
   --tabbar-h: 60px;     /* phone bottom tabs, before the safe area */
   --content-w: 1120px;  /* page container max width */
@@ -553,6 +555,13 @@ a.row:hover .chev { color: var(--ink); transform: translateX(2px); }
   line-height: 1.1; color: var(--ink); }
 .md-terms dd { margin: 0; color: var(--ink-soft); }
 @media (max-width: 640px) { .md-terms > div { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); } }
+.esign { display: grid; gap: var(--sp-12); max-width: var(--read-w); }
+.esign-field { display: flex; flex-direction: column; gap: var(--sp-6); }
+.esign-field > span { font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track-label); text-transform: uppercase; color: var(--muted); }
+.esign-preview { font-family: var(--font-signature-stack); font-size: calc(var(--fs-sig) * 1.4); color: var(--amber); line-height: 1.2;
+  padding: var(--sp-8) 0 var(--sp-4); border-bottom: var(--hair) solid var(--line); min-height: var(--sp-48); }
+.esign-consent { display: flex; gap: var(--sp-10); align-items: flex-start; color: var(--ink-soft); font-size: var(--fs-sm); line-height: 1.5; cursor: pointer; }
+.esign-consent input { margin-top: var(--sp-4); accent-color: var(--amber); }
 .md-table { overflow-x: auto; margin: var(--sp-16) 0; border: var(--hair) solid var(--line); }
 .md-table table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
 .md-table th, .md-table td { padding: var(--sp-8) var(--sp-12); border-bottom: var(--hair) solid var(--line-soft); text-align: left; vertical-align: top; }
