@@ -11,7 +11,7 @@ export function AskFab() {
   const path = usePathname();
   const { date } = useGlobalSearchParams<{ date?: string }>();
   const insets = useSafeAreaInsets();
-  if (path === "/chat") return null;
+  if (path.startsWith("/chat")) return null;
   const meeting = path.startsWith("/forum/") && date ? date : undefined;
   return (
     <Pressable

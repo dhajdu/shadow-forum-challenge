@@ -401,22 +401,42 @@ export async function updateAvatar(uri: string, mime: string): Promise<void> {
 const CHAT_COLS =
   "id, author_id, body, photo_id, reply_to, created_at, edited_at, deleted_at, " +
   "author:profiles!forum_messages_author_id_fkey(full_name), photo:gallery_photos!forum_messages_photo_id_fkey(thumb_path)";
-const CHAT_LIMIT = 200;
+const CHAT_LIMIT = 100; // top-level messages; their thread replies come with them
 
 type ChatRow = Omit<ForumMessage, "author" | "photo"> & {
   author: { full_name: string } | null;
   photo: { thumb_path: string } | null;
 };
 
-/** The latest messages, oldest first, with signed photo thumbnails. */
+/**
+ * The latest top-level messages with the thread replies under them, oldest first, with signed
+ * photo thumbnails. Same window as the website (app/_data/chat.ts).
+ */
 export async function chatMessages(): Promise<ForumMessage[]> {
   if (isDemo) return wait([...fx().forumChat]);
-  const r = await supabase.from("forum_messages").select(CHAT_COLS).order("created_at", { ascending: false }).limit(CHAT_LIMIT);
+  const r = await supabase
+    .from("forum_messages")
+    .select(CHAT_COLS)
+    .is("reply_to", null)
+    .order("created_at", { ascending: false })
+    .limit(CHAT_LIMIT);
   if (r.error?.code && SCHEMA_MISSING.has(r.error.code)) {
     markSample();
     return fx().forumChat;
   }
-  const rows = (must(r) as unknown as ChatRow[]).reverse();
+  const top = (must(r) as unknown as ChatRow[]).reverse();
+  const replies = top.length
+    ? (must(
+        await supabase
+          .from("forum_messages")
+          .select(CHAT_COLS)
+          .not("reply_to", "is", null)
+          .gte("created_at", top[0].created_at)
+          .order("created_at")
+          .limit(1000),
+      ) as unknown as ChatRow[])
+    : [];
+  const rows = [...top, ...replies].sort((a, b) => a.created_at.localeCompare(b.created_at));
   const paths = rows.flatMap((m) => (m.photo?.thumb_path ? [m.photo.thumb_path] : []));
   const signed = paths.length ? (await supabase.storage.from("gallery").createSignedUrls(paths, 3600)).data : null;
   const url = new Map((signed ?? []).map((x) => [x.path, x.signedUrl]));

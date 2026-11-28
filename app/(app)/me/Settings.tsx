@@ -7,7 +7,7 @@ const CLAUDE_CODE = `claude mcp add --transport http shadow-forum ${MCP_URL}`;
 
 const EXAMPLES = [
   "What did I commit to at the last forum?",
-  "What's in the Parking Lot for the next forum?",
+  "Which topics are lined up for the next forum?",
   "How much is in the kitty, and who still owes dues for the last forum?",
   "How has my recovery trended this month?",
 ];
@@ -33,7 +33,7 @@ export function Settings() {
       <section className="zone-card" id="mcp">
         <h2>MCP Connection</h2>
         <p className={s.lede}>
-          Connect your own AI assistant, such as Claude, to the forum database and ask it about agendas, the Parking Lot, the kitty, the chat,
+          Connect your own AI assistant, such as Claude, to the forum database and ask it about agendas, the forum&apos;s topics, the kitty, the chat,
           goals, the race and your WHOOP data. It signs in as you, so it sees only what you can see here. There is no shared key.
         </p>
 
@@ -69,7 +69,7 @@ export function Settings() {
 
         <h3 className={s.step}>What it can do</h3>
         <ul className={s.can}>
-          <li><b>Read</b> forums and agendas from your first forum on, the Parking Lot, the library, the kitty, the chat, the race, your goals and your WHOOP data.</li>
+          <li><b>Read</b> forums and agendas from your first forum on, the forum&apos;s topics, the library, the kitty, the chat, the race, your goals and your WHOOP data.</li>
           <li><b>Act for you</b>: add or void a kitty line, post to the chat, and set or update your own goals. It should check with you first; you can also block these tools in your assistant&apos;s settings.</li>
           <li><b>Never</b> see another member&apos;s WHOOP data or anything from before your first forum, and never change access or admin settings.</li>
         </ul>

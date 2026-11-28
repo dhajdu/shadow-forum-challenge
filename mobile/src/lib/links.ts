@@ -13,6 +13,7 @@ export function appPath(path: string): string {
   if (p === "/race") return "/contest";
   if (p.startsWith("/rider/")) return `/contest${p}`;
   if (p === "/forum/chat") return "/chat";
+  if (p.startsWith("/forum/thread/")) return p.replace("/forum/thread/", "/chat/thread/");
   if (p === "/gallery" || p === "/forum/gallery") return "/forum/photos";
   if (p === "/kitty") return "/forum/kitty";
   if (p === "/goals" || p === "/contest/goal") return "/contest/goals";

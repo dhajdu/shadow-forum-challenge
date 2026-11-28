@@ -66,7 +66,7 @@ export default async function AgendaPage({ params }: { params: Promise<{ date: s
 
           <aside className={r.side}>
             <section>
-              <h3 className={r.label}>Parking lot</h3>
+              <h3 className={r.label}>Topics</h3>
               <ParkingLot groups={parking} />
             </section>
             {recap.learnings.length > 0 && (

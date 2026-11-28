@@ -7,7 +7,7 @@ const initials = (n: string) => n.split(/\s+/).map((w) => w[0]).join("").slice(0
 
 /** The forum's Parking Lot: topics members asked to bring back, newest forum first. */
 export function ParkingLot({ groups, compact = false }: { groups: ParkingGroup[]; compact?: boolean }) {
-  if (groups.length === 0) return <p className="note-line">Nothing parked. Every topic got its time.</p>;
+  if (groups.length === 0) return <p className="note-line">No topics waiting. Every one got its time.</p>;
   const sorted = [...groups].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   const shown = compact ? sorted.slice(0, 2) : sorted;
   return (
