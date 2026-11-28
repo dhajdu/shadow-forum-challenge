@@ -2,6 +2,8 @@ import Image from "next/image";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { LAST_VISIT_COOKIE, SIGN_PROMPT_COOKIE } from "@/app/_data/cookies";
 import { getForumContext } from "@/app/_data/context";
 import { getLibraryDoc, listLibrary, listMeetings, listSeasons, memberStatus, touchLastSeen } from "@/app/_data/forum";
 import { parseVision } from "@/app/_data/vision";
@@ -14,7 +16,7 @@ import { getConstitution } from "@/app/_data/constitution";
 import { getStandings } from "@/lib/standings";
 import { dayOfSeason, hasContest, seasonLength } from "@/lib/contest";
 import type { GoalStatus } from "@/lib/database.types";
-import { LAST_VISIT_COOKIE, MarkVisit } from "./MarkVisit";
+import { MarkVisit } from "./MarkVisit";
 import s from "./home.module.css";
 
 const SUFFIX = ["th", "st", "nd", "rd"];
@@ -72,6 +74,8 @@ export async function HomeView() {
   // what's new since the last visit (first visit: the last 30 days)
   // profiles.last_seen_at when the database has it, else this browser's cookie
   const [lastSeen, jar] = await Promise.all([touchLastSeen(db), cookies()]);
+  // first Home view of a browser session with an unsigned Constitution: go and sign it
+  if (toSign && jar.get(SIGN_PROMPT_COOKIE)?.value !== String(toSign.version)) redirect("/forum/resources/constitution?sign=1#sign");
   const lastVisit = lastSeen ?? (jar.get(LAST_VISIT_COOKIE)?.value ? decodeURIComponent(jar.get(LAST_VISIT_COOKIE)!.value) : null);
   const since = lastVisit ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
   const changed = meetings.filter((m) => new Date(m.updated_at) > new Date(since));

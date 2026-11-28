@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export const LAST_VISIT_COOKIE = "sf_last_visit";
+import { LAST_VISIT_COOKIE } from "@/app/_data/cookies";
 
 // Remembers this visit, so the next Home view can show what is new since now.
 export function MarkVisit() {

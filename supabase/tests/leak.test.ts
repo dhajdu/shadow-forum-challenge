@@ -625,14 +625,15 @@ describe("MCP: join-date rule on every tool", () => {
     assert.equal(f.length, 1);
   });
 
-  it("kitty: everyone sees the same balance, lines only from their first forum", async () => {
+  // Constitution v2: the kitty is open in full to every active member
+  it("kitty: every member sees the same balance and every line", async () => {
     const f = (await call("founding", "get_kitty")).json;
     const n = (await call("nam", "get_kitty")).json;
     assert.equal(f.balance_vnd, n.balance_vnd);
-    assert.match(JSON.stringify(f.entries), /kittyfeb/);
-    assert.doesNotMatch(JSON.stringify(n.entries), /kittyfeb/);
-    assert.match(JSON.stringify(n.entries), /kittyaug/);
-    assert.doesNotMatch(JSON.stringify((await call("december", "get_kitty")).json.entries), /kitty(feb|aug)/);
+    for (const x of [f, n, (await call("december", "get_kitty")).json]) {
+      assert.match(JSON.stringify(x.entries), /kittyfeb/);
+      assert.match(JSON.stringify(x.entries), /kittyaug/);
+    }
   });
 
   it("kitty: a member submits an expense, cannot backdate before joining, can void", async () => {
@@ -849,15 +850,16 @@ describe("gallery", () => {
   });
 
   for (const k of KEYS) {
-    it(`${k}: sees photos and files only from their first forum`, async () => {
+    // Constitution v2: photos are open in full to every active member; leavers and members without a date see none
+    it(`${k}: sees every photo and file if active, none otherwise`, async () => {
       const rows = ok(await client[k].from("gallery_photos").select("id"), "rows") as { id: string }[];
       const seen = rows.map((r) => r.id).filter((id) => Object.values(pid).includes(id));
-      assert.deepEqual(sorted(seen), sorted(SEED.filter((s) => seesDate(k, s.taken_on)).map((s) => pid[s.key])));
+      assert.deepEqual(sorted(seen), active(k) ? sorted(Object.values(pid)) : []);
       for (const s of SEED) {
         const dl = await client[k].storage.from("gallery").download(`${pid[s.key]}/thumb.webp`);
-        assert.equal(!dl.error && !!dl.data, seesDate(k, s.taken_on), `${k} thumb ${s.key}`);
+        assert.equal(!dl.error && !!dl.data, active(k), `${k} thumb ${s.key}`);
         const url = await client[k].storage.from("gallery").createSignedUrl(`${pid[s.key]}/web.webp`, 60);
-        assert.equal(!url.error && !!url.data, seesDate(k, s.taken_on), `${k} signed url ${s.key}`);
+        assert.equal(!url.error && !!url.data, active(k), `${k} signed url ${s.key}`);
       }
     });
   }
