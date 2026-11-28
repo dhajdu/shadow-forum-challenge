@@ -57,6 +57,9 @@ get_forum_plan returns members_present and a standard_run_sheet already timed fo
 ## Away forums and the retreat
 They have planners (get_forum_plan shows them). A retreat is one agenda over several days: use the day field, and the travel, hotel, meal, sight and free kinds for the trip.
 
+## Socials
+A social (a forum dinner, a party) has a host, a place and a start time only: no run sheet, presentations or rotation. "The next forum" skips socials.
+
 ## Rotation
 In each cycle every member presents once and coaches once. Nobody coaches themselves or presents twice in a row. The retreat can hold two presentations. New members join the next cycle.
 
