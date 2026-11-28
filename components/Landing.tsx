@@ -7,8 +7,20 @@ import { createClient } from "@/lib/supabase/client";
 import { signUpWithCode } from "@/app/actions/signup";
 import { PasswordField } from "@/components/PasswordField";
 import { useForumSettings } from "@/components/ForumSettingsProvider";
+import { demoLogin } from "@/lib/demo";
 
 type Mode = "signin" | "signup" | "forgot";
+
+const DEMO = demoLogin(); // a public demo site only
+
+/** Signs in to the demo's shared read-only account and opens Home. */
+async function openDemo(): Promise<boolean> {
+  if (!DEMO) return false;
+  const { error } = await createClient().auth.signInWithPassword(DEMO);
+  if (error) return false;
+  window.location.assign("/");
+  return true;
+}
 
 export function Landing() {
   const router = useRouter();
@@ -31,11 +43,20 @@ export function Landing() {
     const n = q.get("next");
     if (n && n.startsWith("/") && !n.startsWith("//")) setNext(n);
     if (q.get("mode") === "signup") setMode("signup");
+    if (q.has("demo")) void openDemo(); // a link to the demo opens it signed in
     if (q.get("reset") === "expired") {
       setMode("forgot");
       setMsg({ text: "That reset link has expired. Request a new one.", ok: false });
     }
   }, []);
+
+  async function signInAsDemo() {
+    setBusy(true);
+    setMsg(null);
+    if (await openDemo()) return;
+    setMsg({ text: "The demo sign-in did not work. Try again in a minute.", ok: false });
+    setBusy(false);
+  }
 
   async function signInWithPasskey() {
     setBusy(true);
@@ -98,6 +119,18 @@ export function Landing() {
         <div className="eyebrow">By invitation only</div>
         <h1 className="title">{forum.name}</h1>
         <p className="tagline">Into the Shadow</p>
+
+        {DEMO && mode === "signin" && (
+          <div className="demo-entry">
+            <button className="btn" type="button" onClick={signInAsDemo} disabled={busy}>
+              {busy ? "…" : "View the demo"}
+            </button>
+            <p className="demo-note">
+              A made-up forum with fictional members. One click signs you in as a member, read-only. Or sign in
+              below: {DEMO.email} · password {DEMO.password}
+            </p>
+          </div>
+        )}
 
         <form onSubmit={onSubmit}>
           {mode === "signup" && (
