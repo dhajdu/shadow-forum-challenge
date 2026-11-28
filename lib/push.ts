@@ -37,7 +37,7 @@ export function render(m: PushMessage): { title: string; body: string; data: Rec
     case "forum_message":
       return { title: "The Shadow Forum", body: "New message in the forum chat", data: { path: "/forum/chat" } };
     case "whip_nudge":
-      return { title: "The Whip", body: "Time to sync your WHOOP", data: { path: "/me" } };
+      return { title: "The Whip", body: "Time to sync your WHOOP", data: { path: "/biometrics" } };
     case "report_ready":
     {
       const label = new Date(`${m.month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });

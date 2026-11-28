@@ -1,14 +1,10 @@
 import Link from "next/link";
 import { WhoopConnect, whoopNotice } from "./zone/WhoopConnect";
-import { SignOutButton } from "@/components/SignOutButton";
 import { isExternallySynced } from "@/lib/whoop/config";
 import { ScoreTrend } from "@/components/ScoreTrend";
-import { GoalProgress } from "@/components/GoalProgress";
-import type { PersonalGoal } from "@/components/ExtraCredit";
+import { Assistant } from "@/components/Assistant";
 import { getStandings } from "@/lib/standings";
 import { CONTEST_START_DAY } from "@/lib/contest";
-import { coachNameFor } from "@/lib/roster";
-import type { GoalStatus } from "@/lib/database.types";
 import { selectAll } from "@/lib/supabase/selectAll";
 import type { JournalAnalysis } from "@/lib/analyst";
 import {
@@ -25,8 +21,6 @@ import {
   type WhoopDay,
 } from "./zone/stats";
 import s from "./zone/zone.module.css";
-import { Settings } from "./Settings";
-import { contestSeasonId } from "@/app/_data/season";
 import { PageBanner } from "@/components/PageBanner";
 import { getForumContext } from "@/app/_data/context";
 import { longDay } from "@/app/_data/format";
@@ -53,14 +47,13 @@ function scoreColor(score: number, alpha = 1): string {
 
 const signed = (n: number) => `${n > 0 ? "+" : ""}${n}`;
 
-// Me: your biometrics (WHOOP), your goals, then account and admin settings.
-export default async function MePage({
+// Biometrics: your WHOOP numbers, trends and journal, with Ask AI about your own data.
+export default async function BiometricsPage({
   searchParams,
 }: {
   searchParams: Promise<{ view?: string; whoop?: string }>;
 }) {
-  const { db: supabase, user, viewer } = await getForumContext();
-  const contestSeason = await contestSeasonId(supabase, viewer);
+  const { db: supabase, user } = await getForumContext();
 
   const params = await searchParams;
   const view = params.view === "all" ? "all" : "contest";
@@ -70,33 +63,18 @@ export default async function MePage({
 
   // independent reads — run them together
   const [
-    { data: goalRow },
-    { data: me },
     { data: dayRows },
     standings,
-    { data: pgRows },
     journalRows,
     connectionResult,
     { data: analysisRow },
   ] = await Promise.all([
-    supabase
-      .from("goals")
-      .select("id, title, unit, target_value, current_value, current_status")
-      .eq("user_id", user.id)
-      .eq("season_id", contestSeason ?? "")
-      .maybeSingle(),
-    supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single(),
     supabase
       .from("whoop_days")
       .select("day, score, recovery, sleep, strain, resting_hr, hrv, missed")
       .eq("user_id", user.id)
       .order("day", { ascending: true }),
     getStandings(supabase),
-    supabase
-      .from("personal_goals")
-      .select("id, title, unit, target_value, current_value")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true }),
     // ~25 questions a day adds up fast — page past the 1000-row select cap
     selectAll<JournalRow>((from, to) =>
       supabase
@@ -123,27 +101,7 @@ export default async function MePage({
       .maybeSingle(),
   ]);
 
-  const goal = goalRow as
-    | {
-        id: string;
-        title: string;
-        unit: string | null;
-        target_value: number | null;
-        current_value: number;
-        current_status: GoalStatus;
-      }
-    | null;
-
-  const profile = me as { full_name: string | null; avatar_url: string | null } | null;
-  const name = profile?.full_name || "Rider";
-  const initials = name
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
   const days = (dayRows ?? []) as WhoopDay[];
-  const personalGoals = (pgRows ?? []) as PersonalGoal[];
 
   const rank = standings.findIndex((st) => st.user_id === user.id) + 1;
   const mine = standings[rank - 1];
@@ -167,25 +125,12 @@ export default async function MePage({
 
   return (
     <>
-    <PageBanner src="/banners/me.webp" position="50% 40%" />
+    <PageBanner src="/banners/me.webp" position="50% 40%">
+      <h1>Biometrics</h1>
+    </PageBanner>
     <main className={s.page}>
       <header className={s.head}>
-        <div className={s.who}>
-          <div
-            className={s.avatar}
-            style={profile?.avatar_url ? { backgroundImage: `url(${profile.avatar_url})` } : undefined}
-          >
-            {profile?.avatar_url ? null : initials}
-          </div>
-          <div>
-            <div className="eyebrow">Me</div>
-            <h1>{name}</h1>
-            <p className={s.sub}>
-              {viewer.forum_joined_on ? `In the forum since ${longDay(viewer.forum_joined_on)}` : "First forum date not set yet"}
-              {viewer.is_admin ? " · admin" : ""}
-            </p>
-          </div>
-        </div>
+        <p className={s.sub}>Your WHOOP numbers. Only you see them; the race shows only your score.</p>
         <div className={s.actions}>
           <WhoopConnect
             status={connectionResult.error ? null : (connectionResult.data?.status ?? null)}
@@ -194,7 +139,6 @@ export default async function MePage({
             external={isExternallySynced(user.id)}
             notice={whoopNotice(params.whoop)}
           />
-          <SignOutButton className="btn-ghost" />
         </div>
       </header>
 
@@ -270,44 +214,17 @@ export default async function MePage({
           )}
         </section>
 
-        <div className={s.side}>
-          <section className="zone-card">
-            <h2>Business goal</h2>
-            {goal ? (
-              <>
-                <p className="coach-line">
-                  Your coach: <b>{coachNameFor(name) ?? "to be assigned"}</b>
-                </p>
-                <GoalProgress
-                  title={goal.title}
-                  unit={goal.unit}
-                  targetValue={goal.target_value}
-                  currentValue={goal.current_value}
-                  currentStatus={goal.current_status}
-                />
-              </>
-            ) : (
-              <p className="note-line">
-                No business goal for this season yet. <Link href="/welcome" className="back">Set your goal</Link>
-              </p>
-            )}
-          </section>
-
-          <section className="zone-card">
-            <h2>Your goals</h2>
-            <Link href="/goals" className="row">
-              <span className="row-main"><b>{personalGoals.length ? `${personalGoals.length} goal${personalGoals.length === 1 ? "" : "s"} set` : "Set your goals"}</b><small>Add as many as you like for each quarter</small></span>
-              <span className="chev" aria-hidden>→</span>
-            </Link>
-          </section>
-        </div>
+        <section className={`zone-card ${s.ask}`} id="ask">
+          <h2>Ask AI about my biometrics</h2>
+          <Assistant />
+        </section>
       </div>
 
       <details className={s.more}>
         <summary>More WHOOP detail</summary>
         <div className={`seg ${s.viewToggle}`}>
-          <Link href="/me" className={`seg-btn ${view === "contest" ? "on" : ""}`}>This season</Link>
-          <Link href="/me?view=all" className={`seg-btn ${view === "all" ? "on" : ""}`}>All time</Link>
+          <Link href="/biometrics" className={`seg-btn ${view === "contest" ? "on" : ""}`}>This season</Link>
+          <Link href="/biometrics?view=all" className={`seg-btn ${view === "all" ? "on" : ""}`}>All time</Link>
         </div>
         <div className={s.cols}>
         {view === "all" ? (
@@ -433,9 +350,6 @@ export default async function MePage({
         </div>
       </details>
 
-      <div className={s.settings}>
-        <Settings viewer={viewer} />
-      </div>
     </main>
     </>
   );

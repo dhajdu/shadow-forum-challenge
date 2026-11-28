@@ -36,7 +36,7 @@ export default async function AgendaPage({ params }: { params: Promise<{ date: s
         </p>
         {recap?.purpose && <blockquote className={r.purpose}>{recap.purpose}</blockquote>}
         <div className="actions-row">
-          <Link href={`/ask?meeting=${m.id}`} className="btn inline">Ask about this forum</Link>
+          <Link href={`/ask?meeting=${m.id}`} className="btn inline">Ask AI about this forum</Link>
           {m.files.map((f) =>
             f.url ? (
               <a key={f.path} href={f.url} className="btn-ghost inline" target="_blank" rel="noreferrer">{f.name}</a>

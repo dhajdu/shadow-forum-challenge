@@ -1,5 +1,7 @@
-/* Goals: one list per quarter, add as many as you like. */
-.page { max-width: 880px; }
+/* Goals: one list per quarter, add as many as you like. Left-aligned on the page grid like every
+   other page; only the reading column is narrower. */
+.head, .list, .add, .contest { max-width: var(--read-w); }
+.contest { margin-bottom: var(--sp-24); }
 .head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-12); margin-bottom: var(--sp-8); }
 .head h2 { font-family: var(--font-display-stack); font-stretch: var(--display-width); font-weight: 900; font-size: var(--fs-date); text-transform: uppercase; }
 .list { list-style: none; display: flex; flex-direction: column; }

@@ -141,3 +141,6 @@
 .aMeta { font-size: var(--fs-xs); color: var(--muted); margin-top: var(--sp-8); }
 .jNumbers { margin-top: var(--sp-16); font-size: var(--fs-md); letter-spacing: .04em; color: var(--muted); }
 .settings { margin-top: var(--sp-32); }
+
+/* Ask AI beside the biometrics: the chat keeps its own scroll. */
+.ask :global(.chat) { max-height: 52vh; overflow-y: auto; }

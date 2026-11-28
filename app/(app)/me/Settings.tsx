@@ -1,23 +1,15 @@
-import Link from "next/link";
-import type { Viewer } from "@/app/_data/forum";
 import { AddPasskeyButton } from "@/components/AddPasskeyButton";
 import s from "./me.module.css";
 
 const MCP_URL = `${process.env.NEXT_PUBLIC_SITE_URL || "https://eoshadowforum.com"}/api/mcp`;
 
-/** Account and admin links at the bottom of Me. */
-export function Settings({ viewer }: { viewer: Viewer }) {
+/** Account settings on Profile. Admin tools live on Members and access only. */
+export function Settings() {
   return (
-    <div className={s.grid}>
+    <div className={s.settings}>
         <section className="zone-card">
           <h2>Account</h2>
           <ul className="rows">
-            <li>
-              <Link href="/me/profile" className="row">
-                <span className="row-main"><b>Edit profile</b><small>Name, photo and password</small></span>
-                <span className="chev" aria-hidden>→</span>
-              </Link>
-            </li>
             <li className="row">
               <span className="row-main"><b>Notifications</b><small>Forum dates and new agendas, by push in the iPhone app</small></span>
               <span className="tag">soon</span>
@@ -35,25 +27,6 @@ export function Settings({ viewer }: { viewer: Viewer }) {
           </ul>
         </section>
 
-        {viewer.is_admin && (
-          <section className="zone-card">
-            <h2>Admin</h2>
-            <ul className="rows">
-              <li>
-                <Link href="/me/members" className="row">
-                  <span className="row-main"><b>Members and access</b><small>First-forum dates, invites, preview as member</small></span>
-                  <span className="chev" aria-hidden>→</span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/me/seasons" className="row">
-                  <span className="row-main"><b>Seasons</b><small>Contest seasons and their dates</small></span>
-                  <span className="chev" aria-hidden>→</span>
-                </Link>
-              </li>
-            </ul>
-          </section>
-        )}
     </div>
   );
 }

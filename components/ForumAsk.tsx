@@ -124,7 +124,7 @@ export function ForumAsk({
         }}
       >
         <input className="field" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about your forum…" aria-label="Question" />
-        <button className="btn chat-send" type="submit" disabled={busy || !input.trim()}>{busy ? "…" : "Ask"}</button>
+        <button className="btn chat-send" type="submit" disabled={busy || !input.trim()}>{busy ? "…" : "Ask AI"}</button>
       </form>
     </div>
   );
