@@ -5,6 +5,7 @@ export type ChatMessage = {
   id: string;
   author_id: string;
   body: string;
+  reply_to: string | null; // set: a reply in the thread under that message
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
@@ -12,15 +13,30 @@ export type ChatMessage = {
 
 export const CHAT_PAGE = 100;
 
-/** The newest messages the member may see, oldest first. Empty until the table exists. */
+export const CHAT_COLS = "id, author_id, body, reply_to, created_at, edited_at, deleted_at";
+
+/**
+ * The newest top-level messages the member may see, with the thread replies under them,
+ * oldest first. Empty until the table exists.
+ */
 export async function listChat(db: Db): Promise<ChatMessage[]> {
   const { data, error } = await db
     .from("forum_messages")
-    .select("id, author_id, body, created_at, edited_at, deleted_at")
+    .select(CHAT_COLS)
+    .is("reply_to", null)
     .order("created_at", { ascending: false })
     .limit(CHAT_PAGE);
   if (error || !data) return [];
-  return (data as ChatMessage[]).reverse();
+  const top = (data as ChatMessage[]).reverse();
+  if (top.length === 0) return top;
+  const { data: replies } = await db
+    .from("forum_messages")
+    .select(CHAT_COLS)
+    .not("reply_to", "is", null)
+    .gte("created_at", top[0].created_at)
+    .order("created_at")
+    .limit(1000);
+  return [...top, ...((replies ?? []) as ChatMessage[])].sort((a, b) => a.created_at.localeCompare(b.created_at));
 }
 
 /** Names and avatars for everyone the member can see. */

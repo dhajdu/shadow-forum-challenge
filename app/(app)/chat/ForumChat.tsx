@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import type { ChatMessage } from "@/app/_data/chat";
+import { CHAT_COLS, type ChatMessage } from "@/app/_data/chat";
 import s from "./chat.module.css";
 
 type People = Record<string, { name: string; avatar: string | null }>;
@@ -17,16 +17,17 @@ const time = (iso: string) =>
 const initials = (n: string) => n.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 /**
- * The forum's group chat. Reads and live updates run on the member's own session, so Postgres
- * decides which messages arrive (from their first forum on).
+ * The forum's group chat, with threads: a reply (reply_to) sits in the thread under the message it
+ * answers, not in the main list. Reads and live updates run on the member's own session, so
+ * Postgres decides which messages arrive.
  */
 export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; people: People; me: string }) {
   const db = useMemo(() => createClient() as unknown as SupabaseClient, []);
   const [messages, setMessages] = useState(initial);
-  const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [thread, setThread] = useState<string | null>(null); // the open thread's first message
   const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const threadEndRef = useRef<HTMLDivElement>(null);
 
   // live: new and edited messages
   useEffect(() => {
@@ -47,35 +48,70 @@ export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; peo
     };
   }, [db]);
 
+  // each reply belongs to the thread of the top-level message its reply chain starts from
+  const { top, replies } = useMemo(() => {
+    const byId = new Map(messages.map((m) => [m.id, m]));
+    const rootOf = (m: ChatMessage): string | null => {
+      let cur = m;
+      for (let hops = 0; cur.reply_to && hops < 50; hops++) {
+        const parent = byId.get(cur.reply_to);
+        if (!parent) return null; // its thread started before the loaded window
+        cur = parent;
+      }
+      return cur.reply_to ? null : cur.id;
+    };
+    const top: ChatMessage[] = [];
+    const replies = new Map<string, ChatMessage[]>();
+    for (const m of messages) {
+      if (!m.reply_to) top.push(m);
+      else {
+        const root = rootOf(m);
+        if (root) replies.set(root, [...(replies.get(root) ?? []), m]);
+      }
+    }
+    return { top, replies };
+  }, [messages]);
+
+  const open = thread ? top.find((m) => m.id === thread) ?? null : null;
+  const openReplies = open ? replies.get(open.id) ?? [] : [];
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
     // mark the chat read up to now (owner-only row)
     db.from("forum_read_marks").upsert({ last_read_at: new Date().toISOString() }).then(() => {});
-  }, [messages.length, db]);
+  }, [top.length, db]);
 
-  async function send() {
-    const body = text.trim();
-    if (!body || busy) return;
-    setBusy(true);
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ block: "end" });
+  }, [thread, openReplies.length]);
+
+  useEffect(() => {
+    if (!thread) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setThread(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [thread]);
+
+  async function send(body: string, replyTo: string | null): Promise<boolean> {
     setError(null);
     const { data, error } = await db
       .from("forum_messages")
-      .insert({ body })
-      .select("id, author_id, body, created_at, edited_at, deleted_at")
+      .insert(replyTo ? { body, reply_to: replyTo } : { body })
+      .select(CHAT_COLS)
       .single();
-    if (error) setError(error.message);
-    else {
-      setText("");
-      const row = data as ChatMessage;
-      setMessages((xs) => (xs.some((x) => x.id === row.id) ? xs : [...xs, row]));
-      // tell the other members' phones (generic text; the server rate-limits and dedupes)
-      fetch("/api/forum/notify", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message_id: row.id }),
-      }).catch(() => {});
+    if (error) {
+      setError(error.message);
+      return false;
     }
-    setBusy(false);
+    const row = data as ChatMessage;
+    setMessages((xs) => (xs.some((x) => x.id === row.id) ? xs : [...xs, row]));
+    // tell the other members' phones (generic text; the server rate-limits and dedupes)
+    fetch("/api/forum/notify", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message_id: row.id }),
+    }).catch(() => {});
+    return true;
   }
 
   async function remove(id: string) {
@@ -84,86 +120,147 @@ export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; peo
     if (error) setError(error.message);
   }
 
+  const row = (m: ChatMessage, grouped: boolean, inThread: boolean) => {
+    const who = people[m.author_id]?.name ?? "Member";
+    const rs = inThread ? [] : replies.get(m.id) ?? [];
+    return (
+      <div className={`${s.msg} ${grouped ? s.grouped : ""} ${!inThread && thread === m.id ? s.active : ""}`}>
+        <span className={s.avatar} aria-hidden>
+          {!grouped &&
+            (people[m.author_id]?.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element -- avatar from Storage
+              <img src={people[m.author_id]!.avatar!} alt="" />
+            ) : (
+              initials(who)
+            ))}
+        </span>
+        <div className={s.content}>
+          {!grouped && (
+            <div className={s.meta}>
+              <b>{who}</b>
+              <span>{time(m.created_at)}</span>
+            </div>
+          )}
+          {m.deleted_at ? <p className={s.deleted}>Message deleted</p> : <p className={s.body}>{m.body}</p>}
+          {rs.length > 0 && (
+            <button type="button" className={s.replies} onClick={() => setThread(m.id)}>
+              {rs.length} {rs.length === 1 ? "reply" : "replies"}
+              <span>Last {time(rs[rs.length - 1].created_at)}</span>
+            </button>
+          )}
+        </div>
+        <span className={s.actions}>
+          {!inThread && !m.deleted_at && (
+            <button type="button" onClick={() => setThread(m.id)} aria-label={`Reply in thread to ${who}`}>
+              Reply
+            </button>
+          )}
+          {!m.deleted_at && m.author_id === me && (
+            <button type="button" className={s.del} onClick={() => remove(m.id)} aria-label="Delete message">
+              Delete
+            </button>
+          )}
+        </span>
+      </div>
+    );
+  };
+
   let lastDay = "";
   let lastAuthor = "";
 
   return (
-    <div className={s.chat}>
-      <ol className={s.list} aria-live="polite">
-        {messages.length === 0 && <li className="trend-empty">No messages yet. Say hello to the forum.</li>}
-        {messages.map((m) => {
-          const d = dayKey(m.created_at);
-          const newDay = d !== lastDay;
-          const grouped = !newDay && lastAuthor === m.author_id;
-          lastDay = d;
-          lastAuthor = m.author_id;
-          const who = people[m.author_id]?.name ?? "Member";
-          const mine = m.author_id === me;
-          return (
-            <li key={m.id}>
-              {newDay && <div className={s.day}><span>{dayLabel(m.created_at)}</span></div>}
-              <div className={`${s.msg} ${grouped ? s.grouped : ""}`}>
-                <span className={s.avatar} aria-hidden>
-                  {!grouped && (people[m.author_id]?.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- avatar from Storage
-                    <img src={people[m.author_id]!.avatar!} alt="" />
-                  ) : (
-                    initials(who)
-                  ))}
-                </span>
-                <div className={s.content}>
-                  {!grouped && (
-                    <div className={s.meta}>
-                      <b>{who}</b>
-                      <span>{time(m.created_at)}</span>
-                    </div>
-                  )}
-                  {m.deleted_at ? (
-                    <p className={s.deleted}>Message deleted</p>
-                  ) : (
-                    <p className={s.body}>{m.body}</p>
-                  )}
-                </div>
-                {!m.deleted_at && mine && (
-                  <button type="button" className={s.del} onClick={() => remove(m.id)} aria-label="Delete message">
-                    Delete
-                  </button>
+    <div className={`${s.chat} ${open ? s.withThread : ""}`}>
+      <div className={s.main}>
+        <ol className={s.list} aria-live="polite">
+          {top.length === 0 && <li className="trend-empty">No messages yet. Say hello to the forum.</li>}
+          {top.map((m) => {
+            const d = dayKey(m.created_at);
+            const newDay = d !== lastDay;
+            // a message with a thread under it ends the group
+            const grouped = !newDay && lastAuthor === m.author_id;
+            lastDay = d;
+            lastAuthor = (replies.get(m.id)?.length ?? 0) > 0 ? "" : m.author_id;
+            return (
+              <li key={m.id}>
+                {newDay && (
+                  <div className={s.day}>
+                    <span>{dayLabel(m.created_at)}</span>
+                  </div>
                 )}
-              </div>
-            </li>
-          );
-        })}
-        <div ref={endRef} />
-      </ol>
+                {row(m, grouped, false)}
+              </li>
+            );
+          })}
+          <div ref={endRef} />
+        </ol>
+        <Composer placeholder="Message the forum…" onSend={(b) => send(b, null)} />
+        {error && !open && <p className="msg err">{error}</p>}
+        <p className={s.hint}>Only forum members see this chat. Reply to a message to start a thread under it.</p>
+      </div>
 
-      <form
-        className={s.composer}
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-      >
-        <textarea
-          className="field"
-          rows={1}
-          value={text}
-          maxLength={4000}
-          placeholder="Message the forum…"
-          aria-label="Message the forum"
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              send();
-            }
-          }}
-        />
-        <button className="btn inline" type="submit" disabled={busy || !text.trim()}>
-          Send
-        </button>
-      </form>
-      {error && <p className="msg err">{error}</p>}
-      <p className={s.hint}>Only forum members see this chat, and each member sees it from their first forum on.</p>
+      {open && (
+        <aside className={s.thread} aria-label="Thread">
+          <header className={s.threadHead}>
+            <b>Thread</b>
+            <button type="button" onClick={() => setThread(null)} aria-label="Close thread">
+              ×
+            </button>
+          </header>
+          <ol className={s.threadList}>
+            <li>{row(open, false, true)}</li>
+            <li className={s.count}>
+              {openReplies.length === 0 ? "No replies yet" : `${openReplies.length} ${openReplies.length === 1 ? "reply" : "replies"}`}
+            </li>
+            {openReplies.map((m, i) => (
+              <li key={m.id}>{row(m, i > 0 && openReplies[i - 1].author_id === m.author_id, true)}</li>
+            ))}
+            <div ref={threadEndRef} />
+          </ol>
+          <Composer key={open.id} placeholder="Reply in thread…" autoFocus onSend={(b) => send(b, open.id)} />
+          {error && <p className="msg err">{error}</p>}
+        </aside>
+      )}
     </div>
+  );
+}
+
+function Composer({ placeholder, autoFocus, onSend }: { placeholder: string; autoFocus?: boolean; onSend: (body: string) => Promise<boolean> }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit() {
+    const body = text.trim();
+    if (!body || busy) return;
+    setBusy(true);
+    if (await onSend(body)) setText("");
+    setBusy(false);
+  }
+  return (
+    <form
+      className={s.composer}
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      <textarea
+        className="field"
+        rows={1}
+        value={text}
+        maxLength={4000}
+        placeholder={placeholder}
+        aria-label={placeholder.replace("…", "")}
+        autoFocus={autoFocus}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            e.preventDefault();
+            submit();
+          }
+        }}
+      />
+      <button className="btn inline" type="submit" disabled={busy || !text.trim()}>
+        Send
+      </button>
+    </form>
   );
 }
