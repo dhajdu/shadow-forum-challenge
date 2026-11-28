@@ -921,7 +921,7 @@ describe("admin", () => {
   });
 });
 
-// ── Forum settings (0032): active members read, admins update, nobody inserts or deletes ─
+// ── Forum settings (0033): active members read, admins update, nobody inserts or deletes ─
 describe("forum settings", () => {
   const fs = (c: DB) => (c as unknown as SupabaseClient).from("forum_settings");
 

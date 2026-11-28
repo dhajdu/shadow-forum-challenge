@@ -1,5 +1,5 @@
 // The forum's settings: name, organisation, currency, dues, time zone, site and
-// feature switches, from the one forum_settings row (migration 0032).
+// feature switches, from the one forum_settings row (migration 0033).
 //
 // Server-only. Read with the service role so pages that render before sign-in
 // (landing, metadata, password reset) and cron jobs get the same values; the

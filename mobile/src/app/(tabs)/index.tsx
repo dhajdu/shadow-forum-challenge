@@ -65,7 +65,7 @@ export default function Home() {
         <Eyebrow tone={color.inkSoft}>{firstForum ? "Your first forum" : "Next forum"}</Eyebrow>
         {next ? (
           <Pressable onPress={() => router.push(`/forum/${next.held_on}`)} accessibilityRole="link">
-            <Display size={68}>{weekday(next.held_on)}</Display>
+            <Display size={68} style={{ marginBottom: space.rowGap }}>{weekday(next.held_on)}</Display>
             <Small tone={color.inkSoft}>{[next.starts_at ? time(next.starts_at) : null, next.place ?? "Place to be confirmed"].filter(Boolean).join(" · ")}</Small>
           </Pressable>
         ) : (

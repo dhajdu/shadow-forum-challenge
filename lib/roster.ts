@@ -1,6 +1,6 @@
 // Each rider's assigned coach (who they do the monthly 1-on-1 with, and who
 // shares their missed-goal penalty). Coaches are assigned by the forum, not
-// picked by riders. The roster lives in forum_settings.coaches (migration 0032):
+// picked by riders. The roster lives in forum_settings.coaches (migration 0033):
 // rider's normalised full name → coach's full name. Matching is by name.
 //
 // Example roster (fictional): a single cycle, so everyone coaches exactly one

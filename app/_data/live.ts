@@ -42,7 +42,7 @@ type MeetingRow = {
   meeting_docs: { id: string; body_md: string; source_updated_at: string | null }[] | null;
 };
 
-const KIND_TITLE: Record<MeetingKind, string> = { forum: "Forum", away: "Away forum", retreat: "Retreat", kickoff: "Kickoff" };
+const KIND_TITLE: Record<MeetingKind, string> = { forum: "Forum", away: "Away forum", retreat: "Retreat", kickoff: "Kickoff", social: "Social" };
 
 function toMeeting(r: MeetingRow): Omit<Meeting, "path"> {
   const docs = r.meeting_docs ?? [];

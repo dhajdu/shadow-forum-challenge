@@ -4,7 +4,7 @@ import type { Database } from "@/lib/database.types";
 
 export type Db = SupabaseClient<Database>;
 
-export type MeetingKind = "forum" | "away" | "retreat" | "kickoff";
+export type MeetingKind = "forum" | "away" | "retreat" | "kickoff" | "social";
 export type MeetingStatus = "planned" | "held";
 
 /** meetings row, plus a summary of its meeting_docs and files. */

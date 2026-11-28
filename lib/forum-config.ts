@@ -21,7 +21,7 @@ export type ForumSettings = {
 /** What the browser may see (everything but the coach roster). */
 export type PublicForumSettings = Omit<ForumSettings, "coaches">;
 
-/** Used only when the row cannot be read (no keys at build time, database down). Matches the 0032 seed. */
+/** Used only when the row cannot be read (no keys at build time, database down). Matches the 0033 seed. */
 export const DEFAULT_FORUM_SETTINGS: ForumSettings = {
   name: "The Shadow Forum",
   shortName: "Shadow Forum",
