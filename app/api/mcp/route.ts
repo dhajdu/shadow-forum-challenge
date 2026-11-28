@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions:
-          "The Shadow Forum, as the signed-in member: forums and agendas, the Parking Lot, the library, the kitty (read it, add money in or out, submit expenses), the forum chat, goals, the contest race, WHOOP data and photos. You only see forum content from your own first forum on. Amounts are in VND. Confirm with the member before adding to the kitty, posting to the chat or deleting.",
+          "The Shadow Forum, as the signed-in member: forums and agendas, the Parking Lot, the library, the kitty (read it, add money in or out, submit expenses), the forum chat, goals, the contest race, WHOOP data and photos. Agendas, the Parking Lot and goals start from your own first forum; the chat, photos, the kitty and resources are open in full. Amounts are in VND. Confirm with the member before adding to the kitty, posting to the chat or deleting.",
       });
     }
     case "ping":

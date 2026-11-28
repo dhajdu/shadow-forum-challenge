@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { LAST_VISIT_COOKIE, SIGN_PROMPT_COOKIE } from "@/app/_data/cookies";
+import { LAST_VISIT_COOKIE } from "@/app/_data/cookies";
 import { getForumContext } from "@/app/_data/context";
 import { getLibraryDoc, listLibrary, listMeetings, listSeasons, memberStatus, touchLastSeen } from "@/app/_data/forum";
 import { parseVision } from "@/app/_data/vision";
@@ -47,6 +47,8 @@ export async function HomeView() {
     constitution?.current && !constitution.signatures.some((x) => x.version_id === constitution.current!.id && x.user_id === user.id)
       ? constitution.current
       : null;
+  // an unsigned Constitution: nothing else opens until it is signed
+  if (toSign) redirect("/forum/resources/constitution?sign=1#sign");
   const treasurer = kitty?.treasurerId
     ? (await db.from("profiles").select("full_name").eq("id", kitty.treasurerId).maybeSingle()).data?.full_name?.split(/\s+/)[0] ?? null
     : null;
@@ -74,8 +76,6 @@ export async function HomeView() {
   // what's new since the last visit (first visit: the last 30 days)
   // profiles.last_seen_at when the database has it, else this browser's cookie
   const [lastSeen, jar] = await Promise.all([touchLastSeen(db), cookies()]);
-  // first Home view of a browser session with an unsigned Constitution: go and sign it
-  if (toSign && jar.get(SIGN_PROMPT_COOKIE)?.value !== String(toSign.version)) redirect("/forum/resources/constitution?sign=1#sign");
   const lastVisit = lastSeen ?? (jar.get(LAST_VISIT_COOKIE)?.value ? decodeURIComponent(jar.get(LAST_VISIT_COOKIE)!.value) : null);
   const since = lastVisit ?? new Date(Date.now() - 30 * 86_400_000).toISOString();
   const changed = meetings.filter((m) => new Date(m.updated_at) > new Date(since));
@@ -189,16 +189,6 @@ export async function HomeView() {
                   : "Dave adds your first forum date, and your forums appear here from then on."}
               </p>
             </section>
-          )}
-
-          {toSign && (
-            <Link href="/forum/resources/constitution#sign" className={s.line}>
-              <span>
-                <span className={s.label}>The Constitution · version {toSign.version}</span>
-                <b>{toSign.version > 1 ? "Amended. Read what changed and sign again" : "Read it and sign"}</b>
-              </span>
-              <span className={`${s.status} ${s.at_risk}`}>Sign →</span>
-            </Link>
           )}
 
           {goalSeason && (

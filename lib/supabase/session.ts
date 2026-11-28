@@ -5,6 +5,7 @@ import type { Database } from "@/lib/database.types";
 // Set by middleware after it verifies the session with Supabase.
 export const USER_ID_HEADER = "x-sf-user-id";
 export const USER_EMAIL_HEADER = "x-sf-user-email";
+export const PATH_HEADER = "x-sf-path"; // the requested path, for layouts that gate on it
 
 export type SessionUser = { id: string; email: string | null };
 

@@ -638,11 +638,11 @@ describe("MCP: join-date rule on every tool", () => {
 
   it("kitty: a member submits an expense, cannot backdate before joining, can void", async () => {
     assert.ok((await call("nam", "add_kitty_entry", { direction: "out", amount: "750k" })).error, "money out needs a note");
-    const saved = await call("nam", "add_kitty_entry", { direction: "out", amount: "750k", category: "spend", note: "flowers for the venue" });
+    const saved = await call("nam", "add_kitty_entry", { direction: "out", amount: "750k", category: "after_forum", note: "flowers for the venue" });
     assert.equal(saved.error, false, saved.text);
     const line = saved.json.saved as { id: string; amount_vnd: number; category: string };
     assert.equal(Number(line.amount_vnd), 750_000);
-    assert.equal(line.category, "spend");
+    assert.equal(line.category, "after_forum");
     assert.ok((await call("nam", "add_kitty_entry", { direction: "in", amount: "2.5M", entry_on: "2026-02-05" })).error, "before first forum");
     assert.ok((await call("december", "add_kitty_entry", { direction: "in", amount: "2.5M" })).error, "not yet a forum member today");
     assert.equal((await call("nam", "void_kitty_entry", { id: line.id })).error, false);
@@ -971,10 +971,11 @@ describe("forum chat", () => {
   });
 
   for (const k of KEYS) {
-    it(`${k}: reads chat only from their first forum`, async () => {
+    // Chat history is open in full to every active member; leavers and members without a date see none
+    it(`${k}: reads the whole chat if active, none otherwise`, async () => {
       const rows = ok(await client[k].from("forum_messages").select("id"), "chat") as { id: string }[];
       const seen = rows.map((r) => r.id).filter((id) => Object.values(mid).includes(id));
-      assert.deepEqual(sorted(seen), sorted(SENT.filter((s) => seesDate(k, s.sent_on)).map((s) => mid[s.key])));
+      assert.deepEqual(sorted(seen), active(k) ? sorted(Object.values(mid)) : []);
     });
   }
 
@@ -989,7 +990,7 @@ describe("forum chat", () => {
     assert.ok((await client.nam.from("forum_messages").insert({ body: "x", author_id: member.founding.id } as never)).error, "not as someone else");
     assert.ok((await client.nam.from("forum_messages").insert({ body: "x", sent_on: "2026-02-05" } as never)).error, "cannot backdate");
     assert.ok((await client.nam.from("forum_messages").insert({ body: "" })).error, "empty body refused");
-    assert.ok((await client.nam.from("forum_messages").insert({ body: "re", reply_to: mid.feb })).error, "cannot reply to a hidden message");
+    assert.equal((await client.nam.from("forum_messages").insert({ body: "re", reply_to: mid.feb })).error, null, "can reply to a message from before they joined");
     assert.equal((await client.nam.from("forum_messages").insert({ body: "re", reply_to: mid.aug })).error, null, "can reply to a visible one");
   });
 
