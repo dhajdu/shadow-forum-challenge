@@ -10,9 +10,9 @@ Everything App Store Connect asks for, ready to paste. Bundle ID `com.talentedge
 - **Subtitle:** Private forum, race and chat
 - **Category:** Business (secondary: Health & Fitness)
 - **Age rating:** every content question "None", except "Unrestricted web access: No", "User-generated content: Yes" and "Messaging and chat: Yes" (one group chat for the forum's members), "Health or wellness topics: Yes" (WHOOP recovery, sleep and strain), and "Contests: Yes" (Race Into the Shadow, a fitness contest between members; no money moves in the app). Apple will likely rate it 12+ or higher on the chat answer; accept what it gives.
-- **Support URL:** none yet. https://eoshadowforum.com/support and /contact return 404. Use https://eoshadowforum.com only if Dave adds a contact line to it.
+- **Support URL:** https://eoshadowforum.com/support
 - **Marketing URL:** https://eoshadowforum.com
-- **Privacy policy URL:** none yet. **Apple requires one.** https://eoshadowforum.com/privacy returns 404. Publish a page (for example /privacy) and paste it here.
+- **Privacy policy URL:** https://eoshadowforum.com/privacy
 - **Copyright:** 2026 [legal entity, to confirm]
 
 ## Description
@@ -23,7 +23,7 @@ Know when you meet. The next forum fills Home with the date, time and place, and
 
 Race Into the Shadow. The season's contest ranks every rider on their average daily WHOOP score, a blend of recovery, sleep and strain. See the standings, open any rider, read the monthly report and check the penalties before the kitty settles. Connect your WHOOP account for a daily sync, or share your WHOOP export to the app from the share sheet.
 
-Your numbers stay yours. Biometrics shows your latest day, your trends, your monthly averages and a weekly read of your WHOOP journal. No other member sees them.
+Know where you stand. Biometrics shows your latest day, your trends, your monthly averages and a weekly read of your WHOOP journal. Your forum sees your daily recovery, sleep and strain as part of the race; nobody outside it does.
 
 Your goal. Set your business goal for the season, move its progress before your monthly coaching call, and keep your personal goals next to it.
 
@@ -63,11 +63,12 @@ The next forum, Race Into the Shadow and the forum chat in one place. By invitat
 - **Notes for the reviewer:**
   This app is intended for unlisted distribution. It is for the members of The Shadow Forum, a private Entrepreneurs' Organization forum of seven members, and is shared with them by direct link.
   Accounts are created by the forum: members join on eoshadowforum.com with an access code, and an admin sets the date of their first forum. A member sees the forum (agendas, chat, photos) only from that date on. There is no public sign-up.
-  Race Into the Shadow is a fitness contest between members, scored from each member's own WHOOP data. WHOOP data comes from the member's own WHOOP account (connected in Me > Biometrics, which opens WHOOP's sign-in) or from a WHOOP export file the member chooses or shares to the app. The app does not use HealthKit. Only the member sees their own biometrics; other members see the contest score.
+  Race Into the Shadow is a fitness contest between members, scored from each member's own WHOOP data. WHOOP data comes from the member's own WHOOP account (connected in Me > Biometrics, which opens WHOOP's sign-in) or from a WHOOP export file the member chooses or shares to the app. The app does not use HealthKit. Members of the forum can see each other's daily recovery, sleep, strain, resting heart rate and HRV, which the race is scored on; nobody outside the forum can.
   The kitty and the penalties are a record of what members agreed to contribute to the forum offline. No money is paid, collected or moved in the app.
   Ask AI answers from the forum's agendas and the member's own data, through a server-side AI model, and sees only what the member may see.
   The photo library is used to choose a profile photo and add photos to the forum gallery. The calendar is used only to add the next forum, after the member confirms.
-  [Account deletion and chat reporting: add one line each here once built, for example "Me > Account and password > Delete my account deletes the account in the app" and "Press and hold a message to report it or block its sender".]
+  Me > Account and password > Delete my account deletes the account in the app (guideline 5.1.1(v)).
+  Press and hold a member's message to report it or block its sender. Reports go to the forum admins, who review them within 24 hours and can remove the message.
 - **Contact:** Dave Hajdu, with a phone number and email Apple can reach during review.
 
 ## Unlisted distribution

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -182,7 +183,9 @@ export function Landing() {
         </div>
       </section>
 
-      <div className="footer">{forum.name}</div>
+      <div className="footer">
+        {forum.name} · <Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · <Link href="/support">Support</Link>
+      </div>
     </main>
   );
 }

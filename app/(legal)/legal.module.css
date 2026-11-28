@@ -1,0 +1,7 @@
+/* Public pages (privacy, terms, support): readable without signing in, no app shell. */
+.main { padding-top: var(--sp-48); }
+.body { max-width: 72ch; }
+.nav { display: flex; flex-wrap: wrap; gap: var(--sp-16); margin-bottom: var(--sp-32); font-size: var(--fs-sm); font-weight: 600;
+  letter-spacing: var(--track-label); text-transform: uppercase; }
+.nav a { color: var(--muted); text-decoration: none; }
+.nav a:hover { color: var(--ink); }

@@ -58,6 +58,14 @@ jobs:
           eas update --channel "${{ inputs.profile }}" --environment "${{ inputs.profile }}"
           --message "${{ inputs.message || github.sha }}" --platform ios --non-interactive
 
+      # The App Store Connect API key for submits (key 4H7J57K76X), written for eas.json's
+      # submit.production.ios.ascApiKeyPath. The file is gitignored and only exists in the runner.
+      - name: App Store Connect key for submit
+        if: inputs.action == 'build' && inputs.submit && inputs.profile == 'production'
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: printf '%s\n' "$ASC_API_KEY_P8" > asc-api-key.p8 && chmod 600 asc-api-key.p8
+
       - name: EAS Build (iOS)
         if: inputs.action == 'build'
         run: >
