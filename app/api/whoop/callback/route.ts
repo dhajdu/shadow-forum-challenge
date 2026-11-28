@@ -26,7 +26,7 @@ function finish(req: NextRequest, code: string) {
 }
 
 /**
- * The iPhone app's own URL scheme (MOBILE_APP_SCHEME, e.g. "shadowforum"):
+ * The iPhone app's own URL scheme (MOBILE_APP_SCHEME, e.g. "myforum"):
  * ASWebAuthenticationSession returns only on it. Unset: no app, end on the web.
  */
 function finishApp(req: NextRequest, code: string) {
