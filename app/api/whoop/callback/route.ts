@@ -25,11 +25,14 @@ function finish(req: NextRequest, code: string) {
   return res;
 }
 
-/** The iPhone app's own scheme: ASWebAuthenticationSession returns only on it. */
-const APP_RETURN = "shadowforum://me";
-
-function finishApp(code: string) {
-  return NextResponse.redirect(new URL(`${APP_RETURN}?whoop=${code === "connected" ? "ok" : code}`));
+/**
+ * The iPhone app's own URL scheme (MOBILE_APP_SCHEME, e.g. "shadowforum"):
+ * ASWebAuthenticationSession returns only on it. Unset: no app, end on the web.
+ */
+function finishApp(req: NextRequest, code: string) {
+  const scheme = process.env.MOBILE_APP_SCHEME?.trim();
+  if (!scheme) return finish(req, code);
+  return NextResponse.redirect(new URL(`${scheme}://me?whoop=${code === "connected" ? "ok" : code}`));
 }
 
 /**
@@ -60,8 +63,8 @@ export async function GET(req: NextRequest) {
   const flow = await flowUser(req, state);
   if (!flow) return finish(req, "error");
   const user = { id: flow.userId };
-  // Web flows end on /me; app flows end on the app's scheme.
-  const done = (code: string) => (flow.native ? finishApp(code) : finish(req, code));
+  // Web flows end on /me; app flows end on the app's scheme when one is set.
+  const done = (code: string) => (flow.native ? finishApp(req, code) : finish(req, code));
   if (isExternallySynced(user.id)) return done("external");
 
   const oauthError = req.nextUrl.searchParams.get("error");
