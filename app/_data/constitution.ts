@@ -16,8 +16,8 @@ export type Signature = { version_id: string; user_id: string; typed_name: strin
 export const sha256Hex = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 
 /** The exact words a member agrees to. Stored with the signature. */
-export const consentText = (version: number) =>
-  `I have read the Constitution of The Shadow Forum (version ${version}) and I agree to it. I understand that typing my name is my signature.`;
+export const consentText = (version: number, forumName: string) =>
+  `I have read the Constitution of ${forumName} (version ${version}) and I agree to it. I understand that typing my name is my signature.`;
 
 /** Where a member who hasn't signed the newest Constitution is held until they do. */
 export const SIGN_PATH = "/forum/resources/constitution";

@@ -8,7 +8,7 @@ import { ensureFreshAccess } from "./refresh";
 import type { StoredConnection, TokenPatch, TokenStore } from "./refresh";
 
 const key = decodeTokenKey(Buffer.alloc(32, 7).toString("base64"));
-const creds = { clientId: "client", clientSecret: "secret", redirectUri: "https://eoshadowforum.com/api/whoop/callback" };
+const creds = { clientId: "client", clientSecret: "secret", redirectUri: "https://forum.example.com/api/whoop/callback" };
 
 function memoryStore(initial: StoredConnection): TokenStore & { current: StoredConnection | null } {
   const box: { current: StoredConnection | null } = { current: { ...initial } };

@@ -10,6 +10,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { memberCanSeeDate, memberCanSeeSeason, seasonOf, type Member, type Season } from "@/lib/access";
+import { DEFAULT_FORUM_SETTINGS } from "@/lib/forum-config";
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -32,12 +33,12 @@ type DB = SupabaseClient<Database>;
 const admin: DB = createClient<Database>(URL_, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
 
 // ── Personas ─────────────────────────────────────────────
-type PersonaKey = "founding" | "nam" | "december" | "january" | "leaver" | "nodate";
+type PersonaKey = "founding" | "noah" | "december" | "january" | "leaver" | "nodate";
 const PERSONAS: Record<PersonaKey, Omit<Member, "id" | "email">> = {
   founding: { full_name: "Leak Founding", forum_joined_on: "2026-01-19", forum_left_on: null, is_founding: true, is_admin: true },
-  nam: { full_name: "Leak Nam Trung", forum_joined_on: "2026-07-28", forum_left_on: null, is_founding: false, is_admin: false },
-  december: { full_name: "Leak Minh Anh", forum_joined_on: "2026-12-23", forum_left_on: null, is_founding: false, is_admin: false },
-  january: { full_name: "Leak Daniel", forum_joined_on: "2027-01-20", forum_left_on: null, is_founding: false, is_admin: false },
+  noah: { full_name: "Leak Noah Turner", forum_joined_on: "2026-07-28", forum_left_on: null, is_founding: false, is_admin: false },
+  december: { full_name: "Leak Mia Archer", forum_joined_on: "2026-12-23", forum_left_on: null, is_founding: false, is_admin: false },
+  january: { full_name: "Leak Diego", forum_joined_on: "2027-01-20", forum_left_on: null, is_founding: false, is_admin: false },
   leaver: { full_name: "Leak Leaver", forum_joined_on: "2026-01-19", forum_left_on: "2026-11-01", is_founding: true, is_admin: false },
   nodate: { full_name: "Leak No Date", forum_joined_on: null, forum_left_on: null, is_founding: false, is_admin: false },
 };
@@ -51,9 +52,9 @@ const token: Record<PersonaKey, string> = {} as never;
 // ── Seed ids ─────────────────────────────────────────────
 const MEETINGS = [
   { key: "feb", held_on: "2026-02-05", status: "held" as const }, // founding only
-  { key: "aug", held_on: "2026-08-24", status: "held" as const }, // + Nam Trung
-  { key: "dec", held_on: "2026-12-23", status: "planned" as const }, // + Minh Anh
-  { key: "jan", held_on: "2027-01-20", status: "planned" as const }, // + Daniel
+  { key: "aug", held_on: "2026-08-24", status: "held" as const }, // + Noah Turner
+  { key: "dec", held_on: "2026-12-23", status: "planned" as const }, // + Mia Archer
+  { key: "jan", held_on: "2027-01-20", status: "planned" as const }, // + Diego
 ];
 const meetingId: Record<string, string> = {};
 const meetingHeld: Record<string, string> = {};
@@ -144,8 +145,8 @@ before(async () => {
     ) as { id: string };
     meetingId[m.key] = row.id;
     meetingHeld[row.id] = m.held_on;
-    ok(await admin.from("meeting_docs").insert({ meeting_id: row.id, title: `Agenda ${m.key}`, body_md: `secret agenda ${m.key}\n\nchunk ${m.key} Manila trip secretword${m.key}` }), "doc");
-    ok(await admin.from("meeting_chunks").insert({ meeting_id: row.id, content: `chunk ${m.key} Manila trip secretword${m.key}` }), "chunk");
+    ok(await admin.from("meeting_docs").insert({ meeting_id: row.id, title: `Agenda ${m.key}`, body_md: `secret agenda ${m.key}\n\nchunk ${m.key} Lisbon trip secretword${m.key}` }), "doc");
+    ok(await admin.from("meeting_chunks").insert({ meeting_id: row.id, content: `chunk ${m.key} Lisbon trip secretword${m.key}` }), "chunk");
     ok(
       await admin.storage.from("meeting-files").upload(`${row.id}/agenda.txt`, new Blob([`file ${m.key}`]), { upsert: true }),
       "file"
@@ -153,11 +154,11 @@ before(async () => {
   }
 
   // Every agenda repeats the running Parking Lot: the August agenda still lists a February topic.
-  const parking = "## Parking Lot\n\n**Feb 5**\n\nLeak Founding - parkfebword topic\n\n**Aug 24**\n\nLeak Nam - parkaugword topic";
+  const parking = "## Parking Lot\n\n**Feb 5**\n\nLeak Founding - parkfebword topic\n\n**Aug 24**\n\nLeak Noah - parkaugword topic";
   ok(await admin.from("meeting_docs").insert({ meeting_id: meetingId.aug, title: "Parking", body_md: parking }), "parking doc");
   ok(await admin.from("meeting_chunks").insert({ meeting_id: meetingId.aug, content: `Parking\n\n${parking}` }), "parking chunk");
 
-  // kitty: one line from before Nam Trung joined, one after
+  // kitty: one line from before Noah Turner joined, one after
   for (const [entry_on, note] of [["2026-02-10", "kittyfeb venue"], ["2026-08-24", "kittyaug dues"]] as const) {
     ok(await (admin as unknown as SupabaseClient).from("kitty_entries").insert({ entry_on, direction: "in", amount_vnd: 2_500_000, category: "dues", note, created_by: member.founding.id }), "kitty");
   }
@@ -165,10 +166,10 @@ before(async () => {
   // forum planning: a presentation, a planner and a host on every meeting; one yearly role
   for (const m of MEETINGS) {
     const id = meetingId[m.key];
-    ok(await admin.from("meetings").update({ host_id: member.nam.id, theme: `theme ${m.key}` }).eq("id", id), "host");
-    ok(await admin.from("meeting_presentations").insert({ meeting_id: id, presenter_id: member.leaver.id, coach_id: member.nam.id }), "presentation");
+    ok(await admin.from("meetings").update({ host_id: member.noah.id, theme: `theme ${m.key}` }).eq("id", id), "host");
+    ok(await admin.from("meeting_presentations").insert({ meeting_id: id, presenter_id: member.leaver.id, coach_id: member.noah.id }), "presentation");
     ok(await admin.from("meeting_planners").insert({ meeting_id: id, member_id: member.founding.id }), "planner");
-    ok(await admin.from("meeting_agenda_items").insert({ meeting_id: id, position: 1, kind: "lifeline", title: `agendaword${m.key} lifeline`, owner_id: member.nam.id }), "agenda item");
+    ok(await admin.from("meeting_agenda_items").insert({ meeting_id: id, position: 1, kind: "lifeline", title: `agendaword${m.key} lifeline`, owner_id: member.noah.id }), "agenda item");
   }
   ok(await admin.from("forum_roles").insert({ year: 2027, role: "moderator", member_id: member.founding.id }), "role");
 
@@ -182,12 +183,12 @@ before(async () => {
     "library"
   );
 
-  // contest data: goals for the two Q4 riders, Nam Trung coaches the founding member
-  for (const k of ["founding", "nam"] as const) {
+  // contest data: goals for the two Q4 riders, Noah Turner coaches the founding member
+  for (const k of ["founding", "noah"] as const) {
     const g = ok(
       await admin
         .from("goals")
-        .insert({ user_id: member[k].id, title: `Goal ${k}`, season_id: q4.id, coach_id: k === "founding" ? member.nam.id : member.founding.id })
+        .insert({ user_id: member[k].id, title: `Goal ${k}`, season_id: q4.id, coach_id: k === "founding" ? member.noah.id : member.founding.id })
         .select("id")
         .single(),
       `goal ${k}`
@@ -196,12 +197,12 @@ before(async () => {
     ok(await admin.from("goal_progress").insert({ goal_id: g.id, progress: 10, status: "on_track", note: `progress ${k}` }), "progress");
   }
   // one row per insert: a multi-row insert sends null for a column only some rows set
-  ok(await admin.from("coaching_notes").insert({ goal_id: goalId.founding, author_id: member.nam.id, body: "note on founding goal" }), "note");
-  // dated before Nam Trung joined: only his coach (founding) may see it
+  ok(await admin.from("coaching_notes").insert({ goal_id: goalId.founding, author_id: member.noah.id, body: "note on founding goal" }), "note");
+  // dated before Noah Turner joined: only his coach (founding) may see it
   ok(
     await admin
       .from("coaching_notes")
-      .insert({ goal_id: goalId.nam, author_id: member.founding.id, body: "backdated note", created_at: "2026-05-01T00:00:00Z" }),
+      .insert({ goal_id: goalId.noah, author_id: member.founding.id, body: "backdated note", created_at: "2026-05-01T00:00:00Z" }),
     "backdated note"
   );
   ok(await admin.from("penalties").insert({ user_id: member.founding.id, kind: "placement", amount_m: 2, period: "Q4-2026", season_id: q4.id }), "penalty");
@@ -211,7 +212,7 @@ before(async () => {
     await admin.from("whoop_days").insert([
       { user_id: member.founding.id, day: "2026-03-01", score: 11 }, // before any season: owner only
       { user_id: member.founding.id, day: "2026-10-01", score: 71 },
-      { user_id: member.nam.id, day: "2026-10-01", score: 62 },
+      { user_id: member.noah.id, day: "2026-10-01", score: 62 },
       { user_id: member.leaver.id, day: "2026-10-01", score: 55 },
       { user_id: member.december.id, day: "2026-12-24", score: 80 },
     ]),
@@ -244,18 +245,18 @@ const keyOfMeeting = (id: string) => Object.entries(meetingId).find(([, v]) => v
 describe("expectations match the plan's table", () => {
   it("meetings per persona", () => {
     assert.deepEqual(visibleMeetings("founding"), ["aug", "dec", "feb", "jan"]);
-    assert.deepEqual(visibleMeetings("nam"), ["aug", "dec", "jan"]);
+    assert.deepEqual(visibleMeetings("noah"), ["aug", "dec", "jan"]);
     assert.deepEqual(visibleMeetings("december"), ["dec", "jan"]);
     assert.deepEqual(visibleMeetings("january"), ["jan"]);
     assert.deepEqual(visibleMeetings("leaver"), []);
     assert.deepEqual(visibleMeetings("nodate"), []);
   });
-  it("Q4 season: founding and Nam Trung only", () => {
-    assert.deepEqual(KEYS.filter((k) => seesSeason(k, q4)), ["founding", "nam"]);
+  it("Q4 season: founding and Noah Turner only", () => {
+    assert.deepEqual(KEYS.filter((k) => seesSeason(k, q4)), ["founding", "noah"]);
   });
   it("Q1 2027 (from 1 Jan): every active member, including those whose first forum is in January", () => {
     assert.equal(q1.starts_on, "2027-01-01");
-    assert.deepEqual(KEYS.filter((k) => seesSeason(k, q1)), ["founding", "nam", "december", "january"]);
+    assert.deepEqual(KEYS.filter((k) => seesSeason(k, q1)), ["founding", "noah", "december", "january"]);
   });
 });
 
@@ -278,7 +279,7 @@ describe("lib/access.ts agrees with the database rule", () => {
     });
   }
   it("members cannot call the any-member functions", async () => {
-    const { error } = await client.nam.rpc("member_can_see_date", { uid: member.founding.id, d: "2026-02-05" });
+    const { error } = await client.noah.rpc("member_can_see_date", { uid: member.founding.id, d: "2026-02-05" });
     assert.ok(error, "member_can_see_date must not be callable by members");
   });
 });
@@ -299,7 +300,7 @@ describe("tables, per persona", () => {
       });
 
       it("assistant retrieval: match_meeting_chunks (full-text)", async () => {
-        const hits = ok(await c().rpc("match_meeting_chunks", { query: "What about the Manila trip?", match_count: 50 }), "match") as { meeting_id: string }[];
+        const hits = ok(await c().rpc("match_meeting_chunks", { query: "What about the Lisbon trip?", match_count: 50 }), "match") as { meeting_id: string }[];
         assert.deepEqual(sorted(hits.map((h) => keyOfMeeting(h.meeting_id))), visibleMeetings(k));
         // a word that only exists in one meeting's agenda: found only if that meeting is visible
         for (const m of MEETINGS) {
@@ -307,7 +308,7 @@ describe("tables, per persona", () => {
           assert.equal(one.length, seesDate(k, m.held_on) ? 1 : 0, `${k} secretword${m.key}`);
         }
         // scoped to a meeting before their time: nothing, and no error that would confirm it exists
-        const pre = await c().rpc("match_meeting_chunks", { query: "Manila", only_meeting: meetingId.feb });
+        const pre = await c().rpc("match_meeting_chunks", { query: "Lisbon", only_meeting: meetingId.feb });
         assert.equal(pre.error, null);
         assert.equal((pre.data ?? []).length, seesDate(k, "2026-02-05") ? 1 : 0);
         // stop words alone match nothing
@@ -371,21 +372,21 @@ describe("tables, per persona", () => {
         const goals = ok(await c().from("goals").select("id"), "goals") as { id: string }[];
         assert.equal(goals.length, q4Visible ? 2 : 0, "goals");
         const prog = ok(await c().from("goal_progress").select("goal_id"), "progress") as { goal_id: string }[];
-        // owner or coach: founding and Nam Trung coach each other
+        // owner or coach: founding and Noah Turner coach each other
         assert.equal(prog.length, q4Visible ? 2 : 0, "goal_progress");
         const pen = ok(await c().from("penalties").select("id"), "penalties") as unknown[];
         assert.equal(pen.length, q4Visible ? 1 : 0, "penalties");
         const snaps = ok(await c().from("standings_snapshots").select("day").eq("day", "2026-10-05"), "snapshots") as unknown[];
         assert.equal(snaps.length, q4Visible ? 1 : 0, "snapshots");
         const race = ok(await c().from("race_standings").select("user_id"), "race") as { user_id: string }[];
-        const riders = q4Visible ? sorted([member.founding.id, member.nam.id, member.leaver.id]) : [];
+        const riders = q4Visible ? sorted([member.founding.id, member.noah.id, member.leaver.id]) : [];
         assert.deepEqual(sorted(race.map((r) => r.user_id).filter((id) => Object.values(member).some((m) => m.id === id))), riders);
       });
 
       it("coaching_notes: party, season and date", async () => {
         const notes = ok(await c().from("coaching_notes").select("body"), "notes") as { body: string }[];
         const expect =
-          k === "founding" ? ["backdated note", "note on founding goal"] : k === "nam" ? ["note on founding goal"] : [];
+          k === "founding" ? ["backdated note", "note on founding goal"] : k === "noah" ? ["note on founding goal"] : [];
         assert.deepEqual(sorted(notes.map((n) => n.body)), expect);
       });
 
@@ -394,7 +395,7 @@ describe("tables, per persona", () => {
         const all = [
           ["founding", "2026-03-01"],
           ["founding", "2026-10-01"],
-          ["nam", "2026-10-01"],
+          ["noah", "2026-10-01"],
           ["leaver", "2026-10-01"],
           ["december", "2026-12-24"],
         ] as const;
@@ -493,7 +494,7 @@ describe("/api routes", () => {
     const assistant = await import("@/app/api/assistant/route");
     anthropicBodies.length = 0;
     const r = await assistant.POST(
-      req("/api/assistant", { method: "POST", token: token.nam, body: { messages: [{ role: "user", content: "Manila trip?" }] } })
+      req("/api/assistant", { method: "POST", token: token.noah, body: { messages: [{ role: "user", content: "Lisbon trip?" }] } })
     );
     assert.equal(r.status, 200);
     await r.text();
@@ -505,7 +506,7 @@ describe("/api routes", () => {
 
   it("/api/goal PATCH works for an active rider", async () => {
     const goal = await import("@/app/api/goal/route");
-    const r = await goal.PATCH(req("/api/goal", { method: "PATCH", token: token.nam, body: { currentValue: 3, targetValue: 10, status: "on_track" } }));
+    const r = await goal.PATCH(req("/api/goal", { method: "PATCH", token: token.noah, body: { currentValue: 3, targetValue: 10, status: "on_track" } }));
     assert.equal(r.status, 200, JSON.stringify(await r.clone().json()));
   });
 });
@@ -517,7 +518,7 @@ describe("agents (service role) scope to the rule", () => {
     const res = await runWhip(admin, { dry: true });
     const names = res.stale.map((s) => s.name);
     for (const k of ["december", "january", "leaver", "nodate"] as const) assert.ok(!names.includes(PERSONAS[k].full_name), `${k} not nudged`);
-    for (const k of ["founding", "nam"] as const) assert.ok(names.includes(PERSONAS[k].full_name), `${k} considered`);
+    for (const k of ["founding", "noah"] as const) assert.ok(names.includes(PERSONAS[k].full_name), `${k} considered`);
   });
 
   it("Chronicler mails the Q4 report only to members who can see Q4", async () => {
@@ -534,7 +535,7 @@ describe("agents (service role) scope to the rule", () => {
     const { getStandings } = await import("@/lib/standings");
     const ids = (await getStandings(admin)).map((s) => s.user_id);
     for (const k of ["december", "january", "nodate"] as const) assert.ok(!ids.includes(member[k].id), `${k} not a Q4 rider`);
-    for (const k of ["founding", "nam"] as const) assert.ok(ids.includes(member[k].id), `${k} is a Q4 rider`);
+    for (const k of ["founding", "noah"] as const) assert.ok(ids.includes(member[k].id), `${k} is a Q4 rider`);
   });
 
   it("cron routes reject calls without the secret", async () => {
@@ -547,11 +548,11 @@ describe("agents (service role) scope to the rule", () => {
 const askReq = (k: PersonaKey, body: unknown) => req("/api/ask", { method: "POST", token: token[k], body });
 
 describe("Ask", () => {
-  for (const k of ["founding", "nam", "december", "january"] as const) {
+  for (const k of ["founding", "noah", "december", "january"] as const) {
     it(`${k}: the model only sees excerpts from meetings ${k} may see`, async () => {
       const { POST } = await import("@/app/api/ask/route");
       anthropicBodies.length = 0;
-      const r = await POST(askReq(k, { question: "Manila trip?" }));
+      const r = await POST(askReq(k, { question: "Lisbon trip?" }));
       assert.equal(r.status, 200);
       const text = await r.text();
       const cited = JSON.parse(decodeURIComponent(r.headers.get("x-cited-meetings") ?? "%5B%5D")) as { id: string }[];
@@ -566,7 +567,7 @@ describe("Ask", () => {
     const { POST } = await import("@/app/api/ask/route");
     const { NO_RECORD } = await import("@/lib/ask");
     anthropicBodies.length = 0;
-    const r = await POST(askReq("nam", { question: "What happened?", meetingId: meetingId.feb }));
+    const r = await POST(askReq("noah", { question: "What happened?", meetingId: meetingId.feb }));
     assert.equal(await r.text(), NO_RECORD);
     assert.equal(anthropicBodies.length, 0);
     assert.doesNotMatch(NO_RECORD, /join|before|access|permission/i);
@@ -606,7 +607,7 @@ describe("MCP", () => {
     assert.equal((await rpc("nodate", "tools/list")).status, 403);
   });
 
-  for (const k of ["founding", "nam", "december", "january"] as const) {
+  for (const k of ["founding", "noah", "december", "january"] as const) {
     it(`${k}: list_meetings, get_agenda, search_agendas, my_contest`, async () => {
       const init = await rpc(k, "initialize", { protocolVersion: "2025-06-18" });
       assert.equal(init.body?.result?.protocolVersion, "2025-06-18");
@@ -625,7 +626,7 @@ describe("MCP", () => {
       const feb = (await rpc(k, "tools/call", { name: "get_agenda", arguments: { meeting_id: meetingId.feb } })).body?.result;
       if (!seesDate(k, "2026-02-05")) assert.deepEqual(feb, missing, "an unseen meeting looks the same as no meeting");
 
-      const found = toolJson((await rpc(k, "tools/call", { name: "search_agendas", arguments: { query: "Manila trip?", limit: 10 } })).body)
+      const found = toolJson((await rpc(k, "tools/call", { name: "search_agendas", arguments: { query: "Lisbon trip?", limit: 10 } })).body)
         .results as { meeting_id: string }[];
       assert.deepEqual(sorted([...new Set(found.map((h) => keyOfMeeting(h.meeting_id)))]), visibleMeetings(k));
 
@@ -645,20 +646,20 @@ describe("MCP: join-date rule on every tool", () => {
   it("the Parking Lot never shows topics from before a member's first forum", async () => {
     const founding = await call("founding", "get_agenda", { meeting_id: meetingId.aug });
     assert.match(founding.text, /parkfebword/);
-    const nam = await call("nam", "get_agenda", { meeting_id: meetingId.aug });
-    assert.doesNotMatch(nam.text, /parkfebword/, "get_agenda");
-    assert.match(nam.text, /parkaugword/);
-    assert.doesNotMatch((await call("nam", "get_parking_lot")).text, /parkfebword/, "get_parking_lot");
-    assert.match((await call("nam", "get_parking_lot")).text, /parkaugword/);
+    const noah = await call("noah", "get_agenda", { meeting_id: meetingId.aug });
+    assert.doesNotMatch(noah.text, /parkfebword/, "get_agenda");
+    assert.match(noah.text, /parkaugword/);
+    assert.doesNotMatch((await call("noah", "get_parking_lot")).text, /parkfebword/, "get_parking_lot");
+    assert.match((await call("noah", "get_parking_lot")).text, /parkaugword/);
     assert.match((await call("founding", "get_parking_lot")).text, /parkfebword/);
-    assert.doesNotMatch((await call("nam", "search_agendas", { query: "parkfebword" })).text, /parkfebword/, "search_agendas");
+    assert.doesNotMatch((await call("noah", "search_agendas", { query: "parkfebword" })).text, /parkfebword/, "search_agendas");
     assert.match((await call("founding", "search_agendas", { query: "parkfebword" })).text, /parkfebword/);
   });
 
   it("Ask gets no pre-join Parking Lot excerpt either", async () => {
     const { searchAgendas, readerOf } = await import("@/lib/ask");
-    const nam = await searchAgendas(client.nam, "parkfebword", { reader: await readerOf(client.nam, member.nam.id) });
-    assert.equal(nam.length, 0);
+    const noah = await searchAgendas(client.noah, "parkfebword", { reader: await readerOf(client.noah, member.noah.id) });
+    assert.equal(noah.length, 0);
     const f = await searchAgendas(client.founding, "parkfebword", { reader: await readerOf(client.founding, member.founding.id) });
     assert.equal(f.length, 1);
   });
@@ -666,8 +667,8 @@ describe("MCP: join-date rule on every tool", () => {
   // Constitution v2: the kitty is open in full to every active member
   it("kitty: every member sees the same balance and every line", async () => {
     const f = (await call("founding", "get_kitty")).json;
-    const n = (await call("nam", "get_kitty")).json;
-    assert.equal(f.balance_vnd, n.balance_vnd);
+    const n = (await call("noah", "get_kitty")).json;
+    assert.equal(f.balance_amount, n.balance_amount);
     for (const x of [f, n, (await call("december", "get_kitty")).json]) {
       assert.match(JSON.stringify(x.entries), /kittyfeb/);
       assert.match(JSON.stringify(x.entries), /kittyaug/);
@@ -675,51 +676,51 @@ describe("MCP: join-date rule on every tool", () => {
   });
 
   it("kitty: a member submits an expense, cannot backdate before joining, can void", async () => {
-    assert.ok((await call("nam", "add_kitty_entry", { direction: "out", amount: "750k" })).error, "money out needs a note");
-    const saved = await call("nam", "add_kitty_entry", { direction: "out", amount: "750k", category: "after_forum", note: "flowers for the venue" });
+    assert.ok((await call("noah", "add_kitty_entry", { direction: "out", amount: "750k" })).error, "money out needs a note");
+    const saved = await call("noah", "add_kitty_entry", { direction: "out", amount: "750k", category: "after_forum", note: "flowers for the venue" });
     assert.equal(saved.error, false, saved.text);
     const line = saved.json.saved as { id: string; amount_vnd: number; category: string };
     assert.equal(Number(line.amount_vnd), 750_000);
     assert.equal(line.category, "after_forum");
-    assert.ok((await call("nam", "add_kitty_entry", { direction: "in", amount: "2.5M", entry_on: "2026-02-05" })).error, "before first forum");
+    assert.ok((await call("noah", "add_kitty_entry", { direction: "in", amount: "2.5M", entry_on: "2026-02-05" })).error, "before first forum");
     assert.ok((await call("december", "add_kitty_entry", { direction: "in", amount: "2.5M" })).error, "not yet a forum member today");
-    assert.equal((await call("nam", "void_kitty_entry", { id: line.id })).error, false);
-    assert.ok((await call("nam", "void_kitty_entry", { id: line.id })).error, "a void cannot be repeated");
+    assert.equal((await call("noah", "void_kitty_entry", { id: line.id })).error, false);
+    assert.ok((await call("noah", "void_kitty_entry", { id: line.id })).error, "a void cannot be repeated");
   });
 
   it("chat: post and read, nothing from before the first forum", async () => {
-    const posted = await call("nam", "post_chat_message", { text: "mcp hello forum" });
+    const posted = await call("noah", "post_chat_message", { text: "mcp hello forum" });
     assert.equal(posted.error, false, posted.text);
-    const nam = await call("nam", "read_chat", { limit: 200 });
-    assert.match(nam.text, /mcp hello forum/);
+    const noah = await call("noah", "read_chat", { limit: 200 });
+    assert.match(noah.text, /mcp hello forum/);
     assert.match((await call("founding", "read_chat", { limit: 200 })).text, /mcp hello forum/);
     assert.ok((await call("december", "post_chat_message", { text: "too early" })).error);
   });
 
   it("personal goals: add, update, delete only your own", async () => {
-    const added = await call("nam", "add_personal_goal", { title: "mcp goal", target_value: 10 });
+    const added = await call("noah", "add_personal_goal", { title: "mcp goal", target_value: 10 });
     assert.equal(added.error, false, added.text);
     const id = (added.json.added as { id: string }).id;
-    assert.equal((await call("nam", "update_personal_goal", { id, current_value: 4 })).error, false);
+    assert.equal((await call("noah", "update_personal_goal", { id, current_value: 4 })).error, false);
     assert.ok((await call("founding", "update_personal_goal", { id, current_value: 9 })).error, "not someone else's");
     assert.ok((await call("founding", "delete_personal_goal", { id })).error, "not someone else's");
-    assert.equal((await call("nam", "delete_personal_goal", { id })).error, false);
+    assert.equal((await call("noah", "delete_personal_goal", { id })).error, false);
   });
 
   it("library, members, biometrics and photos follow the same rule", async () => {
-    assert.doesNotMatch((await call("nam", "list_library")).text, /leak-expense/, "founding-only doc");
+    assert.doesNotMatch((await call("noah", "list_library")).text, /leak-expense/, "founding-only doc");
     assert.match((await call("founding", "list_library")).text, /leak-expense/);
-    assert.ok((await call("nam", "get_library_doc", { slug: "leak-expense" })).error);
-    const bio = (await call("nam", "my_biometrics", { days: 180 })).json.days as { day: string }[];
+    assert.ok((await call("noah", "get_library_doc", { slug: "leak-expense" })).error);
+    const bio = (await call("noah", "my_biometrics", { days: 180 })).json.days as { day: string }[];
     assert.ok(bio.every((d) => d.day >= "2026-07-28"));
-    assert.equal((await call("nam", "whoami")).json.full_name, "Leak Nam Trung");
-    assert.doesNotMatch((await call("nam", "list_members")).text, /Leak Leaver/, "leavers are not listed");
+    assert.equal((await call("noah", "whoami")).json.full_name, "Leak Noah Turner");
+    assert.doesNotMatch((await call("noah", "list_members")).text, /Leak Leaver/, "leavers are not listed");
   });
 });
 
 describe("MCP: forum planning", () => {
   it("get_forum_plan and get_rotation follow the join-date rule", async () => {
-    for (const k of ["founding", "nam", "december", "january"] as const) {
+    for (const k of ["founding", "noah", "december", "january"] as const) {
       for (const m of MEETINGS) {
         const plan = await call(k, "get_forum_plan", { date: m.held_on });
         assert.equal(!plan.error, seesDate(k, m.held_on), `${k} get_forum_plan ${m.key}`);
@@ -727,14 +728,14 @@ describe("MCP: forum planning", () => {
       }
       const rot = (await call(k, "get_rotation", { from: "2026-01-01", to: "2027-12-31" })).json.forums as { date: string }[];
       assert.deepEqual(sorted(rot.map((f) => MEETINGS.find((m) => m.held_on === f.date)?.key ?? f.date)), visibleMeetings(k));    }
-    const feb = await call("nam", "get_forum_plan", { date: "2026-02-05" });
-    const none = await call("nam", "get_forum_plan", { date: "2026-02-06" });
+    const feb = await call("noah", "get_forum_plan", { date: "2026-02-05" });
+    const none = await call("noah", "get_forum_plan", { date: "2026-02-06" });
     assert.equal(feb.text, none.text, "an unseen forum looks the same as no forum");
   });
 
   it("get_forum_plan counts members present and times the standard run sheet", async () => {
     const dec = (await call("founding", "get_forum_plan", { date: "2026-12-23" })).json;
-    // founding, nam, december (joins that day); not january, not the leaver (left in November), not nodate
+    // founding, noah, december (joins that day); not january, not the leaver (left in November), not nodate
     assert.equal(dec.members_present, 3);
     const std = dec.standard_run_sheet as { starts_at: string; minutes: number; kind: string }[];
     assert.deepEqual(std.slice(0, 5).map((l) => [l.starts_at, l.kind, l.minutes]), [
@@ -743,58 +744,58 @@ describe("MCP: forum planning", () => {
   });
 
   it("only admins write; every write shows before and after", async () => {
-    for (const k of ["nam", "december"] as const) {
+    for (const k of ["noah", "december"] as const) {
       assert.ok((await call(k, "update_forum", { date: "2026-12-23", theme: "hacked" })).error, `${k} update_forum`);
       assert.ok((await call(k, "set_agenda", { date: "2026-12-23", items: [] })).error, `${k} set_agenda`);
-      assert.ok((await call(k, "set_presentation", { date: "2026-12-23", presenter: "Nam" })).error, `${k} set_presentation`);
+      assert.ok((await call(k, "set_presentation", { date: "2026-12-23", presenter: "Noah" })).error, `${k} set_presentation`);
       assert.ok((await call(k, "set_planners", { date: "2026-12-23", members: [] })).error, `${k} set_planners`);
-      assert.ok((await call(k, "set_role", { year: 2027, role: "treasurer", member: "Nam" })).error, `${k} set_role`);
+      assert.ok((await call(k, "set_role", { year: 2027, role: "treasurer", member: "Noah" })).error, `${k} set_role`);
     }
-    const theme = await call("founding", "update_forum", { date: "2026-12-23", theme: "Welcome Minh Anh", host: "Minh Anh", starts_at: "14:00", conversation_starters: ["One?", "Two?"] });
+    const theme = await call("founding", "update_forum", { date: "2026-12-23", theme: "Welcome Mia Archer", host: "Mia Archer", starts_at: "14:00", conversation_starters: ["One?", "Two?"] });
     assert.equal(theme.error, false, theme.text);
     assert.equal((theme.json.before as { theme: string }).theme, "theme dec");
-    assert.equal((theme.json.after as { theme: string; host: string }).theme, "Welcome Minh Anh");
-    assert.equal((theme.json.after as { host: string }).host, "Leak Minh Anh");
+    assert.equal((theme.json.after as { theme: string; host: string }).theme, "Welcome Mia Archer");
+    assert.equal((theme.json.after as { host: string }).host, "Leak Mia Archer");
     assert.equal((theme.json.after as { starts_at: string }).starts_at, "2:00 pm", "start time is GMT+7");
 
     const agenda = await call("founding", "set_agenda", {
       date: "2026-12-23",
       items: [
         { kind: "arrival", title: "Arrival", starts_at: "13:45", minutes: 15 },
-        { kind: "lifeline", title: "Minh Anh's lifeline", minutes: 20, owner: "Minh Anh" },
+        { kind: "lifeline", title: "Mia Archer's lifeline", minutes: 20, owner: "Mia Archer" },
       ],
     });
     assert.equal(agenda.error, false, agenda.text);
     assert.equal((agenda.json.before as unknown[]).length, 1);
-    assert.deepEqual((agenda.json.after as { title: string; owner: string | null }[]).map((i) => [i.title, i.owner]), [["Arrival", null], ["Minh Anh's lifeline", "Leak Minh Anh"]]);
+    assert.deepEqual((agenda.json.after as { title: string; owner: string | null }[]).map((i) => [i.title, i.owner]), [["Arrival", null], ["Mia Archer's lifeline", "Leak Mia Archer"]]);
     assert.ok((await call("founding", "set_agenda", { date: "2026-12-23", items: [{ kind: "nope", title: "x" }] })).error, "bad kind");
     const kept = (await call("founding", "get_forum_plan", { date: "2026-12-23" })).json.run_sheet as unknown[];
     assert.equal(kept.length, 2, "a refused set_agenda keeps the old run sheet");
 
-    assert.ok((await call("founding", "set_presentation", { date: "2026-12-23", presenter: "Nam", coach: "Nam" })).error, "no self-coaching");
-    const pres = await call("founding", "set_presentation", { date: "2026-12-23", presenter: "Nam", coach: "Minh Anh" });
+    assert.ok((await call("founding", "set_presentation", { date: "2026-12-23", presenter: "Noah", coach: "Noah" })).error, "no self-coaching");
+    const pres = await call("founding", "set_presentation", { date: "2026-12-23", presenter: "Noah", coach: "Mia Archer" });
     assert.equal(pres.error, false, pres.text);
-    assert.match(JSON.stringify(pres.json.after), /Leak Nam Trung.*Leak Minh Anh/);
-    assert.equal((await call("founding", "remove_presentation", { date: "2026-12-23", presenter: "Nam" })).error, false);
+    assert.match(JSON.stringify(pres.json.after), /Leak Noah Turner.*Leak Mia Archer/);
+    assert.equal((await call("founding", "remove_presentation", { date: "2026-12-23", presenter: "Noah" })).error, false);
 
-    const planners = await call("founding", "set_planners", { date: "2026-12-23", members: ["Nam", "Minh Anh"] });
-    assert.deepEqual(sorted((planners.json.after as string[]) ?? []), ["Leak Minh Anh", "Leak Nam Trung"]);
+    const planners = await call("founding", "set_planners", { date: "2026-12-23", members: ["Noah", "Mia Archer"] });
+    assert.deepEqual(sorted((planners.json.after as string[]) ?? []), ["Leak Mia Archer", "Leak Noah Turner"]);
     assert.deepEqual(((await call("founding", "set_planners", { date: "2026-12-23", members: ["Founding"] })).json.after as string[]), ["Leak Founding"]);
 
-    const role = await call("founding", "set_role", { year: 2027, role: "treasurer", member: "Nam" });
-    assert.deepEqual((role.json.roles as Record<string, string[]>).treasurer, ["Leak Nam Trung"]);
-    assert.deepEqual(((await call("nam", "get_roles", { year: 2027 })).json.roles as Record<string, string[]>).moderator, ["Leak Founding"]);
-    const gone = await call("founding", "set_role", { year: 2027, role: "treasurer", member: "Nam", remove: true });
+    const role = await call("founding", "set_role", { year: 2027, role: "treasurer", member: "Noah" });
+    assert.deepEqual((role.json.roles as Record<string, string[]>).treasurer, ["Leak Noah Turner"]);
+    assert.deepEqual(((await call("noah", "get_roles", { year: 2027 })).json.roles as Record<string, string[]>).moderator, ["Leak Founding"]);
+    const gone = await call("founding", "set_role", { year: 2027, role: "treasurer", member: "Noah", remove: true });
     assert.deepEqual((gone.json.roles as Record<string, string[]>).treasurer, []);
   });
 
   it("the planning guide and the plan_forum prompt", async () => {
-    assert.match((await call("nam", "planning_guide")).text, /MERPS/);
-    const list = (await rpc("nam", "prompts/list")).body?.result?.prompts as { name: string }[];
+    assert.match((await call("noah", "planning_guide")).text, /MERPS/);
+    const list = (await rpc("noah", "prompts/list")).body?.result?.prompts as { name: string }[];
     assert.deepEqual(list.map((p) => p.name), ["plan_forum"]);
-    const got = (await rpc("nam", "prompts/get", { name: "plan_forum", arguments: { date: "2026-12-23" } })).body?.result as { messages: { content: { text: string } }[] };
+    const got = (await rpc("noah", "prompts/get", { name: "plan_forum", arguments: { date: "2026-12-23" } })).body?.result as { messages: { content: { text: string } }[] };
     assert.match(got.messages[0].content.text, /Plan the forum on 2026-12-23/);
-    assert.ok((await rpc("nam", "prompts/get", { name: "nope" })).body?.error);
+    assert.ok((await rpc("noah", "prompts/get", { name: "nope" })).body?.error);
   });
 });
 
@@ -804,16 +805,16 @@ describe("push", () => {
 
   it("register: active members only, valid Expo tokens only", async () => {
     const { POST } = await devices();
-    const body = { expo_token: "ExponentPushToken[leak-nam-2]", platform: "ios", app_version: "1.0" };
-    assert.equal((await POST(req("/api/push/devices", { method: "POST", token: token.nam, body }))).status, 200);
-    assert.equal((await POST(req("/api/push/devices", { method: "POST", token: token.nam, body: { expo_token: "nope", platform: "ios" } }))).status, 400);
+    const body = { expo_token: "ExponentPushToken[leak-noah-2]", platform: "ios", app_version: "1.0" };
+    assert.equal((await POST(req("/api/push/devices", { method: "POST", token: token.noah, body }))).status, 200);
+    assert.equal((await POST(req("/api/push/devices", { method: "POST", token: token.noah, body: { expo_token: "nope", platform: "ios" } }))).status, 400);
     assert.equal((await POST(req("/api/push/devices", { method: "POST", token: token.leaver, body }))).status, 403);
   });
 
   it("a shared phone's token moves to the member now signed in", async () => {
     const { POST } = await devices();
     const body = { expo_token: "ExponentPushToken[leak-shared]", platform: "ios" };
-    await POST(req("/api/push/devices", { method: "POST", token: token.nam, body }));
+    await POST(req("/api/push/devices", { method: "POST", token: token.noah, body }));
     await POST(req("/api/push/devices", { method: "POST", token: token.december, body }));
     const row = ok(await admin.from("push_devices").select("user_id").eq("expo_token", body.expo_token).single(), "shared") as { user_id: string };
     assert.equal(row.user_id, member.december.id);
@@ -828,8 +829,8 @@ describe("push", () => {
     const to = expoBodies.flat().map((m) => m.to);
     const owners = ok(await admin.from("push_devices").select("user_id, expo_token").in("expo_token", to), "owners") as { user_id: string }[];
     const keys = [...new Set(owners.map((o) => KEYS.find((x) => member[x].id === o.user_id)))].sort();
-    assert.deepEqual(keys, ["founding", "nam"]);
-    for (const m of expoBodies.flat()) assert.equal(m.body, render({ kind: "new_agenda", heldOn: "" }).body);
+    assert.deepEqual(keys, ["founding", "noah"]);
+    for (const m of expoBodies.flat()) assert.equal(m.body, render({ kind: "new_agenda", heldOn: "" }, DEFAULT_FORUM_SETTINGS).body);
     assert.ok("revoked" in res && res.revoked === 1, "unregistered device revoked");
     const dead = ok(await admin.from("push_devices").select("revoked_at").eq("expo_token", "ExponentPushToken[leak-dead]").single(), "dead") as { revoked_at: string | null };
     assert.ok(dead.revoked_at);
@@ -839,10 +840,10 @@ describe("push", () => {
   it("every template's text is free of private content", async () => {
     const { render } = await import("@/lib/push");
     const texts = [
-      render({ kind: "next_forum", heldOn: "2026-12-23", startsAt: "2026-12-23T11:00:00Z" }),
-      render({ kind: "new_agenda", heldOn: "2026-12-23" }),
-      render({ kind: "whip_nudge" }),
-      render({ kind: "report_ready", month: "2026-12" }),
+      render({ kind: "next_forum", heldOn: "2026-12-23", startsAt: "2026-12-23T11:00:00Z" }, DEFAULT_FORUM_SETTINGS),
+      render({ kind: "new_agenda", heldOn: "2026-12-23" }, DEFAULT_FORUM_SETTINGS),
+      render({ kind: "whip_nudge" }, DEFAULT_FORUM_SETTINGS),
+      render({ kind: "report_ready", month: "2026-12" }, DEFAULT_FORUM_SETTINGS),
     ];
     assert.equal(texts[0].body, "Next forum: Wed 23 Dec, 6 pm");
     assert.equal(texts[0].data.path, "/forum/2026-12-23");
@@ -859,7 +860,7 @@ describe("push", () => {
       goal.PATCH(
         new NextRequest("http://localhost/api/goal", {
           method: "PATCH",
-          headers: { "content-type": "application/json", authorization: `Bearer ${token.nam}`, ...headers },
+          headers: { "content-type": "application/json", authorization: `Bearer ${token.noah}`, ...headers },
           body: JSON.stringify({ currentValue: 4, targetValue: 10, status: "on_track" }),
         })
       );
@@ -883,24 +884,24 @@ describe("admin", () => {
     assert.deepEqual(p.seasons, [q1.id]);
     const leaver = (await client.founding.rpc("admin_preview", { member: member.leaver.id })).data as { meetings: unknown[]; library: unknown[]; seasons: unknown[] };
     assert.deepEqual([leaver.meetings.length, leaver.library.length, leaver.seasons.length], [0, 0, 0]);
-    assert.ok((await client.nam.rpc("admin_preview", { member: member.founding.id })).error, "non-admin denied");
+    assert.ok((await client.noah.rpc("admin_preview", { member: member.founding.id })).error, "non-admin denied");
   });
 
   it("touch_last_seen stamps only the caller; the column is not directly writable", async () => {
-    await client.nam.rpc("touch_last_seen");
-    const second = await client.nam.rpc("touch_last_seen");
+    await client.noah.rpc("touch_last_seen");
+    const second = await client.noah.rpc("touch_last_seen");
     assert.ok(second.data, "returns the previous visit");
-    const direct = await client.nam.from("profiles").update({ last_seen_at: "2020-01-01T00:00:00Z" }).eq("id", member.nam.id);
+    const direct = await client.noah.from("profiles").update({ last_seen_at: "2020-01-01T00:00:00Z" }).eq("id", member.noah.id);
     assert.ok(direct.error);
   });
 
   it("members API: admins only; invite with no date sees nothing", async () => {
     const api = await import("@/app/api/admin/members/route");
-    assert.equal((await api.GET(req("/api/admin/members", { token: token.nam }))).status, 403);
+    assert.equal((await api.GET(req("/api/admin/members", { token: token.noah }))).status, 403);
     const list = (await (await api.GET(req("/api/admin/members", { token: token.founding }))).json()) as { members: { id: string; status: string }[] };
     const status = (k: PersonaKey) => list.members.find((m) => m.id === member[k].id)?.status;
     assert.equal(status("leaver"), "left");
-    assert.equal(status("nam"), "active");
+    assert.equal(status("noah"), "active");
     assert.equal(status("nodate"), "no_date");
 
     const inv = await api.POST(req("/api/admin/members", { method: "POST", token: token.founding, body: { email: "leak-invite@leak.test", full_name: "Leak Invite" } }));
@@ -920,18 +921,61 @@ describe("admin", () => {
   });
 });
 
+// ── Forum settings (0032): active members read, admins update, nobody inserts or deletes ─
+describe("forum settings", () => {
+  const fs = (c: DB) => (c as unknown as SupabaseClient).from("forum_settings");
+
+  it("active members read the row; leavers, no-date members and anon read nothing", async () => {
+    for (const k of ["founding", "noah"] as const) {
+      const rows = ok(await fs(client[k]).select("name, currency, time_zone"), `${k} read`) as { name: string }[];
+      assert.equal(rows.length, 1, `${k} sees the row`);
+    }
+    for (const k of ["leaver", "nodate"] as const) {
+      const rows = ok(await fs(client[k]).select("name"), `${k} read`) as unknown[];
+      assert.equal(rows.length, 0, `${k} sees nothing`);
+    }
+    const anon = createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
+    const r = await anon.from("forum_settings").select("name");
+    assert.ok(r.error || (r.data ?? []).length === 0, "anon sees nothing");
+  });
+
+  it("only an admin updates; no client inserts or deletes; the time zone must exist", async () => {
+    const before = ok(await fs(admin).select("short_name, dues_per_forum").single(), "before") as { short_name: string; dues_per_forum: number };
+    const denied = await fs(client.noah).update({ short_name: "Hijacked" }).eq("id", true).select("id");
+    assert.equal((denied.data ?? []).length, 0, "non-admin changes nothing");
+
+    const saved = ok(await fs(client.founding).update({ short_name: "Leak Forum", dues_per_forum: 3_000_000 }).eq("id", true).select("short_name"), "admin update") as { short_name: string }[];
+    assert.deepEqual(saved.map((x) => x.short_name), ["Leak Forum"]);
+    const dues = ok(await (admin as unknown as SupabaseClient).from("kitty_settings").select("dues_vnd").single(), "dues") as { dues_vnd: number };
+    assert.equal(Number(dues.dues_vnd), 3_000_000, "dues kept in step for the iPhone app");
+
+    assert.ok((await fs(client.founding).update({ time_zone: "Mars/Olympus" }).eq("id", true)).error, "unknown time zone");
+    assert.ok((await fs(client.founding).insert({ id: true, name: "x", short_name: "x", site_url: "https://x.test" })).error, "no insert");
+    await fs(client.founding).delete().eq("id", true);
+    assert.equal((ok(await fs(admin).select("id"), "still there") as unknown[]).length, 1, "no delete");
+
+    ok(await fs(admin).update({ short_name: before.short_name, dues_per_forum: before.dues_per_forum }).eq("id", true), "restore");
+  });
+
+  it("forum_today() is today in the forum's time zone", async () => {
+    const tz = (ok(await fs(admin).select("time_zone").single(), "tz") as { time_zone: string }).time_zone;
+    const { data } = await client.noah.rpc("forum_today" as never);
+    assert.equal(data, new Date().toLocaleDateString("en-CA", { timeZone: tz }));
+  });
+});
+
 // ── WHOOP connect started from the iPhone app (no cookie) ─
 describe("WHOOP app flow", () => {
   it("a stored state ends on the app scheme, works once, and unknown states fail on the web /me", async () => {
     const { GET } = await import("@/app/api/whoop/callback/route");
-    ok(await admin.from("whoop_oauth_states").insert({ state: "LeakAbc1", user_id: member.nam.id }), "state");
+    ok(await admin.from("whoop_oauth_states").insert({ state: "LeakAbc1", user_id: member.noah.id }), "state");
     const first = await GET(req("/api/whoop/callback?state=LeakAbc1&error=access_denied"));
     assert.equal(first.headers.get("location"), "shadowforum://me?whoop=denied");
     const replay = await GET(req("/api/whoop/callback?state=LeakAbc1&error=access_denied"));
     assert.match(replay.headers.get("location") ?? "", /^http:\/\/localhost\/me\?whoop=error$/);
     const rows = ok(await admin.from("whoop_oauth_states").select("state").eq("state", "LeakAbc1"), "gone") as unknown[];
     assert.equal(rows.length, 0, "state consumed");
-    const read = await client.nam.from("whoop_oauth_states").select("state");
+    const read = await client.noah.from("whoop_oauth_states").select("state");
     assert.ok(read.error, "members have no access to the states table at all");
   });
 });
@@ -997,7 +1041,7 @@ describe("gallery", () => {
     const past = crypto.randomUUID();
     assert.ok((await c.from("gallery_photos").insert(photo(past, "2026-02-05", member.december.id))).error, "no posting into the past");
     const asOther = crypto.randomUUID();
-    assert.ok((await c.from("gallery_photos").insert(photo(asOther, "2026-12-24", member.nam.id))).error, "not as someone else");
+    assert.ok((await c.from("gallery_photos").insert(photo(asOther, "2026-12-24", member.noah.id))).error, "not as someone else");
     const badPath = crypto.randomUUID();
     assert.ok(
       (await c.from("gallery_photos").insert({ ...photo(badPath, "2026-12-24", member.december.id), web_path: `${pid.feb}/web.webp` })).error,
@@ -1005,7 +1049,7 @@ describe("gallery", () => {
     );
     const hidden = crypto.randomUUID();
     assert.ok(
-      (await client.nam.from("gallery_photos").insert(photo(hidden, "2026-12-24", member.nam.id, { meeting_id: meetingId.feb }))).error,
+      (await client.noah.from("gallery_photos").insert(photo(hidden, "2026-12-24", member.noah.id, { meeting_id: meetingId.feb }))).error,
       "cannot link a meeting you can't see"
     );
     for (const k of ["leaver", "nodate"] as const) {
@@ -1016,13 +1060,13 @@ describe("gallery", () => {
 
   it("edits: uploader or admin, caption/date/meeting only, never into the past", async () => {
     const own = crypto.randomUUID();
-    ok(await client.nam.from("gallery_photos").insert(photo(own, "2026-08-25", member.nam.id)), "nam photo");
-    const cap = await client.nam.from("gallery_photos").update({ caption: "hello" }).eq("id", own).select("id");
+    ok(await client.noah.from("gallery_photos").insert(photo(own, "2026-08-25", member.noah.id)), "noah photo");
+    const cap = await client.noah.from("gallery_photos").update({ caption: "hello" }).eq("id", own).select("id");
     assert.equal(cap.data?.length, 1, "uploader edits caption");
-    assert.ok((await client.nam.from("gallery_photos").update({ uploaded_by: member.founding.id }).eq("id", own)).error, "uploaded_by locked");
-    assert.ok((await client.nam.from("gallery_photos").update({ original_path: `${own}/original.png` }).eq("id", own)).error, "paths locked");
-    assert.ok((await client.nam.from("gallery_photos").update({ taken_on: "2026-02-05" }).eq("id", own)).error, "no moving into the past");
-    const other = await client.nam.from("gallery_photos").update({ caption: "x" }).eq("id", pid.aug).select("id");
+    assert.ok((await client.noah.from("gallery_photos").update({ uploaded_by: member.founding.id }).eq("id", own)).error, "uploaded_by locked");
+    assert.ok((await client.noah.from("gallery_photos").update({ original_path: `${own}/original.png` }).eq("id", own)).error, "paths locked");
+    assert.ok((await client.noah.from("gallery_photos").update({ taken_on: "2026-02-05" }).eq("id", own)).error, "no moving into the past");
+    const other = await client.noah.from("gallery_photos").update({ caption: "x" }).eq("id", pid.aug).select("id");
     assert.equal(other.data?.length ?? 0, 0, "not someone else's photo");
     const byAdmin = await client.founding.from("gallery_photos").update({ caption: "admin" }).eq("id", own).select("id");
     assert.equal(byAdmin.data?.length, 1, "admin edits any");
@@ -1030,15 +1074,15 @@ describe("gallery", () => {
 
   it("deletes: uploader or admin, files too", async () => {
     const id = crypto.randomUUID();
-    ok(await client.nam.from("gallery_photos").insert(photo(id, "2026-08-26", member.nam.id)), "nam photo");
-    assert.equal((await client.nam.storage.from("gallery").upload(`${id}/web.webp`, img())).error, null);
+    ok(await client.noah.from("gallery_photos").insert(photo(id, "2026-08-26", member.noah.id)), "noah photo");
+    assert.equal((await client.noah.storage.from("gallery").upload(`${id}/web.webp`, img())).error, null);
     const dec = await client.december.from("gallery_photos").delete().eq("id", pid.dec).select("id");
     assert.equal(dec.data?.length ?? 0, 0, "december cannot delete founding's photo");
     const notMine = await client.december.storage.from("gallery").remove([`${id}/web.webp`]);
-    assert.equal((notMine.data ?? []).length, 0, "nor nam's files");
-    const files = await client.nam.storage.from("gallery").remove([`${id}/web.webp`]);
+    assert.equal((notMine.data ?? []).length, 0, "nor noah's files");
+    const files = await client.noah.storage.from("gallery").remove([`${id}/web.webp`]);
     assert.equal((files.data ?? []).length, 1, "uploader removes own file");
-    const row = await client.nam.from("gallery_photos").delete().eq("id", id).select("id");
+    const row = await client.noah.from("gallery_photos").delete().eq("id", id).select("id");
     assert.equal(row.data?.length, 1, "uploader removes own row");
     const byAdmin = await client.founding.from("gallery_photos").delete().eq("id", pid.jan).select("id");
     assert.equal(byAdmin.data?.length, 1, "admin removes any row");
@@ -1072,15 +1116,15 @@ describe("forum chat", () => {
     { key: "jan", sent_on: "2027-01-25" },
   ];
   const mid: Record<string, string> = {};
-  const todayVN = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  const todayLocal = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 
   before(async () => {
     for (const s of SENT) {
       const row = ok(
         await admin
           .from("forum_messages")
-          // Nam Trung wrote the August message; the founding member wrote the rest
-          .insert({ author_id: s.key === "aug" ? member.nam.id : member.founding.id, body: `chat ${s.key}`, sent_on: s.sent_on })
+          // Noah Turner wrote the August message; the founding member wrote the rest
+          .insert({ author_id: s.key === "aug" ? member.noah.id : member.founding.id, body: `chat ${s.key}`, sent_on: s.sent_on })
           .select("id")
           .single(),
         `msg ${s.key}`
@@ -1099,39 +1143,39 @@ describe("forum chat", () => {
   }
 
   it("posting: active members on a day they can see, as themselves, with their own links", async () => {
-    const posted = await client.nam.from("forum_messages").insert({ body: "hello forum" }).select("id, author_id, sent_on").single();
+    const posted = await client.noah.from("forum_messages").insert({ body: "hello forum" }).select("id, author_id, sent_on").single();
     assert.equal(posted.error, null);
-    assert.equal(posted.data?.author_id, member.nam.id);
-    assert.equal(posted.data?.sent_on, todayVN);
-    assert.equal(seesDate("december", todayVN), false);
+    assert.equal(posted.data?.author_id, member.noah.id);
+    assert.equal(posted.data?.sent_on, todayLocal);
+    assert.equal(seesDate("december", todayLocal), false);
     assert.ok((await client.december.from("forum_messages").insert({ body: "too early" })).error, "before first forum: cannot post");
     for (const k of ["leaver", "nodate"] as const) assert.ok((await client[k].from("forum_messages").insert({ body: "x" })).error, `${k} cannot post`);
-    assert.ok((await client.nam.from("forum_messages").insert({ body: "x", author_id: member.founding.id } as never)).error, "not as someone else");
-    assert.ok((await client.nam.from("forum_messages").insert({ body: "x", sent_on: "2026-02-05" } as never)).error, "cannot backdate");
-    assert.ok((await client.nam.from("forum_messages").insert({ body: "" })).error, "empty body refused");
-    assert.equal((await client.nam.from("forum_messages").insert({ body: "re", reply_to: mid.feb })).error, null, "can reply to a message from before they joined");
-    assert.equal((await client.nam.from("forum_messages").insert({ body: "re", reply_to: mid.aug })).error, null, "can reply to a visible one");
+    assert.ok((await client.noah.from("forum_messages").insert({ body: "x", author_id: member.founding.id } as never)).error, "not as someone else");
+    assert.ok((await client.noah.from("forum_messages").insert({ body: "x", sent_on: "2026-02-05" } as never)).error, "cannot backdate");
+    assert.ok((await client.noah.from("forum_messages").insert({ body: "" })).error, "empty body refused");
+    assert.equal((await client.noah.from("forum_messages").insert({ body: "re", reply_to: mid.feb })).error, null, "can reply to a message from before they joined");
+    assert.equal((await client.noah.from("forum_messages").insert({ body: "re", reply_to: mid.aug })).error, null, "can reply to a visible one");
   });
 
   it("edit, soft delete, admin delete", async () => {
-    const own = ok(await client.nam.from("forum_messages").insert({ body: "draft" }).select("id").single(), "own") as { id: string };
-    const ed = ok(await client.nam.from("forum_messages").update({ body: "edited" }).eq("id", own.id).select("body, edited_at").single(), "edit") as {
+    const own = ok(await client.noah.from("forum_messages").insert({ body: "draft" }).select("id").single(), "own") as { id: string };
+    const ed = ok(await client.noah.from("forum_messages").update({ body: "edited" }).eq("id", own.id).select("body, edited_at").single(), "edit") as {
       body: string;
       edited_at: string | null;
     };
     assert.equal(ed.body, "edited");
     assert.ok(ed.edited_at, "edited_at stamped");
-    const other = await client.nam.from("forum_messages").update({ body: "hijack" }).eq("id", mid.dec).select("id");
+    const other = await client.noah.from("forum_messages").update({ body: "hijack" }).eq("id", mid.dec).select("id");
     assert.equal(other.data?.length ?? 0, 0, "not someone else's message");
-    assert.ok((await client.nam.from("forum_messages").update({ notified_at: null } as never).eq("id", own.id)).error, "server columns locked");
+    assert.ok((await client.noah.from("forum_messages").update({ notified_at: null } as never).eq("id", own.id)).error, "server columns locked");
 
     const del = ok(
-      await client.nam.from("forum_messages").update({ deleted_at: new Date().toISOString() }).eq("id", own.id).select("body, deleted_at").single(),
+      await client.noah.from("forum_messages").update({ deleted_at: new Date().toISOString() }).eq("id", own.id).select("body, deleted_at").single(),
       "soft delete"
     ) as { body: string; deleted_at: string | null };
     assert.equal(del.body, "", "content wiped");
     assert.ok(del.deleted_at);
-    const undo = await client.nam.from("forum_messages").update({ deleted_at: null }).eq("id", own.id).select("id");
+    const undo = await client.noah.from("forum_messages").update({ deleted_at: null }).eq("id", own.id).select("id");
     assert.ok(undo.error || (undo.data ?? []).length === 0, "cannot undelete");
 
     const rewrite = await client.founding.from("forum_messages").update({ body: "admin words" }).eq("id", mid.aug).select("id");
@@ -1144,15 +1188,15 @@ describe("forum chat", () => {
   });
 
   it("read marks are the member's own", async () => {
-    assert.equal((await client.nam.from("forum_read_marks").upsert({ last_read_at: new Date().toISOString() })).error, null);
-    assert.ok((await client.nam.from("forum_read_marks").insert({ user_id: member.founding.id })).error, "not for someone else");
+    assert.equal((await client.noah.from("forum_read_marks").upsert({ last_read_at: new Date().toISOString() })).error, null);
+    assert.ok((await client.noah.from("forum_read_marks").insert({ user_id: member.founding.id })).error, "not for someone else");
     const theirs = ok(await client.founding.from("forum_read_marks").select("user_id"), "marks") as { user_id: string }[];
     assert.ok(theirs.every((r) => r.user_id === member.founding.id));
     assert.ok((await client.leaver.from("forum_read_marks").upsert({ last_read_at: new Date().toISOString() })).error, "leaver cannot");
   });
 
   it("the table is in the realtime publication", async () => {
-    const { data } = await admin.rpc("member_is_active", { uid: member.nam.id }); // keep a round trip on the API
+    const { data } = await admin.rpc("member_is_active", { uid: member.noah.id }); // keep a round trip on the API
     assert.equal(data, true);
     const pub = await import("node:child_process");
     const out = pub.execSync(
@@ -1167,18 +1211,18 @@ describe("forum chat", () => {
     process.env.EXPO_ACCESS_TOKEN = "leak-expo";
     ok(await admin.from("forum_messages").update({ notified_at: null }).is("deleted_at", null), "reset notified");
     ok(await admin.from("push_devices").update({ revoked_at: null }).like("expo_token", "ExponentPushToken[leak-%"), "revive devices");
-    const m = ok(await client.nam.from("forum_messages").insert({ body: "push me" }).select("id").single(), "msg") as { id: string };
+    const m = ok(await client.noah.from("forum_messages").insert({ body: "push me" }).select("id").single(), "msg") as { id: string };
     expoBodies.length = 0;
-    const r = await POST(req("/api/forum/notify", { method: "POST", token: token.nam, body: { message_id: m.id } }));
+    const r = await POST(req("/api/forum/notify", { method: "POST", token: token.noah, body: { message_id: m.id } }));
     const body = (await r.json()) as { pushed: boolean };
     assert.equal(body.pushed, true);
     const to = expoBodies.flat().map((x) => x.to);
     const owners = ok(await admin.from("push_devices").select("user_id").in("expo_token", to), "owners") as { user_id: string }[];
     const keys = [...new Set(owners.map((o) => KEYS.find((x) => member[x].id === o.user_id)))].sort();
-    assert.deepEqual(keys, KEYS.filter((k) => k !== "nam" && seesDate(k, todayVN)).sort(), "others who can see today");
-    for (const x of expoBodies.flat()) assert.equal(x.body, render({ kind: "forum_message", sentOn: todayVN }).body);
+    assert.deepEqual(keys, KEYS.filter((k) => k !== "noah" && seesDate(k, todayLocal)).sort(), "others who can see today");
+    for (const x of expoBodies.flat()) assert.equal(x.body, render({ kind: "forum_message", sentOn: todayLocal }, DEFAULT_FORUM_SETTINGS).body);
     assert.doesNotMatch(JSON.stringify(expoBodies), /push me/, "message text never in the push");
-    const again = (await (await POST(req("/api/forum/notify", { method: "POST", token: token.nam, body: { message_id: m.id } }))).json()) as { pushed: boolean };
+    const again = (await (await POST(req("/api/forum/notify", { method: "POST", token: token.noah, body: { message_id: m.id } }))).json()) as { pushed: boolean };
     assert.equal(again.pushed, false, "once per message");
     const notMine = await POST(req("/api/forum/notify", { method: "POST", token: token.founding, body: { message_id: m.id } }));
     assert.equal(notMine.status, 404, "only the author can trigger it");
@@ -1212,19 +1256,19 @@ describe("seasons", () => {
   it("goals: one per member per season; lock in the next season before it starts", async () => {
     const goal = await import("@/app/api/goal/route");
     const post = (k: PersonaKey, body: Record<string, unknown>) => goal.POST(req("/api/goal", { method: "POST", token: token[k], body }));
-    // Nam Trung already has a Q4 goal; the default season for a new goal is the newest (Q1 here)
-    assert.equal((await post("nam", { title: "Q1 goal" })).status, 200);
-    assert.equal((await post("nam", { title: "again" })).status, 409, "one per season");
-    const namGoals = ok(await admin.from("goals").select("season_id").eq("user_id", member.nam.id), "nam goals") as { season_id: string }[];
+    // Noah Turner already has a Q4 goal; the default season for a new goal is the newest (Q1 here)
+    assert.equal((await post("noah", { title: "Q1 goal" })).status, 200);
+    assert.equal((await post("noah", { title: "again" })).status, 409, "one per season");
+    const namGoals = ok(await admin.from("goals").select("season_id").eq("user_id", member.noah.id), "noah goals") as { season_id: string }[];
     assert.deepEqual(sorted(namGoals.map((g) => g.season_id)), sorted([q4.id, q1.id]));
-    // Minh Anh joins in December: Q1 yes, Q4 no
-    assert.equal((await post("december", { title: "Q1 for Minh Anh" })).status, 200);
+    // Mia Archer joins in December: Q1 yes, Q4 no
+    assert.equal((await post("december", { title: "Q1 for Mia Archer" })).status, 200);
     assert.equal((await post("december", { title: "Q4?", seasonId: q4.id })).status, 400, "cannot pick a season she can't see");
     assert.ok((await client.december.from("goals").insert({ user_id: member.december.id, title: "direct", season_id: q4.id })).error, "RLS too");
     // updates default to today's season
-    const patch = await goal.PATCH(req("/api/goal", { method: "PATCH", token: token.nam, body: { currentValue: 7, targetValue: 10, status: "on_track" } }));
+    const patch = await goal.PATCH(req("/api/goal", { method: "PATCH", token: token.noah, body: { currentValue: 7, targetValue: 10, status: "on_track" } }));
     assert.equal(patch.status, 200);
-    const q4goal = ok(await admin.from("goals").select("current_value").eq("user_id", member.nam.id).eq("season_id", q4.id).single(), "q4") as { current_value: number };
+    const q4goal = ok(await admin.from("goals").select("current_value").eq("user_id", member.noah.id).eq("season_id", q4.id).single(), "q4") as { current_value: number };
     assert.equal(Number(q4goal.current_value), 7);
   });
 
@@ -1255,16 +1299,16 @@ describe("personal goals per season", () => {
   it("any number per season, only into current or coming seasons the member can see", async () => {
     const add = (k: PersonaKey, season_id: string | null, title: string) =>
       client[k].from("personal_goals").insert({ user_id: member[k].id, title, season_id: season_id as string });
-    assert.equal((await add("nam", q1.id, "Q1 one")).error, null);
-    assert.equal((await add("nam", q1.id, "Q1 two")).error, null, "more than one per season");
-    assert.equal((await add("nam", q4.id, "Q4 extra")).error, null, "Q4 is still running");
-    assert.ok((await add("nam", null, "no season")).error, "season required");
-    assert.equal((await add("december", q1.id, "Minh Anh Q1")).error, null, "December member can set Q1");
+    assert.equal((await add("noah", q1.id, "Q1 one")).error, null);
+    assert.equal((await add("noah", q1.id, "Q1 two")).error, null, "more than one per season");
+    assert.equal((await add("noah", q4.id, "Q4 extra")).error, null, "Q4 is still running");
+    assert.ok((await add("noah", null, "no season")).error, "season required");
+    assert.equal((await add("december", q1.id, "Mia Archer Q1")).error, null, "December member can set Q1");
     assert.ok((await add("december", q4.id, "Q4?")).error, "but not Q4");
     assert.ok((await add("leaver", q1.id, "x")).error, "leaver cannot");
     const theirs = ok(await client.december.from("personal_goals").select("user_id, season_id"), "own") as { user_id: string; season_id: string | null }[];
     assert.ok(theirs.every((g) => g.user_id === member.december.id), "owner only");
-    const q1Count = ok(await client.nam.from("personal_goals").select("id").eq("season_id", q1.id), "q1") as unknown[];
+    const q1Count = ok(await client.noah.from("personal_goals").select("id").eq("season_id", q1.id), "q1") as unknown[];
     assert.equal(q1Count.length, 2);
   });
 });

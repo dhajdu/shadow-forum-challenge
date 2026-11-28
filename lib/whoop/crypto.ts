@@ -7,7 +7,7 @@ const VERSION = "v1";
  *
  * Supabase Vault / pgsodium would keep the key inside Postgres, which is a
  * better fit when SQL itself must decrypt. This app only decrypts in the
- * Node server, and the migration must stay unapplied until Dave runs it, so
+ * Node server, and the migration must stay unapplied until an admin runs it, so
  * a key in the environment is the smaller moving part: the database holds
  * ciphertext even if the service role leaks, and rotating the key is an env
  * change. Generate with `openssl rand -base64 32`.

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireMember } from "@/lib/api";
 import { consentText, getConstitution, sha256Hex } from "@/app/_data/constitution";
+import { readForumSettings } from "@/lib/forum-config";
 
 export const dynamic = "force-dynamic";
 
@@ -20,12 +21,12 @@ export async function POST(req: NextRequest) {
   if (!current) return NextResponse.json({ error: "There is no Constitution to sign yet." }, { status: 404 });
   const shown = String(b.sha256 ?? "");
   if (shown !== current.sha256) return NextResponse.json({ error: "The Constitution changed while you had it open. Reload and read the new version." }, { status: 409 });
-  if (sha256Hex(current.body_md) !== current.sha256) return NextResponse.json({ error: "The stored Constitution does not match its fingerprint. Ask Dave to republish it." }, { status: 500 });
+  if (sha256Hex(current.body_md) !== current.sha256) return NextResponse.json({ error: "The stored Constitution does not match its fingerprint. Ask your moderator to republish it." }, { status: 500 });
 
   const { error } = await db.from("constitution_signatures").insert({
     version_id: current.id,
     typed_name: typed.slice(0, 120),
-    consent: consentText(current.version),
+    consent: consentText(current.version, (await readForumSettings(db)).name),
     sha256_shown: shown,
     ip: (req.headers.get("x-forwarded-for")?.split(",")[0] ?? req.headers.get("x-real-ip") ?? "").trim().slice(0, 100) || null,
     user_agent: (req.headers.get("user-agent") ?? "").slice(0, 500) || null,

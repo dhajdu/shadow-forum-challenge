@@ -16,7 +16,7 @@ const n = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
 
 export default async function GoalsPage({ searchParams }: { searchParams: Promise<{ season?: string }> }) {
   const { season: slug } = await searchParams;
-  const { db, user, viewer, today } = await getForumContext();
+  const { db, user, viewer, today, forum } = await getForumContext();
   const seasons = await listSeasons(db, viewer); // newest first
   // default: the quarter that is running, else the next one, else the newest
   const running = seasons.find((x) => x.starts_on <= today && today <= x.ends_on);
@@ -82,7 +82,7 @@ export default async function GoalsPage({ searchParams }: { searchParams: Promis
               <section className={`zone-card ${s.contest}`}>
                 <h2>Contest business goal</h2>
                 <p className="coach-line">
-                  Your coach: <b>{coachNameFor(viewer.full_name) ?? "to be assigned"}</b>
+                  Your coach: <b>{coachNameFor(viewer.full_name, forum.coaches) ?? "to be assigned"}</b>
                 </p>
                 <GoalProgress
                   title={contest.title}

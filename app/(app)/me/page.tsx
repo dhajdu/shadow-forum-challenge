@@ -14,7 +14,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   // WHOOP connect still returns to /me; the WHOOP data lives on Biometrics now
   if (params.whoop || params.view) redirect(`/biometrics?${new URLSearchParams(params as Record<string, string>)}`);
 
-  const { db, user, viewer } = await getForumContext();
+  const { db, user, viewer, forum } = await getForumContext();
   const { data } = await db.from("profiles").select("full_name, email, avatar_url").eq("id", user.id).single();
   const profile = data as { full_name: string; email: string | null; avatar_url: string | null } | null;
   const name = profile?.full_name || viewer.full_name;
@@ -32,7 +32,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             {viewer.forum_joined_on ? ` · in the forum since ${longDay(viewer.forum_joined_on)}` : ""}
           </p>
           <div className={s.quick}>
-            <Link href="/biometrics" className="btn-ghost inline">Biometrics</Link>
+            {forum.whoopEnabled && <Link href="/biometrics" className="btn-ghost inline">Biometrics</Link>}
             <Link href="/goals" className="btn-ghost inline">Goals</Link>
             <SignOutButton className="btn-ghost" />
           </div>

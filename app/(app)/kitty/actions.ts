@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getForumContext } from "@/app/_data/context";
-import { IN_CATEGORIES, OUT_CATEGORIES, parseVnd, type KittyCategory } from "@/app/_data/kitty";
+import { IN_CATEGORIES, OUT_CATEGORIES, moneyShort, parseMoney, type KittyCategory } from "@/app/_data/kitty";
 
 export type KittyState = { error: string | null; ok: boolean };
 
@@ -14,10 +14,10 @@ const uuid = (v: FormDataEntryValue | null) => {
 
 // Any active member adds a line; RLS checks membership and the date rule.
 export async function addEntry(_prev: KittyState, form: FormData): Promise<KittyState> {
-  const { db } = await getForumContext();
+  const { db, forum } = await getForumContext();
   const direction = form.get("direction") === "out" ? "out" : "in";
-  const amount = parseVnd(String(form.get("amount") ?? ""));
-  if (!amount) return { error: "Enter an amount, like 2.5M or 2,500,000.", ok: false };
+  const amount = parseMoney(String(form.get("amount") ?? ""), forum.currency);
+  if (!amount) return { error: `Enter a whole amount, like ${moneyShort(forum.duesPerForum || 250, forum.currency)}.`, ok: false };
   const allowed = direction === "in" ? IN_CATEGORIES : OUT_CATEGORIES;
   const category = allowed.includes(form.get("category") as KittyCategory) ? (form.get("category") as KittyCategory) : "other";
   const entry_on = String(form.get("entry_on") ?? "");

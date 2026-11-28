@@ -14,7 +14,7 @@ function nextMonths(from: string, n: number): string[] {
 }
 
 export default async function DatesPage() {
-  const { db, viewer, today } = await getForumContext();
+  const { db, viewer, today, forum } = await getForumContext();
   const [upcoming, moderator] = await Promise.all([listUpcoming(db, viewer, today), getModerator(db)]);
   const next = upcoming[0];
   const setMonths = new Set(upcoming.map((m) => m.held_on.slice(0, 7)));
@@ -27,7 +27,7 @@ export default async function DatesPage() {
         {next ? (
           <Link href={next.path} className={`row ${s.next}`}>
             <span className="row-main">
-              <b>{weekdayDay(next.held_on)}{next.starts_at ? ` · ${timeOf(next.starts_at)}` : ""}</b>
+              <b>{weekdayDay(next.held_on)}{next.starts_at ? ` · ${timeOf(next.starts_at, forum.timeZone)}` : ""}</b>
               <span>{next.place ?? "Place to be confirmed"}</span>
             </span>
             <span className="chev" aria-hidden>→</span>
@@ -40,7 +40,7 @@ export default async function DatesPage() {
             <li key={m.id}>
               <Link href={m.path} className="row">
                 <span className="row-main">
-                  <b>{weekdayDay(m.held_on)}{m.starts_at ? ` · ${timeOf(m.starts_at)}` : ""}</b>
+                  <b>{weekdayDay(m.held_on)}{m.starts_at ? ` · ${timeOf(m.starts_at, forum.timeZone)}` : ""}</b>
                   {m.place && <small>{m.place}</small>}
                 </span>
               </Link>

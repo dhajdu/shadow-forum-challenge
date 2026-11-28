@@ -10,7 +10,7 @@ import { parseVision } from "@/app/_data/vision";
 import { shortDay, timeOf, weekdayDay } from "@/app/_data/format";
 import { MeetingRow } from "@/app/(app)/forum/MeetingRow";
 import { listGallery } from "@/app/_data/gallery";
-import { getKitty, vndShort } from "@/app/_data/kitty";
+import { getKitty, moneyLabel } from "@/app/_data/kitty";
 import { getConstitution } from "@/app/_data/constitution";
 import { getStandings } from "@/lib/standings";
 import { dayOfSeason, hasContest, seasonLength } from "@/lib/contest";
@@ -23,22 +23,22 @@ const ordinal = (n: number) => n + (SUFFIX[(n % 100 - 20) % 10] || SUFFIX[n % 10
 
 const STATUS_LABEL: Record<GoalStatus, string> = { on_track: "on track", at_risk: "at risk", behind: "behind", hit: "hit" };
 
-function greeting(): string {
-  const h = Number(new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "Asia/Ho_Chi_Minh" }));
+function greeting(timeZone: string): string {
+  const h = Number(new Date().toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone }));
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
 type NewItem = { key: string; href: string; text: string; when: string };
 
 export async function HomeView() {
-  const { db, user, viewer, today } = await getForumContext();
+  const { db, user, viewer, today, forum } = await getForumContext();
   const [meetings, library, seasons, photos, home, kitty, constitution] = await Promise.all([
     listMeetings(db, viewer),
     listLibrary(db, viewer),
     listSeasons(db, viewer),
     listGallery(db, 6),
     getLibraryDoc(db, viewer, "home"),
-    getKitty(db).catch(() => null),
+    getKitty(db, forum.duesPerForum).catch(() => null),
     getConstitution(db).catch(() => null),
   ]);
   // the newest Constitution this member still has to sign
@@ -51,7 +51,7 @@ export async function HomeView() {
   const treasurer = kitty?.treasurerId
     ? (await db.from("profiles").select("full_name").eq("id", kitty.treasurerId).maybeSingle()).data?.full_name?.split(/\s+/)[0] ?? null
     : null;
-  const vision = home ? parseVision(home.body_md) : null;
+  const vision = home ? parseVision(home.body_md, forum.shortName) : null;
 
   // goals for the quarter that is running, else the next one
   const goalSeason =
@@ -102,7 +102,8 @@ export async function HomeView() {
   ].sort((a, b) => b.when.localeCompare(a.when));
 
   // contest card only while a season with a contest is running (or just finished)
-  const season = seasons.find((x) => x.starts_on <= today && today <= addDays(x.ends_on, 9) && hasContest(x)) ?? null;
+  // (the race scores WHOOP data, so none while the forum has WHOOP switched off)
+  const season = forum.whoopEnabled ? seasons.find((x) => x.starts_on <= today && today <= addDays(x.ends_on, 9) && hasContest(x)) ?? null : null;
   let place: { rank: number; of: number; avg: number; stale: boolean } | null = null;
   let goal: { status: GoalStatus; pct: number | null } | null = null;
   if (season) {
@@ -134,24 +135,24 @@ export async function HomeView() {
       <section className={s.hero}>
         <Image src="/hero.webp" alt="" fill priority sizes="100vw" className={s.heroImg} />
         <div className={s.heroInner}>
-          <p className={s.greet}>{greeting()}, {first}</p>
+          <p className={s.greet}>{greeting(forum.timeZone)}, {first}</p>
           <span className={s.kicker}>{isFirst ? "Your first forum" : "Next forum"}</span>
           {next ? (
             <>
               <h1 className={s.date}>{weekdayDay(next.held_on)}</h1>
               <p className={s.meta}>
-                {[next.starts_at && timeOf(next.starts_at), next.place ?? "Place to be confirmed"].filter(Boolean).join(" · ")}
+                {[next.starts_at && timeOf(next.starts_at, forum.timeZone), next.place ?? "Place to be confirmed"].filter(Boolean).join(" · ")}
                 {isFirst ? ` · welcome to the Shadow, ${first}` : ""}
               </p>
               <div className="actions-row">
-                <a className="btn inline" href={googleCalendarUrl(next)} target="_blank" rel="noreferrer">Add to Google Calendar</a>
+                <a className="btn inline" href={googleCalendarUrl(next, forum)} target="_blank" rel="noreferrer">Add to Google Calendar</a>
                 <a className="btn-ghost inline" href={`${next.path}/calendar.ics`}>Apple / Outlook</a>
               </div>
             </>
           ) : (
             <>
               <h1 className={s.date}>Date not set</h1>
-              <p className={s.meta}>Dave sets the next forum date. It shows here as soon as it is in.</p>
+              <p className={s.meta}>Your moderator sets the next forum date. It shows here as soon as it is in.</p>
             </>
           )}
         </div>
@@ -162,7 +163,7 @@ export async function HomeView() {
           <div className={s.visionInner}>
             {vision.is && (
               <div className={s.visionItem}>
-                <span className={s.kicker}>The Shadow Forum is</span>
+                <span className={s.kicker}>{forum.name} is</span>
                 <p>{vision.is}</p>
               </div>
             )}
@@ -184,8 +185,8 @@ export async function HomeView() {
               <h2>{status === "left" ? "You are no longer in the forum" : "Your access is being set up"}</h2>
               <p className="note-line">
                 {status === "left"
-                  ? "Your forum access has ended. Ask Dave if you think this is a mistake."
-                  : "Dave adds your first forum date, and your forums appear here from then on."}
+                  ? "Your forum access has ended. Ask your moderator if you think this is a mistake."
+                  : "Your moderator adds your first forum date, and your forums appear here from then on."}
               </p>
             </section>
           )}
@@ -204,7 +205,7 @@ export async function HomeView() {
             <Link href="/kitty" className={s.line}>
               <span>
                 <span className={s.label}>The kitty</span>
-                <b className={s.kitty}>{vndShort(kitty.balance)} ₫</b>
+                <b className={s.kitty}>{moneyLabel(kitty.balance, forum.currency)}</b>
               </span>
               <span className={s.status}>{treasurer ? `Held by ${treasurer}` : "Ledger"} →</span>
             </Link>
@@ -264,12 +265,14 @@ export async function HomeView() {
                     </Link>
                   </li>
                 ))}
-                <li>
-                  <Link href="/biometrics" className="row">
-                    <span className="row-main"><b>Connect WHOOP for the next season</b></span>
-                    <span className="chev" aria-hidden>→</span>
-                  </Link>
-                </li>
+                {forum.whoopEnabled && (
+                  <li>
+                    <Link href="/biometrics" className="row">
+                      <span className="row-main"><b>Connect WHOOP for the next season</b></span>
+                      <span className="chev" aria-hidden>→</span>
+                    </Link>
+                  </li>
+                )}
               </ul>
             </section>
           )}
@@ -325,7 +328,10 @@ export async function HomeView() {
 }
 
 /** Google Calendar "add event" link (opens Google with the forum filled in). */
-function googleCalendarUrl(m: { held_on: string; starts_at: string | null; place: string | null; title: string }): string {
+function googleCalendarUrl(
+  m: { held_on: string; starts_at: string | null; place: string | null; title: string },
+  forum: { name: string; shortName: string }
+): string {
   const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   let dates: string;
   if (m.starts_at) {
@@ -334,7 +340,7 @@ function googleCalendarUrl(m: { held_on: string; starts_at: string | null; place
   } else {
     dates = `${m.held_on.replace(/-/g, "")}/${addDays(m.held_on, 1).replace(/-/g, "")}`;
   }
-  const q = new URLSearchParams({ action: "TEMPLATE", text: `Shadow Forum · ${m.title}`, dates, details: "The Shadow Forum" });
+  const q = new URLSearchParams({ action: "TEMPLATE", text: `${forum.shortName} · ${m.title}`, dates, details: forum.name });
   if (m.place) q.set("location", m.place);
   return `https://calendar.google.com/calendar/render?${q.toString()}`;
 }

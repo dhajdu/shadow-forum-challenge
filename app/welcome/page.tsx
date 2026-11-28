@@ -4,12 +4,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "@/components/OnboardingForm";
 import { getSessionUser } from "@/lib/supabase/session";
+import { coachNameFor } from "@/lib/roster";
 
 export default async function Welcome() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
-  const { viewer } = await getForumContext();
+  const { viewer, forum } = await getForumContext();
   const contestSeason = await contestSeasonId(supabase, viewer);
 
   const [{ data: goal }, { data: me }] = await Promise.all([
@@ -29,7 +30,7 @@ export default async function Welcome() {
         <div className="eyebrow">First time in</div>
         <h1 className="title">Welcome, Rider</h1>
         <p className="tagline">Lock in your Q4 goal</p>
-        <OnboardingForm name={name} />
+        <OnboardingForm name={name} coach={coachNameFor(name, forum.coaches)} />
       </section>
     </main>
   );

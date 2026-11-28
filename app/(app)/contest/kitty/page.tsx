@@ -3,6 +3,7 @@ import { buildReport } from "@/lib/report";
 import { coachNameFor } from "@/lib/roster";
 import { CONTEST_END, COACH_SHARE_PENALTY, MISSED_GOAL_PENALTY } from "@/lib/contest";
 import type { GoalStatus } from "@/lib/database.types";
+import { getForumSettings } from "@/lib/forum-settings";
 
 const ordinal = (n: number) => ["1st", "2nd", "3rd", "4th", "5th"][n - 1] ?? `${n}th`;
 const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -11,7 +12,7 @@ const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: 
 // Bookkeeper books once the season ends), plus the goal penalties that settle on 31 Dec.
 export default async function KittyPage() {
   const supabase = await createClient();
-  const report = await buildReport(supabase);
+  const [report, forum] = await Promise.all([buildReport(supabase), getForumSettings()]);
   const placement = report.standings.reduce((a, r) => a + r.owes, 0);
   const atRisk = (s: GoalStatus) => s === "behind" || s === "at_risk";
 
@@ -20,7 +21,7 @@ export default async function KittyPage() {
       <div className="race-head">
         <div>
           <div className="eyebrow">Provisional kitty</div>
-          <h1>{placement}M VND</h1>
+          <h1>{placement}M {forum.currency}</h1>
           <p className="sub">
             From race placement today. Final after {fmt(CONTEST_END)}; goals decide up to {MISSED_GOAL_PENALTY + COACH_SHARE_PENALTY}M more each.
           </p>
@@ -59,7 +60,7 @@ export default async function KittyPage() {
             {report.standings.map((r) => (
               <tr key={r.user_id}>
                 <td>{r.name}</td>
-                <td className="dim">{coachNameFor(r.name) ?? "—"}</td>
+                <td className="dim">{coachNameFor(r.name, forum.coaches) ?? "—"}</td>
                 <td><span className={`chip ${r.goalStatus}`}>{r.goalStatus.replace("_", " ")}</span></td>
                 <td className={`r amt ${atRisk(r.goalStatus) ? "owe" : "dim"}`}>
                   {r.goalStatus === "hit" ? "0" : `${MISSED_GOAL_PENALTY + COACH_SHARE_PENALTY}M`}

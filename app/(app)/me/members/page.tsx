@@ -8,9 +8,9 @@ import { setTreasurer } from "@/app/(app)/kitty/actions";
 import s from "./members.module.css";
 
 export default async function MembersPage() {
-  const { db, viewer } = await getForumContext();
+  const { db, viewer, forum } = await getForumContext();
   if (!viewer.is_admin) notFound();
-  const [members, kitty] = await Promise.all([listMembers(db, viewer), getKitty(db)]);
+  const [members, kitty] = await Promise.all([listMembers(db, viewer), getKitty(db, forum.duesPerForum)]);
 
   return (
     <main className="page">
@@ -19,6 +19,7 @@ export default async function MembersPage() {
         <h1>Members and access</h1>
         <p className="sub">One date per member is the whole access setup: they see forums, agendas and contest seasons from their first forum on.</p>
         <nav className="actions-row">
+          <Link href="/me/forum" className="btn-ghost inline">Forum settings</Link>
           <Link href="/me/seasons" className="btn-ghost inline">Seasons</Link>
           <Link href="/me/members/constitution" className="btn-ghost inline">Amend the Constitution</Link>
         </nav>
@@ -71,8 +72,8 @@ export default async function MembersPage() {
             <p className="note-line">The member who holds the money. Shown on the Kitty page and Home.</p>
           </section>
           <section className="zone-card">
-            <h2>Lark checklist</h2>
-            <p className="note-line">Lark access is per space, not per date, so it stays a manual step.</p>
+            <h2>Shared spaces checklist</h2>
+            <p className="note-line">Access to outside tools (chat or document spaces) is per space, not per date, so it stays a manual step.</p>
             <ul className={s.checklist}>
               <li>☐ Add each new member only to the space that starts at their first forum (for 23 Dec: &ldquo;2026/12 Forum&rdquo;)</li>
               <li>☐ Never add a new member to an older space</li>

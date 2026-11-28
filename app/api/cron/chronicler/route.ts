@@ -5,6 +5,7 @@ import { sendEmail } from "@/lib/notify";
 import { buildReport } from "@/lib/report";
 import { hasContest, seasonForDay } from "@/lib/contest";
 import { groupScope, loadAccess, seasonAudience } from "@/lib/access";
+import { getForumSettings } from "@/lib/forum-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   if (!dry) {
     for (const to of recipients) {
-      const res = await sendEmail({ to, subject: `The Shadow Forum — ${monthLabel} report`, html });
+      const res = await sendEmail({ to, subject: `${(await getForumSettings()).name} — ${monthLabel} report`, html });
       if (res.ok) sent++;
     }
   }

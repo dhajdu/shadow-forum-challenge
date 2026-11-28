@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { addEntry, type KittyState } from "./actions";
-import { CATEGORY_LABEL, IN_CATEGORIES, OUT_CATEGORIES, vndShort } from "@/app/_data/kitty";
+import { CATEGORY_LABEL, IN_CATEGORIES, OUT_CATEGORIES, moneyShort } from "@/app/_data/kitty";
+import { useForumSettings } from "@/components/ForumSettingsProvider";
 import s from "./kitty.module.css";
 
 const initial: KittyState = { error: null, ok: false };
@@ -24,22 +25,23 @@ export function KittyForm({
   defaultForum: string | null;
 }) {
   const [state, action, pending] = useActionState(addEntry, initial);
+  const { currency } = useForumSettings();
   const [dir, setDir] = useState<"in" | "out">("in");
   const [category, setCategory] = useState("dues");
-  const [amount, setAmount] = useState(vndShort(dues));
+  const [amount, setAmount] = useState(moneyShort(dues, currency));
   const form = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (state.ok) {
       form.current?.reset();
-      setAmount(dir === "in" ? vndShort(dues) : "");
+      setAmount(dir === "in" ? moneyShort(dues, currency) : "");
     }
-  }, [state, dir, dues]);
+  }, [state, dir, dues, currency]);
 
   function pick(d: "in" | "out") {
     setDir(d);
     setCategory(d === "in" ? "dues" : "after_forum");
-    setAmount(d === "in" ? vndShort(dues) : "");
+    setAmount(d === "in" ? moneyShort(dues, currency) : "");
   }
 
   return (
@@ -51,14 +53,14 @@ export function KittyForm({
       </div>
 
       <label className={s.amount}>
-        <span>Amount (VND)</span>
-        <input className="field" name="amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="2.5M" required />
+        <span>Amount ({currency})</span>
+        <input className="field" name="amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={moneyShort(dues || 250, currency)} required />
       </label>
       <label>
         <span>What for</span>
         <select className="field" name="category" value={category} onChange={(e) => {
           setCategory(e.target.value);
-          if (e.target.value === "dues") setAmount(vndShort(dues));
+          if (e.target.value === "dues") setAmount(moneyShort(dues, currency));
         }}>
           {(dir === "in" ? IN_CATEGORIES : OUT_CATEGORIES).map((c) => (
             <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>
@@ -89,7 +91,7 @@ export function KittyForm({
       </label>
       <label className={s.note}>
         <span>Note{dir === "out" ? "" : " (optional)"}</span>
-        <input className="field" name="note" maxLength={500} placeholder={dir === "out" ? "e.g. Dreamplex room, 23 Dec" : "e.g. paid Vinh in cash"} required={dir === "out"} />
+        <input className="field" name="note" maxLength={500} placeholder={dir === "out" ? "e.g. Riverside room, 23 Dec" : "e.g. paid the treasurer in cash"} required={dir === "out"} />
       </label>
 
       {state.error && <p className={`msg err ${s.full}`}>{state.error}</p>}

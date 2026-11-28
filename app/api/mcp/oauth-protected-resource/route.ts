@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getForumSettings } from "@/lib/forum-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
       resource: `${site}/api/mcp`,
       authorization_servers: [`${supabase}/auth/v1`],
       bearer_methods_supported: ["header"],
-      resource_name: "The Shadow Forum",
+      resource_name: (await getForumSettings()).name,
     },
     { headers: { "cache-control": "public, max-age=3600", "access-control-allow-origin": "*" } }
   );

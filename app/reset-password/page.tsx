@@ -4,12 +4,14 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { changePassword, type ProfileState } from "@/app/actions/profile";
 import { PasswordField } from "@/components/PasswordField";
+import { useForumSettings } from "@/components/ForumSettingsProvider";
 
 const initial: ProfileState = { error: null, ok: false };
 
 // Reached from the reset email via /auth/confirm, which signs the rider in first.
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const forum = useForumSettings();
   const [state, action, pending] = useActionState(changePassword, initial);
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function ResetPasswordPage() {
       <div className="hero" />
       <div className="scrim" />
       <section className="panel">
-        <div className="eyebrow">The Shadow Forum</div>
+        <div className="eyebrow">{forum.name}</div>
         <h1 className="title">New password</h1>
         <form action={action}>
           <PasswordField name="password" placeholder="New password" autoComplete="new-password" minLength={6} required />

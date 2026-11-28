@@ -103,7 +103,7 @@ export default async function PreviewPage({ searchParams }: { searchParams: Prom
               <ul className={s.checklist}>
                 <li>{member.forum_joined_on ? <span className={s.ok}>✓</span> : "☐"} First-forum date set</li>
                 <li><span className={view.beforeJoin === 0 ? s.ok : s.bad}>{view.beforeJoin === 0 ? "✓" : "✗"}</span> Nothing before their first forum</li>
-                <li>☐ Lark: only the space from their first forum</li>
+                <li>☐ Outside spaces: only the one from their first forum</li>
                 <li>☐ Invite sent</li>
               </ul>
             </section>

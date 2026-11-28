@@ -12,7 +12,7 @@ const day = (iso: string) => longDay(iso.slice(0, 10));
 
 /** The signed Constitution: current version, who has signed it, and the e-sign form. Null if none is published yet. */
 export async function ConstitutionView() {
-  const { db, user, viewer, today } = await getForumContext();
+  const { db, user, viewer, today, forum } = await getForumContext();
   const [{ current, versions, signatures }, { data: ppl }] = await Promise.all([
     getConstitution(db),
     (db as unknown as SupabaseClient).from("profiles").select("id, full_name, is_founding, forum_joined_on, forum_left_on").order("full_name"),
@@ -86,7 +86,7 @@ export async function ConstitutionView() {
             You signed version {current.version} on {day(mine.signed_at)} as <span className={s.script}>{mine.typed_name}</span>
           </p>
         ) : (
-          <SignForm version={current.version} sha256={current.sha256} consent={consentText(current.version)} suggested={viewer.full_name} />
+          <SignForm version={current.version} sha256={current.sha256} consent={consentText(current.version, forum.name)} suggested={viewer.full_name} />
         )}
       </section>
 

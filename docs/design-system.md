@@ -1,6 +1,6 @@
-# Shadow Forum design system: Neon Noir
+# Forum design system: Neon Noir
 
-The source of truth for how the web app looks. Direction "A · Neon Noir" (picked by Dave, 27 Nov 2026):
+The source of truth for how the web app looks. Direction "A · Neon Noir" (picked by the moderator, 27 Nov 2026):
 the night city done properly. Near-black ground, the landing photo bleeding into Home, huge condensed
 uppercase titles and dates, red and blue neon used only as thin accents. No boxed cards: hairlines separate.
 Tokens live in [`app/globals.css`](../app/globals.css) `:root`. The iOS app mirrors the core palette in

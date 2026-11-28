@@ -18,7 +18,7 @@ function sleep(partial: Partial<WhoopSleepRecord> & Pick<WhoopSleepRecord, "cycl
 
 describe("WHOOP API → whoop_days", () => {
   it("labels days by the main sleep's local wake date and reuses blendScore", () => {
-    // Dave, 10-18: flew UTC+11 → UTC+07, went to bed at 17:09 local and woke on the 19th.
+    // A rider, 10-18: flew UTC+11 → UTC+07, went to bed at 17:09 local and woke on the 19th.
     const days = daysFromWhoop({
       cycles: [
         cycle({ id: 1, start: "2026-10-17T13:57:16.000Z", timezone_offset: "+11:00", score: { strain: 5.5 } }),
@@ -102,9 +102,9 @@ describe("WHOOP API → whoop_days", () => {
   });
 
   it("does not treat an externally synced user as eligible", () => {
-    const dave = "11111111-1111-1111-1111-111111111111";
-    assert.equal(isExternallySynced(dave, `${dave}, 22222222-2222-2222-2222-222222222222`), true);
-    assert.equal(isExternallySynced("33333333-3333-3333-3333-333333333333", dave), false);
-    assert.equal(isExternallySynced(dave, ""), false);
+    const rider = "11111111-1111-1111-1111-111111111111";
+    assert.equal(isExternallySynced(rider, `${rider}, 22222222-2222-2222-2222-222222222222`), true);
+    assert.equal(isExternallySynced("33333333-3333-3333-3333-333333333333", rider), false);
+    assert.equal(isExternallySynced(rider, ""), false);
   });
 });

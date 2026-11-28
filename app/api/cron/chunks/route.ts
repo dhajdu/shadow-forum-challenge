@@ -6,7 +6,7 @@ import { reindexStale } from "@/lib/chunks";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** Rebuild the agenda search chunks for meetings whose docs changed. Run after a Lark import. */
+/** Rebuild the agenda search chunks for meetings whose docs changed. Run after an agenda import. */
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

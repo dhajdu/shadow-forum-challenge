@@ -3,6 +3,7 @@ import { getRequestUser } from "@/lib/supabase/request";
 import { isActiveCaller } from "@/lib/access";
 import { TOOLS, callTool } from "@/lib/mcp";
 import { PLANNING_GUIDE } from "@/lib/forum-planning";
+import { forumSlug, readForumSettings } from "@/lib/forum-config";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -12,12 +13,11 @@ export const maxDuration = 60;
 // No shared key. Tools run as the member, so RLS decides what they see.
 
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
-const SERVER_INFO = { name: "shadow-forum", title: "The Shadow Forum", version: "2.0.0" };
 
 const PLAN_PROMPT = {
   name: "plan_forum",
   title: "Plan a forum",
-  description: "Plan a Shadow Forum session as the moderator: run sheet, host, presentations, gaps.",
+  description: "Plan a forum session as the moderator: run sheet, host, presentations, gaps.",
   arguments: [{ name: "date", description: "Forum date, YYYY-MM-DD (default the next forum)", required: false }],
 };
 
@@ -55,12 +55,13 @@ export async function POST(req: NextRequest) {
   switch (msg.method) {
     case "initialize": {
       const asked = String(msg.params?.protocolVersion ?? "");
+      const forum = await readForumSettings(auth.supabase);
       return reply(msg.id, {
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
         capabilities: { tools: { listChanged: false }, prompts: { listChanged: false } },
-        serverInfo: SERVER_INFO,
+        serverInfo: { name: forumSlug(forum), title: forum.name, version: "2.0.0" },
         instructions:
-          "The Shadow Forum, as the signed-in member: forums and agendas, the Parking Lot, the library, the kitty (read it, add money in or out, submit expenses), the forum chat, goals, the contest race, WHOOP data and photos. Agendas, the Parking Lot and goals start from your own first forum; the chat, photos, the kitty and resources are open in full. Amounts are in VND. Confirm with the member before adding to the kitty, posting to the chat or deleting. Forum planning (hosts, run sheets, presentations, planners, roles): call planning_guide first and follow it; only forum admins can change the plan, and every change needs the member's OK first.",
+          `${forum.name}, as the signed-in member: forums and agendas, the Parking Lot, the library, the kitty (read it, add money in or out, submit expenses), the forum chat, goals, the contest race, WHOOP data and photos. Agendas, the Parking Lot and goals start from your own first forum; the chat, photos, the kitty and resources are open in full. Amounts are whole units of ${forum.currency}. Confirm with the member before adding to the kitty, posting to the chat or deleting. Forum planning (hosts, run sheets, presentations, planners, roles): call planning_guide first and follow it; only forum admins can change the plan, and every change needs the member's OK first.`,
       });
     }
     case "ping":

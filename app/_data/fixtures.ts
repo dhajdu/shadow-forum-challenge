@@ -20,6 +20,8 @@ import {
   type Viewer,
 } from "./types";
 import { agendaTheme } from "./recap";
+import { todayIn } from "./format";
+import { DEFAULT_FORUM_SETTINGS } from "@/lib/forum-config";
 
 const PLACEHOLDER_AGENDA = `## Agenda
 1. Opening and confidentiality
@@ -27,7 +29,7 @@ const PLACEHOLDER_AGENDA = `## Agenda
 3. Presentation
 4. Parking lot
 
-Placeholder agenda. The real text is imported from Lark.`;
+Placeholder agenda. The real text is imported.`;
 
 type Row = Omit<MeetingDetail, "has_agenda" | "theme" | "file_count" | "path">;
 
@@ -50,13 +52,13 @@ const MEETINGS: Row[] = [
   m("2026-02-05", "Forum"),
   m("2026-03-05", "Forum"),
   m("2026-04-28", "Forum"),
-  m("2026-05-25", "Forum Manila", { place: "Manila" }),
+  m("2026-05-25", "Forum Lisbon", { place: "Lisbon" }),
   m("2026-07-28", "Forum"),
   m("2026-08-24", "Forum"),
   m("2026-09-22", "Forum"),
   m("2026-10-08", "Mini Retreat", { kind: "retreat" }),
-  m("2026-11-25", "Forum Dreamplex", {
-    place: "Dreamplex",
+  m("2026-11-25", "Forum Riverside", {
+    place: "Riverside",
     starts_at: "2026-11-25T18:00:00+07:00",
     files: [{ name: "Slides.pdf", path: "fx-2026-11-25/slides.pdf", url: null }],
     updated_at: "2026-11-26T09:00:00+07:00",
@@ -70,9 +72,9 @@ const MEETINGS: Row[] = [
 ];
 
 const LIBRARY: LibraryDocDetail[] = [
-  { slug: "constitution", title: "Approved Constitution", audience: "all", updated_at: "2026-02-05T12:00:00+07:00", body_md: "Placeholder. The approved Constitution is imported from Lark." },
-  { slug: "resources", title: "Resources", audience: "all", updated_at: "2026-08-24T12:00:00+07:00", body_md: "Placeholder. Forum resources are imported from Lark." },
-  { slug: "expense-sheet", title: "Expense Sheet", audience: "founding", updated_at: "2026-11-25T12:00:00+07:00", body_md: "Placeholder. The Expense Sheet is imported from Lark." },
+  { slug: "constitution", title: "Approved Constitution", audience: "all", updated_at: "2026-02-05T12:00:00+07:00", body_md: "Placeholder. The approved Constitution is imported." },
+  { slug: "resources", title: "Resources", audience: "all", updated_at: "2026-08-24T12:00:00+07:00", body_md: "Placeholder. Forum resources are imported." },
+  { slug: "expense-sheet", title: "Expense Sheet", audience: "founding", updated_at: "2026-11-25T12:00:00+07:00", body_md: "Placeholder. The Expense Sheet is imported." },
 ];
 
 // Matches lib/contest.ts (CONTEST_START / CONTEST_END).
@@ -84,16 +86,16 @@ const member = (id: string, full_name: string, joined: string | null, extra: Par
   status: "active", first_forum_label: null, ...extra,
 });
 const MEMBERS: Member[] = [
-  member("fx-dave", "Dave Hajdu", FOUNDED, { is_admin: true, is_founding: true }),
+  member("fx-ana", "Ana Souza", FOUNDED, { is_admin: true, is_founding: true }),
   member("fx-founding-2", "Founding member 2", FOUNDED, { is_founding: true }),
   member("fx-founding-3", "Founding member 3", FOUNDED, { is_founding: true }),
   member("fx-founding-4", "Founding member 4", FOUNDED, { is_founding: true }),
-  member("fx-nam-trung", "Nam Trung", "2026-07-28"),
-  member("fx-minh-anh", "Minh Anh", "2026-12-23"),
-  member("fx-daniel", "Daniel", null, { status: "waiting", first_forum_label: "Jan 2027" }),
+  member("fx-noah", "Noah Turner", "2026-07-28"),
+  member("fx-mia", "Mia Archer", "2026-12-23"),
+  member("fx-diego", "Diego Ramos", null, { status: "waiting", first_forum_label: "Jan 2027" }),
 ];
 
-const today = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+const today = () => todayIn(DEFAULT_FORUM_SETTINGS.timeZone);
 const active = (v: Viewer) => memberStatus(v, today()) === "active";
 const canSeeDate = (v: Viewer, d: string) => active(v) && (v.is_founding || (v.forum_joined_on != null && d >= v.forum_joined_on));
 const canSeeDoc = (v: Viewer, d: LibraryDoc) => active(v) && (d.audience === "all" || v.is_founding);
@@ -152,7 +154,7 @@ export async function listSeasons(_db: Db, v: Viewer): Promise<Season[]> {
 }
 
 export async function getModerator(_db: Db): Promise<string> {
-  return "Dave Hajdu";
+  return "Ana Souza";
 }
 
 export async function listMembers(_db: Db, v: Viewer): Promise<Member[]> {

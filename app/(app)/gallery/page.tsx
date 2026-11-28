@@ -1,7 +1,7 @@
 import { getForumContext } from "@/app/_data/context";
 import { listMeetings } from "@/app/_data/forum";
 import { listGallery, type GalleryPhoto } from "@/app/_data/gallery";
-import { longDay, todayVN } from "@/app/_data/format";
+import { longDay } from "@/app/_data/format";
 import { GalleryGrid } from "./GalleryGrid";
 import { GalleryUpload } from "./GalleryUpload";
 import { PageBanner } from "@/components/PageBanner";
@@ -13,7 +13,7 @@ const monthTitle = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 
 export default async function GalleryPage() {
-  const { db, viewer } = await getForumContext();
+  const { db, viewer, today } = await getForumContext();
   const [photos, meetings] = await Promise.all([listGallery(db), listMeetings(db, viewer)]);
   const byId = new Map(meetings.map((m) => [m.id, m]));
 
@@ -35,7 +35,7 @@ export default async function GalleryPage() {
   }
 
   const forums = meetings
-    .filter((m) => m.held_on <= todayVN())
+    .filter((m) => m.held_on <= today)
     .map((m) => ({ id: m.id, label: `${longDay(m.held_on)} · ${m.title}`, date: m.held_on }));
 
   return (
@@ -44,7 +44,7 @@ export default async function GalleryPage() {
       <h1>Gallery</h1>
     </PageBanner>
     <main className={`page ${s.wrap}`}>
-      <GalleryUpload forums={forums} today={todayVN()} />
+      <GalleryUpload forums={forums} today={today} />
       {groups.length === 0 ? (
         <p className="trend-empty">No photos yet. Add the first ones above.</p>
       ) : (

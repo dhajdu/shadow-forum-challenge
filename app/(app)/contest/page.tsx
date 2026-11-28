@@ -19,7 +19,8 @@ export default async function RacePage() {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) redirect("/");
-  const { viewer } = await getForumContext();
+  const { viewer, forum } = await getForumContext();
+  const coaches = forum.coaches;
   const contestSeason = await contestSeasonId(supabase, viewer);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -60,7 +61,7 @@ export default async function RacePage() {
   const rows: RaceRow[] = standings.map((s) => ({
     ...s,
     goal: goalByUser.get(s.user_id) ?? null,
-    coach: coachNameFor(s.full_name),
+    coach: coachNameFor(s.full_name, coaches),
   }));
 
   const pot = PLACEMENT_PENALTIES.reduce((a, b) => a + b, 0);

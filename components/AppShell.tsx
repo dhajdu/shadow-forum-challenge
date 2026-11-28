@@ -5,6 +5,7 @@ import { ChatBell } from "@/components/ChatBell";
 import { AskDock } from "@/components/AskDock";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getForumContext } from "@/app/_data/context";
+import { getForumSettings } from "@/lib/forum-settings";
 
 /** Messages from others since this member last opened Chat (RLS limits them to what they may see). */
 async function unreadChat(): Promise<{ me: string; unread: number }> {
@@ -27,17 +28,20 @@ async function unreadChat(): Promise<{ me: string; unread: number }> {
 
 /** Signed-in frame: sidebar on desktop, bottom tabs on phone widths, Chat icon top right, Ask AI floating bottom right. */
 export async function AppShell({ isAdmin, children }: { isAdmin: boolean; children: React.ReactNode }) {
-  const { me, unread } = await unreadChat();
+  const [{ me, unread }, forum] = await Promise.all([unreadChat(), getForumSettings()]);
+  // "The Lantern Forum" → "THE LANTERN"
+  const brand = forum.name.replace(/\s+forum$/i, "").toUpperCase();
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="side-top">
-          <Link href="/" className="side-brand">THE SHADOW</Link>
+          <Link href="/" className="side-brand">{brand}</Link>
           <ChatBell unread={unread} me={me} className="in-side" />
         </div>
         <TabNav variant="side" />
         <div className="side-foot">
           {isAdmin && <Link href="/me/members">Members and access</Link>}
+          {isAdmin && <Link href="/me/forum">Forum settings</Link>}
           <SignOutButton className="side-signout" />
         </div>
       </aside>

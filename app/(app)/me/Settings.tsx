@@ -1,9 +1,7 @@
 import { AddPasskeyButton } from "@/components/AddPasskeyButton";
 import { CopyButton } from "@/components/CopyButton";
+import { forumSlug, getForumSettings } from "@/lib/forum-settings";
 import s from "./me.module.css";
-
-const MCP_URL = `${process.env.NEXT_PUBLIC_SITE_URL || "https://eoshadowforum.com"}/api/mcp`;
-const CLAUDE_CODE = `claude mcp add --transport http shadow-forum ${MCP_URL}`;
 
 const EXAMPLES = [
   "What did I commit to at the last forum?",
@@ -13,7 +11,10 @@ const EXAMPLES = [
 ];
 
 /** Account settings and the MCP connection on Profile. Admin tools live on Members and access only. */
-export function Settings() {
+export async function Settings() {
+  const forum = await getForumSettings();
+  const MCP_URL = `${process.env.NEXT_PUBLIC_SITE_URL || forum.siteUrl}/api/mcp`;
+  const CLAUDE_CODE = `claude mcp add --transport http ${forumSlug(forum)} ${MCP_URL}`;
   return (
     <div className={s.settings}>
       <section className="zone-card">
@@ -45,9 +46,9 @@ export function Settings() {
         <h3 className={s.step}>Claude (web, desktop and phone)</h3>
         <ol className={s.steps}>
           <li>In Claude, open <b>Settings → Connectors</b> and choose <b>Add custom connector</b>.</li>
-          <li>Name it <b>The Shadow Forum</b> and paste the URL above.</li>
+          <li>Name it <b>{forum.name}</b> and paste the URL above.</li>
           <li>Click <b>Connect</b>. This site opens: sign in with your forum account and choose <b>Allow</b>.</li>
-          <li>In a chat, turn on <b>The Shadow Forum</b> in the tools menu and ask away. It works on every device signed in to the same Claude account.</li>
+          <li>In a chat, turn on <b>{forum.name}</b> in the tools menu and ask away. It works on every device signed in to the same Claude account.</li>
         </ol>
 
         <h3 className={s.step}>Claude Code</h3>

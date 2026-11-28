@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useForumSettings } from "@/components/ForumSettingsProvider";
 
 type Tab = { href: string; label: string; short?: string };
 
@@ -24,9 +25,11 @@ export function isActive(pathname: string, href: string): boolean {
 /** The sections: a left sidebar on desktop, a bottom tab bar on phones (CSS decides). */
 export function TabNav({ variant }: { variant: "side" | "bottom" }) {
   const pathname = usePathname();
+  const { whoopEnabled } = useForumSettings();
+  const tabs = whoopEnabled ? TABS : TABS.filter((t) => t.href !== "/biometrics");
   return (
     <nav className={variant === "side" ? "side-tabs" : "tabbar"} aria-label="Sections">
-      {TABS.map((t) => {
+      {tabs.map((t) => {
         const on = isActive(pathname, t.href);
         return (
           <Link key={t.href} href={t.href} className={on ? "on" : ""} aria-current={on ? "page" : undefined}>

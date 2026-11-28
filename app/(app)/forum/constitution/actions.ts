@@ -11,7 +11,7 @@ export type SignState = { error: string | null; ok: boolean };
 // Sign the newest version. Like Edge8's agreements: the text is re-hashed and must match both the
 // stored hash and the one the member was shown; their IP and browser are kept as evidence.
 export async function signConstitution(_prev: SignState, form: FormData): Promise<SignState> {
-  const { db } = await getForumContext();
+  const { db, forum } = await getForumContext();
   const typed = String(form.get("typed_name") ?? "").trim().replace(/\s+/g, " ");
   if (typed.length < 2) return { error: "Type your full name to sign.", ok: false };
   if (form.get("consent") !== "on") return { error: "Tick the box to agree.", ok: false };
@@ -20,13 +20,13 @@ export async function signConstitution(_prev: SignState, form: FormData): Promis
   if (!current) return { error: "There is no Constitution to sign yet.", ok: false };
   const shown = String(form.get("sha256") ?? "");
   if (shown !== current.sha256) return { error: "The Constitution changed while you had it open. Reload the page and read the new version.", ok: false };
-  if (sha256Hex(current.body_md) !== current.sha256) return { error: "The stored Constitution does not match its fingerprint. Ask Dave to republish it.", ok: false };
+  if (sha256Hex(current.body_md) !== current.sha256) return { error: "The stored Constitution does not match its fingerprint. Ask your moderator to republish it.", ok: false };
 
   const h = await headers();
   const { error } = await (db as unknown as SupabaseClient).from("constitution_signatures").insert({
     version_id: current.id,
     typed_name: typed.slice(0, 120),
-    consent: consentText(current.version),
+    consent: consentText(current.version, forum.name),
     sha256_shown: shown,
     ip: (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "").trim().slice(0, 100) || null,
     user_agent: (h.get("user-agent") ?? "").slice(0, 500) || null,

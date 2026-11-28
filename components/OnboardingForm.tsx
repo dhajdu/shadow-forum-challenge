@@ -2,13 +2,11 @@
 
 import { useActionState } from "react";
 import { createGoal, type GoalFormState } from "@/app/actions/goal";
-import { coachNameFor } from "@/lib/roster";
 
 const initial: GoalFormState = { error: null };
 
-export function OnboardingForm({ name }: { name: string }) {
+export function OnboardingForm({ name, coach }: { name: string; coach: string | null }) {
   const [state, formAction, pending] = useActionState(createGoal, initial);
-  const coach = coachNameFor(name);
 
   return (
     <form action={formAction} className="onboard-form">

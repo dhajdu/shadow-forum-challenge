@@ -1,4 +1,4 @@
-// The forum's vision lives in the "Home of the Shadow" library doc (slug "home"), so Dave can edit it.
+// The forum's vision lives in the "home" library doc, so the moderator can edit it.
 export type Vision = { is: string | null; ambition: string | null };
 
 /** The quote under a "# … <title>" heading. */
@@ -16,6 +16,9 @@ function quoteUnder(md: string, title: RegExp): string | null {
   return out.join(" ") || null;
 }
 
-export function parseVision(md: string): Vision {
-  return { is: quoteUnder(md, /shadow forum is/i), ambition: quoteUnder(md, /ambition/i) };
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** The "<short name> is" quote (e.g. "# The Lantern Forum is") and the ambition. */
+export function parseVision(md: string, shortName: string): Vision {
+  return { is: quoteUnder(md, new RegExp(`${escape(shortName)} is`, "i")), ambition: quoteUnder(md, /ambition/i) };
 }

@@ -255,6 +255,38 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"forum_settings": {
+                  Row: {
+                    "coaches": NonNullable<Json>,"currency": string,"dues_per_forum": number,"id": boolean,"name": string,"organisation": string,"short_name": string,"site_url": string,"time_zone": string,"updated_at": string,"updated_by": string | null,"whoop_enabled": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "coaches"?: NonNullable<Json>,"currency"?: string,"dues_per_forum"?: number,"id"?: boolean,"name": string,"organisation"?: string,"short_name": string,"site_url": string,"time_zone"?: string,"updated_at"?: string,"updated_by"?: string | null,"whoop_enabled"?: boolean
+                  }
+                  Update: {
+                    "coaches"?: NonNullable<Json>,"currency"?: string,"dues_per_forum"?: number,"id"?: boolean,"name"?: string,"organisation"?: string,"short_name"?: string,"site_url"?: string,"time_zone"?: string,"updated_at"?: string,"updated_by"?: string | null,"whoop_enabled"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "forum_settings_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "forum_settings_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "race_standings"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "forum_settings_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "season_standings"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"gallery_photos": {
                   Row: {
                     "bytes": number | null,"caption": string | null,"created_at": string,"height": number | null,"id": string,"meeting_id": string | null,"original_path": string,"taken_on": string,"thumb_path": string,"uploaded_by": string,"web_path": string,"width": number | null
@@ -1139,6 +1171,9 @@ isOneToOne: true
                            },
 "can_see_season":
 { Args: { "s": string }; Returns: boolean
+                           },
+"forum_today":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "gallery_object_photo":
 { Args: { "object_name": string }; Returns: string

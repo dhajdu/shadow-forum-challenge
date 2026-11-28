@@ -6,7 +6,7 @@ import s from "./resources.module.css";
 
 // Resources: the forum's toolkit, following a forum month. Our own documents first, then the
 // worksheets members use before and in the room (private files, active members only), then EO links.
-// Mirrors the Lark "Resources" page.
+// Mirrors the forum's imported "Resources" page.
 
 type Tool = { path: string; title: string; when: string; what: string; pages?: number };
 

@@ -4,16 +4,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { CHAT_COLS, type ChatMessage } from "@/app/_data/chat";
+import { useForumSettings } from "@/components/ForumSettingsProvider";
 import s from "./chat.module.css";
 
 type People = Record<string, { name: string; avatar: string | null }>;
 
-const TZ = "Asia/Ho_Chi_Minh";
-const dayKey = (iso: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
-const dayLabel = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: TZ });
-const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
+// Days and times in the forum's time zone (forum settings).
+const dayKey = (iso: string, timeZone: string) => new Date(iso).toLocaleDateString("en-CA", { timeZone });
+const dayLabel = (iso: string, timeZone: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone });
+const time = (iso: string, timeZone: string) =>
+  new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone });
 const initials = (n: string) => n.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
 /**
@@ -23,6 +24,7 @@ const initials = (n: string) => n.split(/\s+/).map((w) => w[0]).join("").slice(0
  */
 export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; people: People; me: string }) {
   const db = useMemo(() => createClient() as unknown as SupabaseClient, []);
+  const tz = useForumSettings().timeZone;
   const [messages, setMessages] = useState(initial);
   const [thread, setThread] = useState<string | null>(null); // the open thread's first message
   const [error, setError] = useState<string | null>(null);
@@ -138,14 +140,14 @@ export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; peo
           {!grouped && (
             <div className={s.meta}>
               <b>{who}</b>
-              <span>{time(m.created_at)}</span>
+              <span>{time(m.created_at, tz)}</span>
             </div>
           )}
           {m.deleted_at ? <p className={s.deleted}>Message deleted</p> : <p className={s.body}>{m.body}</p>}
           {rs.length > 0 && (
             <button type="button" className={s.replies} onClick={() => setThread(m.id)}>
               {rs.length} {rs.length === 1 ? "reply" : "replies"}
-              <span>Last {time(rs[rs.length - 1].created_at)}</span>
+              <span>Last {time(rs[rs.length - 1].created_at, tz)}</span>
             </button>
           )}
         </div>
@@ -174,7 +176,7 @@ export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; peo
         <ol className={s.list} aria-live="polite">
           {top.length === 0 && <li className="trend-empty">No messages yet. Say hello to the forum.</li>}
           {top.map((m) => {
-            const d = dayKey(m.created_at);
+            const d = dayKey(m.created_at, tz);
             const newDay = d !== lastDay;
             // a message with a thread under it ends the group
             const grouped = !newDay && lastAuthor === m.author_id;
@@ -184,7 +186,7 @@ export function ForumChat({ initial, people, me }: { initial: ChatMessage[]; peo
               <li key={m.id}>
                 {newDay && (
                   <div className={s.day}>
-                    <span>{dayLabel(m.created_at)}</span>
+                    <span>{dayLabel(m.created_at, tz)}</span>
                   </div>
                 )}
                 {row(m, grouped, false)}

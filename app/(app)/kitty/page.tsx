@@ -2,21 +2,22 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getForumContext } from "@/app/_data/context";
 import { listMeetings } from "@/app/_data/forum";
 import { longDay, shortDay } from "@/app/_data/format";
-import { CATEGORY_LABEL, getKitty, vndFull, vndShort } from "@/app/_data/kitty";
+import { CATEGORY_LABEL, getKitty, moneyDigits, moneyFull, moneyLabel, moneyShort } from "@/app/_data/kitty";
 import { PageBanner } from "@/components/PageBanner";
 import { KittyForm } from "./KittyForm";
 import { voidEntry } from "./actions";
 import s from "./kitty.module.css";
 
-const LARK = " (Lark Expense Sheet)"; // lines imported from Lark on 28 Nov 2026
+const LARK = " (Lark Expense Sheet)"; // note suffix on lines imported from an earlier expense sheet; matches stored data
 
 type Person = { id: string; full_name: string; is_founding: boolean; forum_joined_on: string | null; forum_left_on: string | null };
 
 // Kitty: the forum's shared money. Balance, who holds it, dues per forum, and the ledger anyone can add to.
 export default async function KittyPage() {
-  const { db, user, viewer, today } = await getForumContext();
+  const { db, user, viewer, today, forum: settings } = await getForumContext();
+  const cur = settings.currency;
   const [kitty, meetings, { data: ppl }] = await Promise.all([
-    getKitty(db),
+    getKitty(db, settings.duesPerForum),
     listMeetings(db, viewer),
     (db as unknown as SupabaseClient).from("profiles").select("id, full_name, is_founding, forum_joined_on, forum_left_on").order("full_name"),
   ]);
@@ -60,15 +61,15 @@ export default async function KittyPage() {
         <section className={s.top}>
           <div className={s.balance}>
             <span className={s.label}>In the kitty</span>
-            <b>{kitty.balance == null ? "—" : `${vndShort(kitty.balance)} ₫`}</b>
-            <small>{kitty.balance == null ? "" : vndFull(kitty.balance)}</small>
+            <b>{kitty.balance == null ? "—" : moneyLabel(kitty.balance, cur)}</b>
+            <small>{kitty.balance == null ? "" : moneyFull(kitty.balance, cur)}</small>
             <p className={s.holder}>
               {kitty.treasurerId ? (
                 <>Held by <strong>{name(kitty.treasurerId)}</strong>, treasurer</>
               ) : (
                 "No treasurer set"
               )}
-              {" · "}dues {vndShort(kitty.dues)} each per forum
+              {" · "}dues {moneyShort(kitty.dues, cur)} each per forum
             </p>
           </div>
 
@@ -95,7 +96,7 @@ export default async function KittyPage() {
           <div className={s.ledgerHead}>
             <h2 className={s.label}>Ledger</h2>
             <span className="note-line">
-              {live.length} line{live.length === 1 ? "" : "s"} · in {vndShort(inTotal)} · out {vndShort(outTotal)}
+              {live.length} line{live.length === 1 ? "" : "s"} · in {moneyShort(inTotal, cur)} · out {moneyShort(outTotal, cur)}
             </span>
             <a href="#add" className="btn inline">Add a line</a>
           </div>
@@ -121,7 +122,7 @@ export default async function KittyPage() {
                     <tr className={s.bf}>
                       <td />
                       <td colSpan={5}>Brought forward from before your first forum</td>
-                      <td className={s.num}>{vndFull(broughtForward).replace(" VND", "")}</td>
+                      <td className={s.num}>{moneyDigits(broughtForward)}</td>
                       <td />
                     </tr>
                   )}
@@ -132,7 +133,7 @@ export default async function KittyPage() {
                       <td className={s.desc}>
                         {[meetingLabel(e.meeting_id), e.note?.replace(LARK, "")].filter(Boolean).join(" · ") || "—"}
                         <small>
-                          {e.note?.includes(LARK) ? "from the Lark Expense Sheet" : `added by ${first(e.created_by)}`}
+                          {e.note?.includes(LARK) ? "imported from the Expense Sheet" : `added by ${first(e.created_by)}`}
                           {e.voided_at ? ` · voided by ${first(e.voided_by)}` : ""}
                         </small>
                       </td>
@@ -144,7 +145,7 @@ export default async function KittyPage() {
                         {!e.voided_at && (
                           <form action={voidEntry}>
                             <input type="hidden" name="id" value={e.id} />
-                            <button className={s.void} type="submit" aria-label={`Void ${CATEGORY_LABEL[e.category]} ${vndShort(e.amount_vnd)}`}>Void</button>
+                            <button className={s.void} type="submit" aria-label={`Void ${CATEGORY_LABEL[e.category]} ${moneyShort(e.amount_vnd, cur)}`}>Void</button>
                           </form>
                         )}
                       </td>

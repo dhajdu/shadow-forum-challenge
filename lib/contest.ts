@@ -9,7 +9,7 @@ export const CONTEST_END = new Date("2026-12-22T23:59:59Z");
 export const CONTEST_DAYS = 91;
 export const CONTEST_START_DAY = "2026-09-23"; // YYYY-MM-DD, for filtering whoop_days
 
-// Placement penalties (VND millions): 1st pays 0, then 2M..5M.
+// Placement penalties (millions of the forum's currency): 1st pays 0, then 2M..5M.
 export const PLACEMENT_PENALTIES = [0, 2, 3, 4, 5];
 export const MISSED_GOAL_PENALTY = 5; // rider
 export const COACH_SHARE_PENALTY = 5; // coach
@@ -73,13 +73,13 @@ export function seasonPhase(s: Pick<ContestSeason, "starts_on" | "ends_on">, now
   return t < s.starts_on ? "upcoming" : t > s.ends_on ? "over" : "running";
 }
 
-/** Placement penalties (VND millions) for the season, from its ladder. Empty: no contest. */
+/** Placement penalties (millions of the forum's currency) for the season, from its ladder. Empty: no contest. */
 export function seasonLadder(s: Pick<ContestSeason, "ladder"> | null): number[] {
   const l = s?.ladder;
   return Array.isArray(l) && l.length && l.every((x) => typeof x === "number") ? (l as number[]) : [];
 }
 
-/** Whether the season has a contest (a ladder). Q1 2027 has none until Dave picks one. */
+/** Whether the season has a contest (a ladder). A season has none until the forum picks one. */
 export function hasContest(s: Pick<ContestSeason, "ladder"> | null): boolean {
   return seasonLadder(s).length > 0;
 }
